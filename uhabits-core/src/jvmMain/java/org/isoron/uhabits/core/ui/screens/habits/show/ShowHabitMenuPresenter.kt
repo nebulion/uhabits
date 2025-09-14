@@ -18,8 +18,10 @@
  */
 package org.isoron.uhabits.core.ui.screens.habits.show
 
+import org.isoron.uhabits.core.commands.ArchiveHabitsCommand
 import org.isoron.uhabits.core.commands.CommandRunner
 import org.isoron.uhabits.core.commands.DeleteHabitsCommand
+import org.isoron.uhabits.core.commands.UnarchiveHabitsCommand
 import org.isoron.uhabits.core.models.Entry
 import org.isoron.uhabits.core.models.Habit
 import org.isoron.uhabits.core.models.HabitList
@@ -40,8 +42,22 @@ class ShowHabitMenuPresenter(
     private val system: System,
     private val taskRunner: TaskRunner
 ) {
+
+    fun canArchive(): Boolean {
+        return !(habit.isArchived)
+    }
+
+    fun canUnarchive(): Boolean {
+        return habit.isArchived
+    }
+
     fun onEditHabit() {
         screen.showEditHabitScreen(habit)
+    }
+
+    fun onArchiveHabits() {
+        commandRunner.run(ArchiveHabitsCommand(habitList, listOf(habit)))
+        screen.showMessage(Message.HABIT_ARCHIVED)
     }
 
     fun onExportCSV() {
@@ -64,6 +80,11 @@ class ShowHabitMenuPresenter(
         }
     }
 
+    fun onUnarchiveHabits() {
+        commandRunner.run(UnarchiveHabitsCommand(habitList, listOf(habit)))
+        screen.showMessage(Message.HABIT_UNARCHIVED)
+    }
+
     fun onRandomize() {
         val random = Random()
         habit.originalEntries.clear()
@@ -72,7 +93,10 @@ class ShowHabitMenuPresenter(
             if (i % 7 == 0) strength = max(0.0, min(100.0, strength + 10 * random.nextGaussian()))
             if (random.nextInt(100) > strength) continue
             var value = Entry.YES_MANUAL
-            if (habit.isNumerical) value = (1000 + 250 * random.nextGaussian() * strength / 100).toInt() * 1000
+            if (habit.isNumerical) {
+                value =
+                    (1000 + 250 * random.nextGaussian() * strength / 100).toInt() * 1000
+            }
             habit.originalEntries.add(Entry(DateUtils.getToday().minus(i), value))
         }
         habit.recompute()
@@ -80,7 +104,9 @@ class ShowHabitMenuPresenter(
     }
 
     enum class Message {
-        COULD_NOT_EXPORT
+        COULD_NOT_EXPORT,
+        HABIT_ARCHIVED,
+        HABIT_UNARCHIVED
     }
 
     interface Screen {
