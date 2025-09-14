@@ -203,7 +203,8 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
         }
 
         private fun getPopupAnchor(): View? {
-            val dialog = supportFragmentManager.findFragmentByTag("historyEditor") as HistoryEditorDialog?
+            val dialog =
+                supportFragmentManager.findFragmentByTag("historyEditor") as HistoryEditorDialog?
             return dialog?.dataView
         }
 
@@ -216,6 +217,25 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
                 ShowHabitMenuPresenter.Message.COULD_NOT_EXPORT -> {
                     showMessage(resources.getString(R.string.could_not_export))
                 }
+
+                ShowHabitMenuPresenter.Message.HABIT_ARCHIVED -> {
+                    showMessage(
+                        resources.getQuantityString(
+                            R.plurals.toast_habits_archived,
+                            1
+                        )
+                    )
+                }
+
+                ShowHabitMenuPresenter.Message.HABIT_UNARCHIVED -> {
+                    showMessage(
+                        resources.getQuantityString(
+                            R.plurals.toast_habits_unarchived,
+                            1
+                        )
+                    )
+                }
+
                 else -> {}
             }
         }
