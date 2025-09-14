@@ -1,8 +1,5 @@
 <h1 align="center">Loop Habit Tracker</h1>
 <p align="center">
-  <a href="https://github.com/iSoron/uhabits/actions?query=workflow%3A%22Build+%26+Test%22">
-    <img alt="Build & Test" src="https://github.com/iSoron/uhabits/workflows/Build%20&%20Test/badge.svg" />
-  </a>
   <a href="https://github.com/iSoron/uhabits/releases/latest">
     <img alt="release" src="https://img.shields.io/github/v/release/iSoron/uhabits" />
   </a>
