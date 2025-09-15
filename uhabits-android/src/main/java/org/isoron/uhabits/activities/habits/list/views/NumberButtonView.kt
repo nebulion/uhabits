@@ -145,6 +145,8 @@ class NumberButtonView(
         private val lowContrast: Int
         private val mediumContrast: Int
 
+        private val pNotesIndicator = Paint()
+
         private val paint = TextPaint().apply {
             typeface = getFontAwesome()
             isAntiAlias = true
@@ -234,7 +236,13 @@ class NumberButtonView(
                 canvas.drawText(trimmedUnits, rect.centerX(), rect.centerY(), pUnit)
             }
 
-            drawNotesIndicator(canvas, color, em, notes)
+            drawNotesIndicator(
+                pNotesIndicator = pNotesIndicator,
+                canvas = canvas,
+                color = color,
+                size = em,
+                notes = notes,
+            )
         }
     }
 }

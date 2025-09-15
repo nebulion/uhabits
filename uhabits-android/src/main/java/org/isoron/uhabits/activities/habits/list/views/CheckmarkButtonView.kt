@@ -135,6 +135,7 @@ class CheckmarkButtonView(
         private val bgColor = sres.getColor(R.attr.cardBgColor)
         private val lowContrastColor = sres.getColor(R.attr.contrast40)
         private val mediumContrastColor = sres.getColor(R.attr.contrast60)
+        private val pNotesIndicator = Paint()
 
         private val paint = TextPaint().apply {
             typeface = getFontAwesome()
@@ -192,7 +193,13 @@ class CheckmarkButtonView(
                 canvas.drawText(label, rect.centerX(), rect.centerY(), paint)
             }
 
-            drawNotesIndicator(canvas, color, em, notes)
+            drawNotesIndicator(
+                pNotesIndicator = pNotesIndicator,
+                canvas = canvas,
+                color = color,
+                size = em,
+                notes = notes,
+            )
         }
     }
 }
