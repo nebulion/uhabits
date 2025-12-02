@@ -20,6 +20,7 @@
 package org.isoron.uhabits.activities.common.dialogs
 
 import android.app.Dialog
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View.GONE
@@ -37,11 +38,17 @@ import org.isoron.uhabits.utils.sres
 
 class CheckmarkDialog : AppCompatDialogFragment() {
     var onToggle: (Int, String) -> Unit = { _, _ -> }
+    var onDismiss: () -> Unit = {}
+
+    private var dismissedViaSaveAction = false
+    private var originalNotes: String = ""
+    private var originalValue: Int = 0
+    private lateinit var view: CheckmarkPopupBinding
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val appComponent = (requireActivity().application as HabitsApplication).component
         val prefs = appComponent.preferences
-        val view = CheckmarkPopupBinding.inflate(LayoutInflater.from(context))
+        view = CheckmarkPopupBinding.inflate(LayoutInflater.from(context))
         val color = requireArguments().getInt("color")
         arrayOf(view.yesBtn, view.skipBtn).forEach {
             it.setTextColor(color)
@@ -52,7 +59,9 @@ class CheckmarkDialog : AppCompatDialogFragment() {
         arrayOf(view.yesBtn, view.noBtn, view.skipBtn, view.unknownBtn).forEach {
             it.typeface = getFontAwesome(requireContext())
         }
-        view.notes.setText(requireArguments().getString("notes")!!)
+        originalNotes = requireArguments().getString("notes")!!
+        originalValue = requireArguments().getInt("value")
+        view.notes.setText(originalNotes)
         if (!prefs.isSkipEnabled) view.skipBtn.visibility = GONE
         if (!prefs.areQuestionMarksEnabled) view.unknownBtn.visibility = GONE
         view.booleanButtons.visibility = VISIBLE
@@ -62,6 +71,7 @@ class CheckmarkDialog : AppCompatDialogFragment() {
             setBackgroundDrawableResource(android.R.color.transparent)
         }
         fun onClick(v: Int) {
+            dismissedViaSaveAction = true
             val notes = view.notes.text.toString().trim()
             onToggle(v, notes)
             requireDialog().dismiss()
@@ -76,5 +86,17 @@ class CheckmarkDialog : AppCompatDialogFragment() {
         }
 
         return dialog
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+
+        if (!dismissedViaSaveAction) {
+            val currentNotes = view.notes.text.toString().trim()
+            if (currentNotes != originalNotes) {
+                onToggle(originalValue, currentNotes)
+            }
+        }
+        onDismiss()
     }
 }
