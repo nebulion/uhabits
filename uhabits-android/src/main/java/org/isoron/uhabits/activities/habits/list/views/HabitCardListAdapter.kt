@@ -70,6 +70,8 @@ class HabitCardListAdapter @Inject constructor(
      * Sets all items as not selected.
      */
     override fun clearSelection() {
+        if (selected.isEmpty()) return
+
         selected.clear()
         notifyDataSetChanged()
         observable.notifyListeners()

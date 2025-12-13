@@ -36,12 +36,14 @@ abstract class ButtonPanelView<T : View>(
 
     var buttonCount = 0
         set(value) {
+            if (field == value) return
             field = value
             inflateButtons()
         }
 
     var dataOffset = 0
         set(value) {
+            if (field == value) return
             field = value
             setupButtons()
         }
