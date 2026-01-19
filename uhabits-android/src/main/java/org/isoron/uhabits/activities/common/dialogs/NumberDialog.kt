@@ -1,6 +1,7 @@
 package org.isoron.uhabits.activities.common.dialogs
 
 import android.app.Dialog
+import android.content.DialogInterface
 import android.os.Bundle
 import android.provider.Settings
 import android.text.method.DigitsKeyListener
@@ -28,6 +29,7 @@ class NumberDialog : AppCompatDialogFragment() {
     var onToggle: (Double, String) -> Unit = { _, _ -> }
     var onDismiss: () -> Unit = {}
 
+    private var dismissedViaSaveAction = false
     private var originalNotes: String = ""
     private var originalValue: Double = 0.0
     private lateinit var view: CheckmarkPopupBinding
@@ -88,8 +90,19 @@ class NumberDialog : AppCompatDialogFragment() {
         dialog.window?.apply {
             setBackgroundDrawableResource(android.R.color.transparent)
         }
-        dialog.setOnDismissListener { onDismiss() }
         return dialog
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+
+        if (!dismissedViaSaveAction) {
+            val currentNotes = view.notes.text.toString().trim()
+            if (currentNotes != originalNotes) {
+                onToggle(originalValue, currentNotes)
+            }
+        }
+        onDismiss()
     }
 
     private fun fixDecimalSeparator(view: CheckmarkPopupBinding) {
@@ -108,6 +121,7 @@ class NumberDialog : AppCompatDialogFragment() {
     }
 
     fun save() {
+        dismissedViaSaveAction = true
         var value = originalValue
         try {
             val numberFormat = NumberFormat.getInstance()
@@ -120,7 +134,7 @@ class NumberDialog : AppCompatDialogFragment() {
         } catch (e: ParseException) {
             // NOP
         }
-        val notes = view.notes.text.toString()
+        val notes = view.notes.text.toString().trim()
         val location = view.saveBtn.getCenter()
         onToggle(value, notes)
         requireDialog().dismiss()
