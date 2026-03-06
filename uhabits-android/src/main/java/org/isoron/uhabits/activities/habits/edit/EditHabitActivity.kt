@@ -85,6 +85,7 @@ class EditHabitActivity : AppCompatActivity() {
     var reminderMin = -1
     var reminderDays: WeekdayList = WeekdayList.EVERY_DAY
     var targetType = NumericalHabitType.AT_LEAST
+    var priority = 1
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
@@ -112,6 +113,7 @@ class EditHabitActivity : AppCompatActivity() {
                 reminderMin = it.minute
                 reminderDays = it.days
             }
+            priority = habit.priority
             binding.nameInput.setText(habit.name)
             binding.questionInput.setText(habit.question)
             binding.notesInput.setText(habit.description)
@@ -130,6 +132,7 @@ class EditHabitActivity : AppCompatActivity() {
             reminderHour = state.getInt("reminderHour")
             reminderMin = state.getInt("reminderMin")
             reminderDays = WeekdayList(state.getInt("reminderDays"))
+            priority = state.getInt("priority", 1)
         }
 
         updateColors()
@@ -209,6 +212,20 @@ class EditHabitActivity : AppCompatActivity() {
             builder.show()
         }
 
+        populatePriority(component.preferences.maxPriorityLevels)
+        binding.priorityPicker.setOnClickListener {
+            val maxLevels = component.preferences.maxPriorityLevels
+            val builder = AlertDialog.Builder(this)
+            val arrayAdapter = ArrayAdapter<String>(this, android.R.layout.select_dialog_item)
+            for (i in 1..maxLevels) arrayAdapter.add(i.toString())
+            builder.setAdapter(arrayAdapter) { dialog, which ->
+                priority = which + 1
+                populatePriority(maxLevels)
+                dialog.dismiss()
+            }
+            builder.create().dismissCurrentAndShow()
+        }
+
         populateReminder()
         binding.reminderTimePicker.setOnClickListener {
             val currentHour = if (reminderHour >= 0) reminderHour else 8
@@ -278,6 +295,7 @@ class EditHabitActivity : AppCompatActivity() {
             habit.reminder = null
         }
 
+        habit.priority = priority
         habit.frequency = Frequency(freqNum, freqDen)
         if (habitType == HabitType.NUMERICAL) {
             habit.targetValue = binding.targetInput.text.toString().toDouble()
@@ -316,6 +334,10 @@ class EditHabitActivity : AppCompatActivity() {
             }
         }
         return isValid
+    }
+
+    private fun populatePriority(maxLevels: Int) {
+        binding.priorityPicker.text = priority.coerceIn(1, maxLevels).toString()
     }
 
     private fun populateReminder() {
@@ -376,6 +398,7 @@ class EditHabitActivity : AppCompatActivity() {
             putInt("reminderHour", reminderHour)
             putInt("reminderMin", reminderMin)
             putInt("reminderDays", reminderDays.toInteger())
+            putInt("priority", priority)
         }
     }
 }

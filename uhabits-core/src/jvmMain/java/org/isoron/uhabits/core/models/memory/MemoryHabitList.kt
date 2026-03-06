@@ -151,6 +151,10 @@ class MemoryHabitList : HabitList {
         }
         val statusComparatorAsc =
             Comparator { h1: Habit, h2: Habit -> statusComparatorDesc.compare(h2, h1) }
+        val priorityComparatorAsc =
+            Comparator<Habit> { h1, h2 -> h1.priority.compareTo(h2.priority) }
+        val priorityComparatorDesc =
+            Comparator<Habit> { h1, h2 -> h2.priority.compareTo(h1.priority) }
         return when {
             order === Order.BY_POSITION -> positionComparator
             order === Order.BY_NAME_ASC -> nameComparatorAsc
@@ -161,6 +165,8 @@ class MemoryHabitList : HabitList {
             order === Order.BY_SCORE_ASC -> scoreComparatorAsc
             order === Order.BY_STATUS_DESC -> statusComparatorDesc
             order === Order.BY_STATUS_ASC -> statusComparatorAsc
+            order === Order.BY_PRIORITY_ASC -> priorityComparatorAsc
+            order === Order.BY_PRIORITY_DESC -> priorityComparatorDesc
             else -> throw IllegalStateException()
         }
     }

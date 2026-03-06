@@ -81,6 +81,10 @@ class ListHabitsMenuBehavior @Inject constructor(
         onSortToggleBy(HabitList.Order.BY_STATUS_ASC, HabitList.Order.BY_STATUS_DESC)
     }
 
+    fun onSortByPriority() {
+        onSortToggleBy(HabitList.Order.BY_PRIORITY_ASC, HabitList.Order.BY_PRIORITY_DESC)
+    }
+
     private fun onSortToggleBy(defaultOrder: HabitList.Order, reversedOrder: HabitList.Order) {
         if (adapter.primaryOrder != defaultOrder) {
             if (adapter.primaryOrder != reversedOrder) {

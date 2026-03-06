@@ -29,6 +29,7 @@ data class Habit(
     var isArchived: Boolean = false,
     var name: String = "",
     var position: Int = 0,
+    var priority: Int = 1,
     var question: String = "",
     var reminder: Reminder? = null,
     var targetType: NumericalHabitType = NumericalHabitType.AT_LEAST,
@@ -115,6 +116,7 @@ data class Habit(
         this.isArchived = other.isArchived
         this.name = other.name
         this.position = other.position
+        this.priority = other.priority
         this.question = other.question
         this.reminder = other.reminder
         this.targetType = other.targetType
@@ -135,6 +137,7 @@ data class Habit(
         if (isArchived != other.isArchived) return false
         if (name != other.name) return false
         if (position != other.position) return false
+        if (priority != other.priority) return false
         if (question != other.question) return false
         if (reminder != other.reminder) return false
         if (targetType != other.targetType) return false
@@ -154,6 +157,7 @@ data class Habit(
         result = 31 * result + isArchived.hashCode()
         result = 31 * result + name.hashCode()
         result = 31 * result + position
+        result = 31 * result + priority
         result = 31 * result + question.hashCode()
         result = 31 * result + (reminder?.hashCode() ?: 0)
         result = 31 * result + targetType.value

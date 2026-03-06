@@ -67,6 +67,7 @@ class ListHabitsMenu @Inject constructor(
         val sortColor = menu.findItem(R.id.actionSortColor)
         val sortScore = menu.findItem(R.id.actionSortScore)
         val sortStatus = menu.findItem(R.id.actionSortStatus)
+        val sortPriority = menu.findItem(R.id.actionSortPriority)
         val arrowUp = styledResources.getDrawable(R.attr.iconArrowUp)
         val arrowDown = styledResources.getDrawable(R.attr.iconArrowDown)
         when (preferences.defaultPrimaryOrder) {
@@ -79,6 +80,8 @@ class ListHabitsMenu @Inject constructor(
             HabitList.Order.BY_STATUS_ASC -> sortStatus.icon = arrowDown
             HabitList.Order.BY_STATUS_DESC -> sortStatus.icon = arrowUp
             HabitList.Order.BY_POSITION -> sortManual.icon = arrowUp
+            HabitList.Order.BY_PRIORITY_ASC -> sortPriority.icon = arrowDown
+            HabitList.Order.BY_PRIORITY_DESC -> sortPriority.icon = arrowUp
         }
     }
 
@@ -143,6 +146,11 @@ class ListHabitsMenu @Inject constructor(
 
             R.id.actionSortStatus -> {
                 behavior.onSortByStatus()
+                return true
+            }
+
+            R.id.actionSortPriority -> {
+                behavior.onSortByPriority()
                 return true
             }
 

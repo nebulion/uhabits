@@ -55,6 +55,9 @@ class HabitRecord {
     @field:Column
     var position: Int? = null
 
+    @field:Column
+    var priority: Int? = null
+
     @field:Column(name = "reminder_hour")
     var reminderHour: Int? = null
 
@@ -100,6 +103,7 @@ class HabitRecord {
         targetValue = model.targetValue
         unit = model.unit
         position = model.position
+        priority = model.priority
         question = model.question
         uuid = model.uuid
         val (numerator, denominator) = model.frequency
@@ -129,6 +133,7 @@ class HabitRecord {
         habit.targetValue = targetValue!!
         habit.unit = unit!!
         habit.position = position!!
+        habit.priority = priority ?: 1
         habit.uuid = uuid
         if (reminderHour != null && reminderMin != null) {
             habit.reminder = Reminder(

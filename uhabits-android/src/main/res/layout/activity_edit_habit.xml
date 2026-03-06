@@ -227,6 +227,19 @@
             </FrameLayout>
 
 
+            <!-- Priority -->
+            <FrameLayout style="@style/FormOuterBox">
+                <LinearLayout style="@style/FormInnerBox">
+                    <TextView
+                        style="@style/FormLabel"
+                        android:text="@string/priority_label" />
+                    <TextView
+                        style="@style/FormDropdown"
+                        android:id="@+id/priorityPicker"
+                        android:textColor="?attr/contrast100" />
+                </LinearLayout>
+            </FrameLayout>
+
             <!-- Reminder -->
             <FrameLayout style="@style/FormOuterBox">
                 <LinearLayout style="@style/FormInnerBox">

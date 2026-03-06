@@ -18,8 +18,12 @@
  */
 package org.isoron.uhabits.activities.habits.list.views
 
+import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.habits.list.MAX_CHECKMARK_COUNT
 import org.isoron.uhabits.core.models.Habit
 import org.isoron.uhabits.core.models.HabitList
@@ -46,14 +50,58 @@ class HabitCardListAdapter @Inject constructor(
     private val cache: HabitCardListCache,
     private val preferences: Preferences,
     private val midnightTimer: MidnightTimer
-) : RecyclerView.Adapter<HabitCardViewHolder?>(),
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     HabitCardListCache.Listener,
     MidnightTimer.MidnightListener,
     ListHabitsMenuBehavior.Adapter,
     ListHabitsSelectionMenuBehavior.Adapter {
+
+    companion object {
+        const val ITEM_TYPE_HEADER = 0
+        const val ITEM_TYPE_HABIT = 1
+    }
+
     val observable: ModelObservable = ModelObservable()
     private var listView: HabitCardListView? = null
     val selected: LinkedList<Habit> = LinkedList()
+
+    /** Tracks which priority-level headers are currently collapsed. */
+    private val collapsedPriorities = mutableSetOf<Int>()
+
+    /**
+     * Flat display list used when [isPrioritySort] is true.
+     * Contains [Int] (header priority level) or [Habit] entries.
+     */
+    private var displayItems: List<Any> = emptyList()
+
+    private val isPrioritySort: Boolean
+        get() = cache.primaryOrder == HabitList.Order.BY_PRIORITY_ASC ||
+            cache.primaryOrder == HabitList.Order.BY_PRIORITY_DESC
+
+    /**
+     * Rebuilds [displayItems] from the current cache state, inserting
+     * priority-group headers and omitting habits whose group is collapsed.
+     */
+    private fun rebuildDisplayList() {
+        if (!isPrioritySort) {
+            displayItems = emptyList()
+            return
+        }
+        val items = mutableListOf<Any>()
+        var lastPriority = -1
+        for (i in 0 until cache.habitCount) {
+            val habit = cache.getHabitByPosition(i) ?: continue
+            if (habit.priority != lastPriority) {
+                lastPriority = habit.priority
+                items.add(habit.priority) // header sentinel (Int)
+            }
+            if (habit.priority !in collapsedPriorities) {
+                items.add(habit)
+            }
+        }
+        displayItems = items
+    }
+
     override fun atMidnight() {
         cache.refreshAllHabits()
     }
@@ -80,22 +128,36 @@ class HabitCardListAdapter @Inject constructor(
     }
 
     /**
-     * Returns the item that occupies a certain position on the list
+     * Returns the habit that occupies a certain position on the list.
+     * Returns null for header rows or invalid positions.
      *
      * @param position position of the item
-     * @return the item at given position or null if position is invalid
+     * @return the habit at given position or null if position is a header or invalid
      */
     @Deprecated("")
     fun getItem(position: Int): Habit? {
+        if (isPrioritySort) return displayItems.getOrNull(position) as? Habit
         return cache.getHabitByPosition(position)
     }
 
     override fun getItemCount(): Int {
-        return cache.habitCount
+        return if (isPrioritySort) displayItems.size else cache.habitCount
     }
 
     override fun getItemId(position: Int): Long {
-        return getItem(position)!!.id!!
+        if (isPrioritySort) {
+            return when (val item = displayItems.getOrNull(position)) {
+                is Int -> -item.toLong() // headers use negative IDs
+                is Habit -> item.id ?: -1L
+                else -> -999L
+            }
+        }
+        return cache.getHabitByPosition(position)?.id ?: -1L
+    }
+
+    override fun getItemViewType(position: Int): Int {
+        if (isPrioritySort && displayItems.getOrNull(position) is Int) return ITEM_TYPE_HEADER
+        return ITEM_TYPE_HABIT
     }
 
     /**
@@ -116,31 +178,44 @@ class HabitCardListAdapter @Inject constructor(
         midnightTimer.addListener(this)
     }
 
-    override fun onBindViewHolder(
-        holder: HabitCardViewHolder,
-        position: Int
-    ) {
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        if (holder is PriorityHeaderViewHolder) {
+            val priority = displayItems[position] as Int
+            val collapsed = priority in collapsedPriorities
+            holder.bind(priority, collapsed) { toggledPriority ->
+                if (toggledPriority in collapsedPriorities) {
+                    collapsedPriorities.remove(toggledPriority)
+                } else {
+                    collapsedPriorities.add(toggledPriority)
+                }
+                rebuildDisplayList()
+                notifyDataSetChanged()
+            }
+            return
+        }
         if (listView == null) return
-        val habit = cache.getHabitByPosition(position)
-        val score = cache.getScore(habit!!.id!!)
+        val habit = getItem(position) ?: return
+        val score = cache.getScore(habit.id!!)
         val checkmarks = cache.getCheckmarks(habit.id!!)
         val notes = cache.getNotes(habit.id!!)
-        val selected = selected.contains(habit)
-        listView!!.bindCardView(holder, habit, score, checkmarks, notes, selected)
+        val isSelected = selected.contains(habit)
+        listView!!.bindCardView(holder as HabitCardViewHolder, habit, score, checkmarks, notes, isSelected)
     }
 
-    override fun onViewAttachedToWindow(holder: HabitCardViewHolder) {
-        listView!!.attachCardView(holder)
+    override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
+        if (holder is HabitCardViewHolder) listView!!.attachCardView(holder)
     }
 
-    override fun onViewDetachedFromWindow(holder: HabitCardViewHolder) {
-        listView!!.detachCardView(holder)
+    override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
+        if (holder is HabitCardViewHolder) listView!!.detachCardView(holder)
     }
 
-    override fun onCreateViewHolder(
-        parent: ViewGroup,
-        viewType: Int
-    ): HabitCardViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        if (viewType == ITEM_TYPE_HEADER) {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.view_priority_header, parent, false)
+            return PriorityHeaderViewHolder(view)
+        }
         val view = listView!!.createHabitCardView()
         return HabitCardViewHolder(view)
     }
@@ -154,26 +229,27 @@ class HabitCardListAdapter @Inject constructor(
     }
 
     override fun onItemChanged(position: Int) {
-        notifyItemChanged(position)
+        if (isPrioritySort) { rebuildDisplayList(); notifyDataSetChanged() } else notifyItemChanged(position)
         observable.notifyListeners()
     }
 
     override fun onItemInserted(position: Int) {
-        notifyItemInserted(position)
+        if (isPrioritySort) { rebuildDisplayList(); notifyDataSetChanged() } else notifyItemInserted(position)
         observable.notifyListeners()
     }
 
     override fun onItemMoved(oldPosition: Int, newPosition: Int) {
-        notifyItemMoved(oldPosition, newPosition)
+        if (isPrioritySort) { rebuildDisplayList(); notifyDataSetChanged() } else notifyItemMoved(oldPosition, newPosition)
         observable.notifyListeners()
     }
 
     override fun onItemRemoved(position: Int) {
-        notifyItemRemoved(position)
+        if (isPrioritySort) { rebuildDisplayList(); notifyDataSetChanged() } else notifyItemRemoved(position)
         observable.notifyListeners()
     }
 
     override fun onRefreshFinished() {
+        if (isPrioritySort) { rebuildDisplayList(); notifyDataSetChanged() }
         observable.notifyListeners()
     }
 
@@ -235,6 +311,9 @@ class HabitCardListAdapter @Inject constructor(
         set(value) {
             cache.primaryOrder = value
             preferences.defaultPrimaryOrder = value
+            collapsedPriorities.clear()
+            rebuildDisplayList()
+            notifyDataSetChanged()
         }
 
     override var secondaryOrder: HabitList.Order
@@ -246,6 +325,7 @@ class HabitCardListAdapter @Inject constructor(
 
     /**
      * Selects or deselects the item at a given position.
+     * Header rows are ignored silently.
      *
      * @param position position of the item to be toggled
      */
@@ -256,13 +336,24 @@ class HabitCardListAdapter @Inject constructor(
         notifyDataSetChanged()
     }
 
+    /** ViewHolder for a priority group header row. */
+    inner class PriorityHeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val label: TextView = itemView.findViewById(R.id.priorityHeaderLabel)
+        private val chevron: TextView = itemView.findViewById(R.id.priorityHeaderChevron)
+
+        fun bind(priority: Int, collapsed: Boolean, onToggle: (Int) -> Unit) {
+            label.text = itemView.context.getString(R.string.priority_header_format, priority)
+            chevron.text = if (collapsed) "▶" else "▼"
+            itemView.setOnClickListener { onToggle(priority) }
+        }
+    }
+
     init {
         cache.setListener(this)
-        cache.setCheckmarkCount(
-            MAX_CHECKMARK_COUNT
-        )
+        cache.setCheckmarkCount(MAX_CHECKMARK_COUNT)
         cache.secondaryOrder = preferences.defaultSecondaryOrder
         cache.primaryOrder = preferences.defaultPrimaryOrder
         setHasStableIds(true)
+        rebuildDisplayList()
     }
 }

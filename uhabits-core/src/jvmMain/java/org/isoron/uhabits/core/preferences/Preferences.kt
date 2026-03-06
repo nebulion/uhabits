@@ -211,6 +211,10 @@ open class Preferences(private val storage: Storage) {
             for (l in listeners) l.onQuestionMarksChanged()
         }
 
+    var maxPriorityLevels: Int
+        get() = storage.getInt("pref_max_priority_levels", 3).coerceIn(1, 9)
+        set(value) = storage.putInt("pref_max_priority_levels", value.coerceIn(1, 9))
+
     /**
      * @return An integer representing the first day of the week. Sunday
      * corresponds to 1, Monday to 2, and so on, until Saturday, which is
