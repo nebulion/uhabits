@@ -119,6 +119,16 @@ open class Preferences(private val storage: Storage) {
         set(isDeveloper) {
             storage.putBoolean("pref_developer", isDeveloper)
         }
+    var syncServerUrl: String
+        get() = storage.getString("pref_sync_base_url", "")
+        set(value) {
+            storage.putString("pref_sync_base_url", value)
+        }
+    var syncApiKey: String
+        get() = storage.getString("pref_sync_key", "")
+        set(value) {
+            storage.putString("pref_sync_key", value)
+        }
     var isFirstRun: Boolean
         get() = storage.getBoolean("pref_first_run", true)
         set(isFirstRun) {

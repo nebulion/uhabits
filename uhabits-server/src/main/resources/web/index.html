@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loop Habit Tracker</title>
+  <!-- Roboto — matches Android system font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 — same icons as Android (f00c=check, f00d=xmark, f068=minus/skip, f128=question) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- ══ Toolbar ═══════════════════════════════════════════════════ -->
+<div id="toolbar">
+  <h1>Loop Habit Tracker</h1>
+  <button class="tb-btn" id="btn-show-archived" title="Show archived" onclick="toggleArchived()">
+    <i class="fa-solid fa-box-archive"></i>
+  </button>
+  <button class="tb-btn" id="btn-sort" title="Sort habits" onclick="cycleSortOrder()">
+    <i class="fa-solid fa-arrow-up-wide-short"></i>
+  </button>
+  <button class="tb-btn" id="btn-import" title="Import backup" onclick="openImport()">
+    <i class="fa-solid fa-file-import"></i>
+  </button>
+  <button class="tb-btn" id="btn-theme" title="Toggle theme" onclick="toggleTheme()">
+    <i class="fa-solid fa-circle-half-stroke"></i>
+  </button>
+  <button class="tb-btn" id="btn-settings" title="Settings" onclick="openSettings()">
+    <i class="fa-solid fa-gear"></i>
+  </button>
+</div>
+
+<!-- ══ Content (scrollable) ══════════════════════════════════════ -->
+<div id="scroller">
+
+  <!-- Sticky date-column header — aligns with checkmark cells -->
+  <div id="header-row">
+    <div id="header-spacer"></div>
+    <div id="header-dates" style="display:flex"></div>
+  </div>
+
+  <!-- Empty state (outside habit-list so innerHTML replacement doesn't destroy it) -->
+  <div id="empty-state" style="display:none">
+    <h2>No habits yet</h2>
+    <p>Tap + to create your first habit,<br>or import a backup from the Android app.</p>
+  </div>
+
+  <!-- Habit list (groups + rows rendered by JS) -->
+  <div id="habit-list"></div>
+
+</div><!-- /scroller -->
+
+<!-- ══ FAB ════════════════════════════════════════════════════════ -->
+<button id="fab" onclick="openCreateHabit()" title="New habit"
+        style="background:var(--toolbar-bg)">
+  <i class="fa-solid fa-plus"></i>
+</button>
+
+<!-- ══ Detail panel ═══════════════════════════════════════════════ -->
+<div id="detail-panel">
+  <div class="dp-header">
+    <svg class="dp-ring" id="dp-ring" viewBox="0 0 15 15" width="32" height="32">
+      <circle class="ring-bg" cx="7.5" cy="7.5" r="5.5"/>
+      <circle class="ring-fg" id="dp-ring-fg" cx="7.5" cy="7.5" r="5.5"/>
+    </svg>
+    <div class="dp-name" id="dp-name"></div>
+    <button class="dp-close" onclick="closeDetail()" title="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+  <div class="dp-section">
+    <div class="dp-section-title">Last 2 Years</div>
+    <div id="dp-history" class="history-grid"></div>
+  </div>
+  <div class="dp-section">
+    <div class="dp-section-title">Score</div>
+    <canvas id="score-chart"></canvas>
+  </div>
+  <div class="dp-section">
+    <div class="dp-section-title">Streaks</div>
+    <div id="dp-streaks"></div>
+  </div>
+  <div class="dp-section">
+    <div class="dp-section-title">Frequency</div>
+    <div id="dp-freq" style="font-size:14px"></div>
+  </div>
+  <div class="dp-actions">
+    <button class="btn btn-text" onclick="openEditHabit(currentDetailUuid)">
+      <i class="fa-solid fa-pencil" style="margin-right:6px"></i>Edit
+    </button>
+    <button class="btn btn-text" id="dp-archive-btn" onclick="toggleArchiveCurrentHabit()">
+      <i class="fa-solid fa-box-archive" style="margin-right:6px"></i><span id="dp-archive-label">Archive</span>
+    </button>
+    <button class="btn btn-danger" onclick="deleteHabit(currentDetailUuid)">
+      <i class="fa-solid fa-trash" style="margin-right:6px"></i>Delete
+    </button>
+  </div>
+</div>
+
+<!-- ══ Create/Edit habit modal ════════════════════════════════════ -->
+<div id="habit-modal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeHabitModal()">
+  <div class="modal">
+    <div class="modal-title" id="habit-modal-title">New Habit</div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Name</label>
+        <input id="f-name" type="text" placeholder="e.g. Meditate" maxlength="40" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Question (optional)</label>
+        <input id="f-question" type="text" placeholder="e.g. Did you meditate today?">
+      </div>
+      <div class="field">
+        <label>Description (optional)</label>
+        <input id="f-description" type="text">
+      </div>
+      <div class="field">
+        <label>Type</label>
+        <select id="f-type" onchange="updateTypeFields()">
+          <option value="0">Yes/No</option>
+          <option value="1">Numerical</option>
+        </select>
+      </div>
+      <div id="num-fields" style="display:none">
+        <div class="field">
+          <label>Target</label>
+          <div class="field-row">
+            <select id="f-target-type">
+              <option value="0">At least</option>
+              <option value="1">At most</option>
+            </select>
+            <input id="f-target-value" type="number" step="0.1" min="0" value="1" style="max-width:80px">
+            <input id="f-unit" type="text" placeholder="unit" style="max-width:80px">
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Frequency</label>
+        <div class="field-row">
+          <input id="f-freq-num" type="number" min="1" max="365" value="1" style="max-width:60px">
+          <span style="color:var(--contrast60);font-size:14px">times per</span>
+          <input id="f-freq-den" type="number" min="1" max="365" value="1" style="max-width:60px">
+          <span style="color:var(--contrast60);font-size:14px">day(s)</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Priority</label>
+        <select id="f-priority">
+          <option value="1">High</option>
+          <option value="2" selected>Medium</option>
+          <option value="3">Low</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Color</label>
+        <div class="color-grid" id="color-grid"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-text" onclick="closeHabitModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHabit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Import modal ═══════════════════════════════════════════════ -->
+<div id="import-modal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeImport()">
+  <div class="modal">
+    <div class="modal-title">Import Backup</div>
+    <div class="modal-body">
+      <p style="margin-bottom:16px;font-size:14px;color:var(--contrast60)">
+        Import a Loop Habit Tracker backup (.db) or CSV export (.zip / .csv) from the Android app.
+      </p>
+      <div id="import-drop"
+           onclick="document.getElementById('import-file').click()"
+           ondragover="event.preventDefault();this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleImportDrop(event)">
+        <div class="drop-icon"><i class="fa-solid fa-folder-open"></i></div>
+        <div>Drop file here or click to browse</div>
+        <div style="font-size:12px;margin-top:4px;color:var(--contrast40)">Supports .db and .zip / .csv</div>
+      </div>
+      <input type="file" id="import-file" accept=".db,.zip,.csv" style="display:none"
+             onchange="handleImportFile(this.files[0])">
+      <div id="import-status" style="margin-top:12px;font-size:14px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-text" onclick="closeImport()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Note modal ═════════════════════════════════════════════════ -->
+<div id="note-modal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeNoteModal()">
+  <div class="modal">
+    <div class="modal-title">Note</div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Note for this day</label>
+        <textarea id="note-text" rows="4" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-text" onclick="closeNoteModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNote()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Settings modal ═════════════════════════════════════════════ -->
+<div id="settings-modal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modal-title">Settings</div>
+    <div class="modal-body">
+
+      <div class="settings-section-title">Interface</div>
+
+      <div class="settings-row">
+        <label for="s-reverse-days">Reverse day order (newest on left)</label>
+        <input type="checkbox" id="s-reverse-days" onchange="saveSetting('reverseDays',this.checked);render()">
+      </div>
+      <div class="settings-row">
+        <label for="s-skip">Enable Skip entries</label>
+        <input type="checkbox" id="s-skip" onchange="saveSetting('skipEnabled',this.checked);render()">
+      </div>
+      <div class="settings-row">
+        <label for="s-question">Show question marks for unknown days</label>
+        <input type="checkbox" id="s-question" onchange="saveSetting('questionMarks',this.checked);render()">
+      </div>
+      <div class="settings-row">
+        <label for="s-first-day">First day of week</label>
+        <select id="s-first-day" onchange="saveSetting('firstWeekday',+this.value);render()">
+          <option value="1">Monday</option>
+          <option value="0">Sunday</option>
+          <option value="6">Saturday</option>
+        </select>
+      </div>
+
+      <div class="settings-section-title">Server / Sync</div>
+
+      <div class="settings-row">
+        <label for="s-api-key">API key (if server uses --api-key)</label>
+        <input type="text" id="s-api-key" placeholder="(none)"
+               style="max-width:180px;padding:4px 8px;border:1px solid var(--divider);border-radius:4px;background:var(--contrast0);color:var(--contrast100);font-family:inherit;font-size:14px"
+               oninput="saveSetting('apiKey',this.value)">
+      </div>
+
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeSettings()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Number entry popup (for numerical habits) ═════════════════ -->
+<div id="num-modal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeNumModal()">
+  <div class="modal" style="max-width:320px">
+    <div class="modal-title" id="num-modal-title">Enter value</div>
+    <div class="modal-body">
+      <div class="field">
+        <label id="num-modal-unit">Value</label>
+        <input id="num-input" type="number" step="0.01" style="font-size:18px">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-text" onclick="saveNumSkip()">Skip</button>
+      <button class="btn btn-text" onclick="closeNumModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNum()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Toast ══════════════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

@@ -29,6 +29,7 @@ import org.isoron.uhabits.inject.AppContextModule
 import org.isoron.uhabits.inject.DaggerHabitsApplicationComponent
 import org.isoron.uhabits.inject.HabitsApplicationComponent
 import org.isoron.uhabits.inject.HabitsModule
+import org.isoron.uhabits.sync.SyncManager
 import org.isoron.uhabits.utils.DatabaseUtils
 import org.isoron.uhabits.widgets.WidgetUpdater
 import java.io.File
@@ -78,6 +79,8 @@ class HabitsApplication : Application() {
 
         val habitList = component.habitList
         for (h in habitList) h.recompute()
+
+        SyncManager(habitList, component.modelFactory, component.preferences).syncIfEnabled()
 
         widgetUpdater = component.widgetUpdater.apply {
             startListening()

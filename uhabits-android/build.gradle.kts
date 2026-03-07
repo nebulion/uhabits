@@ -74,6 +74,7 @@ android {
 
         debug {
             enableUnitTestCoverage = true
+            applicationIdSuffix = ".debug"
         }
     }
 

@@ -1,0 +1,658 @@
+/* Loop Habit Tracker Web — pixel-faithful Android replica */
+/* Colours from Android styles.xml + material_colors.xml */
+
+/* ─── Light theme (default) ──────────────────────────────────── */
+:root {
+  --bg:             #EEEEEE;   /* windowBackgroundColor = grey_200 */
+  --card-bg:        #FAFAFA;   /* cardBgColor = grey_50 */
+  --header-bg:      #EEEEEE;   /* headerBackgroundColor = grey_200 */
+  --toolbar-bg:     #363636;   /* colorPrimary */
+  --toolbar-text:   #FFFFFF;
+
+  --contrast0:      #FFFFFF;   /* white */
+  --contrast20:     #E0E0E0;   /* grey_300 */
+  --contrast40:     #D8D8D8;   /* grey_350  — NO icon (low contrast) */
+  --contrast60:     #9E9E9E;   /* grey_500  — header text, date labels */
+  --contrast80:     #616161;   /* grey_700 */
+  --contrast100:    #424242;   /* grey_800  — primary text */
+
+  --ring-inactive:  rgba(66,66,66,0.15); /* contrast100 @15% */
+  --divider:        #E0E0E0;   /* contrast20 */
+  --ripple:         rgba(0,0,0,0.08);
+  --group-chevron:  #424242;
+
+  --toolbar-h: 56px;
+  --header-h:  48px;
+  --btn-size:  48px;
+}
+
+/* ─── Dark theme ─────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:             #212121;   /* grey_900 */
+  --card-bg:        #303030;   /* grey_850 */
+  --header-bg:      #212121;   /* grey_900 */
+  --toolbar-bg:     #101010;   /* grey_950 */
+
+  --contrast0:      #212121;   /* grey_900 */
+  --contrast20:     #424242;   /* grey_800 */
+  --contrast40:     #505050;   /* grey_750 approx */
+  --contrast60:     #9E9E9E;   /* grey_500 */
+  --contrast80:     #E0E0E0;   /* grey_300 */
+  --contrast100:    #F5F5F5;   /* grey_100 */
+
+  --ring-inactive:  rgba(245,245,245,0.15);
+  --divider:        #424242;
+  --ripple:         rgba(255,255,255,0.08);
+  --group-chevron:  #F5F5F5;
+}
+
+/* ─── 20-colour palette (light) — indices 0-19 ───────────────── */
+/* Same as Android lightPalette array */
+:root {
+  --p0:  #D32F2F; --p1:  #E64A19; --p2:  #F57C00; --p3:  #FF8F00;
+  --p4:  #F9A825; --p5:  #9E9D24; --p6:  #558B2F; --p7:  #2E7D32;
+  --p8:  #00695C; --p9:  #00838F; --p10: #0277BD; --p11: #1565C0;
+  --p12: #283593; --p13: #4527A0; --p14: #6A1B9A; --p15: #AD1457;
+  --p16: #4E342E; --p17: #424242; --p18: #757575; --p19: #9E9E9E;
+}
+/* Dark palette overrides */
+[data-theme="dark"] {
+  --p0:  #EF9A9A; --p1:  #FFAB91; --p2:  #FFCC80; --p3:  #FFECB3;
+  --p4:  #FFF59D; --p5:  #E6EE9C; --p6:  #C5E1A5; --p7:  #69F0AE;
+  --p8:  #80CBC4; --p9:  #80DEEA; --p10: #81D4FA; --p11: #64B5F6;
+  --p12: #9FA8DA; --p13: #B39DDB; --p14: #CE93D8; --p15: #F48FB1;
+  --p16: #BCAAA4; --p17: #F5F5F5; --p18: #E0E0E0; --p19: #9E9E9E;
+}
+
+/* ─── Reset & base ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--contrast100);
+  overflow: hidden; /* scroll happens inside #scroller */
+}
+
+/* ─── Layout shell ───────────────────────────────────────────── */
+#toolbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--toolbar-h);
+  z-index: 100;
+  background: var(--toolbar-bg);
+  color: var(--toolbar-text);
+  display: flex;
+  align-items: center;
+  padding: 0 4px 0 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+#toolbar h1 {
+  font-size: 20px;
+  font-weight: 500;
+  flex: 1;
+  user-select: none;
+}
+
+.tb-btn {
+  background: none;
+  border: none;
+  color: var(--toolbar-text);
+  cursor: pointer;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.87;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.tb-btn:hover { background: rgba(255,255,255,0.12); }
+.tb-btn.active { opacity: 1; }
+
+/* ─── Scrollable body (below fixed toolbar) ──────────────────── */
+#scroller {
+  position: fixed;
+  top: var(--toolbar-h);
+  left: 0; right: 0; bottom: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  background: var(--bg);
+}
+
+/* ─── Sticky date header ─────────────────────────────────────── */
+#header-row {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  background: var(--header-bg);
+  display: flex;
+  align-items: stretch;
+  height: var(--header-h);
+  /* Elevation from Android's HeaderView (2dp) */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* Spacer left of date columns — matches the ring+name flex:1 area */
+#header-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.date-cell {
+  width: var(--btn-size);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;            /* tinyTextSize */
+  font-weight: 700;           /* DEFAULT_BOLD */
+  color: var(--contrast60);   /* grey_500 */
+  text-transform: uppercase;
+  line-height: 1.3;
+  cursor: default;
+  user-select: none;
+}
+.date-cell.today {
+  color: var(--contrast80);
+}
+
+/* ─── Habit list ─────────────────────────────────────────────── */
+#habit-list {
+  padding-bottom: 80px; /* room for FAB */
+}
+
+/* ─── Priority group header ──────────────────────────────────── */
+/* Android: view_priority_header.xml — 48dp, colorSurface bg, colorOnSurface text */
+.group-header {
+  display: flex;
+  align-items: center;
+  height: var(--btn-size);
+  padding: 0 16px;
+  background: var(--card-bg);
+  color: var(--contrast100);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--divider);
+  position: relative;
+}
+.group-header:hover { background: var(--bg); }
+.group-header .chevron {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--group-chevron);
+  transition: transform 0.2s;
+}
+.group-header.collapsed .chevron { transform: rotate(-90deg); }
+.group-content.collapsed { display: none; }
+
+/* ─── Habit row ──────────────────────────────────────────────── */
+/* Android: HabitCardView — FrameLayout with 3dp margin, 1dp elevation */
+.habit-row {
+  display: flex;
+  align-items: center;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--divider);
+  min-height: var(--btn-size);
+  transition: background 0.1s;
+  position: relative;
+}
+
+/* Left section: ring + name — flex:1 to fill remaining space */
+.row-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+.row-left:hover { background: var(--ripple); }
+.row-left:active { background: var(--divider); }
+
+/* ─── Score ring ─────────────────────────────────────────────── */
+/* Android: RingView — 15dp × 15dp, thickness 3dp, margin 8dp left */
+.ring-wrap {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin: 0 8px;
+}
+.ring-wrap svg {
+  width: 15px;
+  height: 15px;
+  overflow: visible;
+}
+.ring-bg {
+  fill: none;
+  stroke: var(--ring-inactive);
+  stroke-width: 3;
+}
+.ring-fg {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dasharray 0.4s;
+}
+
+/* ─── Habit name ─────────────────────────────────────────────── */
+/* Android: regularTextSize=16sp, maxLines=2, weight=1 */
+.habit-name {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  padding-right: 4px;
+}
+.habit-row.archived .habit-name { opacity: 0.5; }
+
+/* ─── Checkmark / number button cells ───────────────────────── */
+/* Android: CheckmarkButtonView — 48dp × 48dp, icon only, no border */
+.check-cell, .num-cell {
+  width: var(--btn-size);
+  height: var(--btn-size);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.1s;
+  font-size: 18px;
+}
+/* Let clicks pass through the icon to the cell div — avoids mis-targeting the tiny icon */
+.check-cell i, .num-cell i, .check-cell span, .num-cell span {
+  pointer-events: none;
+}
+.check-cell:hover, .num-cell:hover {
+  background: var(--ripple);
+}
+.check-cell:active, .num-cell:active {
+  background: var(--divider);
+}
+
+/* YES_MANUAL (2): solid filled icon in habit colour — 14sp */
+.chk-yes-manual {
+  font-size: 17px;
+}
+
+/* YES_AUTO (1): outlined hollow icon in habit colour — 13sp, stroke style */
+/* Simulate Android's STROKE+bgFill trick: icon at 35% opacity */
+.chk-yes-auto {
+  font-size: 15px;
+  opacity: 0.38;
+}
+
+/* NO (0): times icon in lowContrastColor (grey_350 / grey_750) — 14sp */
+.chk-no {
+  font-size: 15px;
+  color: var(--contrast40) !important;
+}
+
+/* SKIP (3): minus icon in habit colour — 14sp */
+.chk-skip {
+  font-size: 15px;
+}
+
+/* UNKNOWN (-1): question/times in lowContrast — 12sp */
+.chk-unknown {
+  font-size: 13px;
+  color: var(--contrast40) !important;
+}
+
+/* Notes dot (small dot bottom-right when notes exist) */
+.notes-dot {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+/* ─── Number habit cells ─────────────────────────────────────── */
+.num-cell {
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-family: 'Roboto Condensed', 'Arial Narrow', sans-serif;
+}
+.num-unit {
+  font-size: 10px;
+  font-weight: 400;
+  max-width: calc(var(--btn-size) - 4px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Empty state ────────────────────────────────────────────── */
+#empty-state {
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--contrast60);
+}
+#empty-state h2 { font-size: 20px; font-weight: 400; margin-bottom: 8px; }
+#empty-state p  { font-size: 14px; line-height: 1.6; }
+
+/* ─── FAB ────────────────────────────────────────────────────── */
+#fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  transition: transform 0.2s, box-shadow 0.2s;
+  color: #FFFFFF;
+}
+#fab:hover  { transform: scale(1.06); box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
+#fab:active { transform: scale(0.96); }
+
+/* ─── Detail side panel ──────────────────────────────────────── */
+#detail-panel {
+  position: fixed;
+  top: var(--toolbar-h);
+  right: 0; bottom: 0;
+  width: 360px;
+  background: var(--card-bg);
+  box-shadow: -3px 0 12px rgba(0,0,0,0.25);
+  z-index: 150;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+}
+#detail-panel.open { transform: translateX(0); }
+
+.dp-header {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--card-bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.dp-ring { flex-shrink: 0; }
+.dp-name {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.dp-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--contrast60);
+  font-size: 18px;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.dp-close:hover { background: var(--ripple); }
+
+.dp-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+.dp-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--contrast60);
+  margin-bottom: 10px;
+}
+
+/* History calendar — same as Android ShowHabitActivity */
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.hcell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.hcell:hover { opacity: 0.75; }
+.hcell-no      { background: var(--contrast20); }
+.hcell-unknown { background: transparent; border: 1px solid var(--divider); }
+.hcell-skip    { background: repeating-linear-gradient(45deg, var(--divider) 0, var(--divider) 2px, transparent 2px, transparent 6px); }
+.hcell-yes-auto { opacity: 0.5; }
+
+/* Score chart */
+#score-chart { width: 100%; height: 80px; display: block; }
+
+/* Streaks */
+.streak-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 14px;
+}
+.streak-val { font-weight: 500; }
+
+/* Detail action buttons */
+.dp-actions {
+  padding: 12px 16px;
+  display: flex;
+  gap: 8px;
+}
+
+/* ─── Modals ─────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal {
+  background: var(--card-bg);
+  border-radius: 4px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.modal-title {
+  padding: 20px 24px 12px;
+  font-size: 18px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--divider);
+}
+.modal-body { padding: 16px 24px; }
+.modal-actions {
+  padding: 8px 8px 8px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  border-top: 1px solid var(--divider);
+}
+
+/* ─── Form fields ────────────────────────────────────────────── */
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 12px;
+  color: var(--contrast60);
+  margin-bottom: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--divider);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--contrast0);
+  color: var(--contrast100);
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--contrast80);
+}
+.field-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.field-row input, .field-row select { width: auto; flex: 1; }
+.field-inline { display: flex; align-items: center; gap: 8px; }
+.field-note { font-size: 12px; color: var(--contrast60); margin-top: 4px; }
+
+/* ─── Color picker ───────────────────────────────────────────── */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+.color-swatch {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.selected { border-color: var(--contrast100); transform: scale(1.1); }
+
+/* ─── Buttons ────────────────────────────────────────────────── */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-text {
+  background: transparent;
+  color: var(--contrast80);
+}
+.btn-text:hover { background: var(--ripple); }
+.btn-danger {
+  background: transparent;
+  color: #F44336;
+}
+.btn-danger:hover { background: rgba(244,67,54,0.08); }
+.btn-primary {
+  background: var(--toolbar-bg);
+  color: #FFFFFF;
+}
+[data-theme="dark"] .btn-primary { background: var(--contrast80); }
+.btn-primary:hover { filter: brightness(1.1); }
+
+/* ─── Import area ────────────────────────────────────────────── */
+#import-drop {
+  border: 2px dashed var(--divider);
+  border-radius: 4px;
+  padding: 32px;
+  text-align: center;
+  color: var(--contrast60);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+#import-drop.dragover {
+  border-color: var(--contrast80);
+  background: var(--ripple);
+}
+#import-drop .drop-icon { font-size: 40px; margin-bottom: 8px; }
+
+/* ─── Settings panel ─────────────────────────────────────────── */
+.settings-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider);
+  gap: 12px;
+  font-size: 14px;
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row label { flex: 1; cursor: pointer; }
+.settings-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.settings-row select {
+  padding: 4px 8px;
+  border: 1px solid var(--divider);
+  border-radius: 4px;
+  background: var(--contrast0);
+  color: var(--contrast100);
+  font-family: inherit;
+  font-size: 14px;
+}
+.settings-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--contrast60);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 16px 0 4px;
+}
+
+/* ─── Toast ──────────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: #323232;
+  color: #FFFFFF;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 300;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
