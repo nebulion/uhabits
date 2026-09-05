@@ -24,6 +24,7 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import org.isoron.uhabits.BuildConfig
 import org.isoron.uhabits.HabitsApplication
 import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.AndroidThemeSwitcher
@@ -159,6 +160,20 @@ class SettingsActivity : AppCompatActivity() {
                     }
                     startActivity(intent)
                 },
+            )
+        )
+
+        add(SettingsRow.Header(getString(R.string.about)))
+        // All that is left of the About screen. It held a version number and a
+        // contributor list behind an activity nothing linked to -- the habits
+        // list lost its menu, and `onViewAbout` had no caller anywhere -- so
+        // the screen is deleted and the one fact worth keeping moved here.
+        // A row with no `onClick` is not a control; it is a line of text in the
+        // shape of the rows around it.
+        add(
+            SettingsRow.Action(
+                title = getString(R.string.version_n, BuildConfig.VERSION_NAME),
+                onClick = {},
             )
         )
 

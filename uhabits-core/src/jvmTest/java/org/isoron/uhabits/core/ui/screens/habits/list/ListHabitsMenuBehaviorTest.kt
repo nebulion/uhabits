@@ -153,12 +153,6 @@ class ListHabitsMenuBehaviorTest : BaseUnitTest() {
     }
 
     @Test
-    fun testOnViewAbout() {
-        behavior.onViewAbout()
-        verify(screen).showAboutScreen()
-    }
-
-    @Test
     fun testOnViewSettings() {
         behavior.onViewSettings()
         verify(screen).showSettingsScreen()

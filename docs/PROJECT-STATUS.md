@@ -442,6 +442,54 @@ both are 6 now.
 
 ### Half-done — read before touching the habits screen
 
+- **Drag-to-reorder works, and is not yet right.** Long press a habit to
+  select it, long press again to pick it up, drag, release. The list holds
+  still while you drag and the separator you would drop into thickens; the
+  reorder happens once, on release.
+
+  Three things are wrong or unfinished, in the order they annoy:
+
+  1. **Turning a page loses the indicator, which makes the scroll useless.**
+     Drag to the edge, a page turns -- and from then on no separator
+     highlights, so you can scroll but you cannot place anything. This is the
+     worst of the three and it has a single cause: the drag reads the finger's
+     position as `here.offset + change.position.y`, where `here` is *the
+     dragged row's own entry* in `listState.layoutInfo.visibleItemsInfo`. Turn
+     a page and that row is no longer visible, `here` is null, the loop hits
+     its `continue`, and no boundary is computed again. Worse, a `LazyColumn`
+     disposes items it has scrolled past, so the row hosting the gesture can be
+     destroyed underneath it.
+
+     The fix is structural, not a patch: **the drag has to be tracked by a
+     container spanning the list, not by the row it started on.** A
+     `pointerInput` on the Box around `LazyColumnMMD` is never disposed, its
+     coordinates are the list's own, and it can hit-test which row the finger
+     went down on from `layoutInfo`. That is how reorderable lists are normally
+     built, and it deletes the `here` lookup entirely.
+  2. **The list scrolls when you release.** Not the page turn -- that is
+     cancelled on release -- but `LazyColumn` re-anchoring: it keeps the
+     keyed first-visible item in view, and dropping a habit moves that item.
+     The fix is to snapshot `firstVisibleItemIndex`/`firstVisibleItemScrollOffset`
+     before the drop and restore them once the list has rebuilt.
+  3. **It only works in manual order** (`BY_POSITION`), silently. Sorted by
+     name or score, the gesture picks the habit up and the drop does nothing,
+     with no explanation anywhere.
+
+  **Do not try to verify this over adb.** `input motionevent` injections
+  arrive as a fresh pointer each time, so the gesture's own `down.id` never
+  matches and the drag loop exits immediately -- instrumentation logs nothing
+  while a real finger drives it perfectly well. Several rounds were spent
+  "fixing" a drag that was not broken in the way the harness suggested. Test
+  it by hand, on the device.
+
+  Two traps are already paid for and worth not re-learning, both in
+  `HabitListScreenMMD.reorderDragHandle`: `positionChange()` reports a
+  movement as **zero** once the change has been consumed, so the movement has
+  to be read before consuming (or via `positionChangeIgnoreConsumed`); and
+  `LazyColumnMMD` claims drags for its own paging, so `verticalDrag` and
+  `detectDragGesturesAfterLongPress` both treat a claimed movement as a
+  cancelled drag and give up. Hence the raw pointer loop.
+
 - **`ScrollableChart` cannot be deleted yet** — it is still the base class for
   `ScoreChart` and `FrequencyChart` on the ShowHabit screen.
 - **Drag-to-reorder is gone.** `performReorder` survives on the model;

@@ -214,11 +214,6 @@ class ListHabitsScreen
         activity.restartWithFade(ListHabitsActivity::class.java)
     }
 
-    override fun showAboutScreen() {
-        val intent = intentFactory.startAboutActivity(activity)
-        activity.startActivity(intent)
-    }
-
     override fun showSelectHabitTypeDialog() {
         val dialog = HabitTypeDialog()
         dialog.show(activity.supportFragmentManager, "habitType")
