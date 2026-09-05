@@ -36,7 +36,6 @@ import org.isoron.platform.gui.EinkRefresh
 import org.isoron.platform.gui.toInt
 import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.common.dialogs.CheckmarkDialog
-import org.isoron.uhabits.activities.common.dialogs.ColorPickerDialogFactory
 import org.isoron.uhabits.activities.common.dialogs.ConfirmDeleteDialog
 import org.isoron.uhabits.activities.common.dialogs.NumberDialog
 import org.isoron.uhabits.activities.habits.edit.HabitTypeDialog
@@ -102,7 +101,6 @@ class ListHabitsScreen
     private val taskRunner: TaskRunner,
     private val exportDBFactory: ExportDBTaskFactory,
     private val importTaskFactory: ImportDataTaskFactory,
-    private val colorPickerFactory: ColorPickerDialogFactory,
     private val behavior: Lazy<ListHabitsBehavior>,
     private val preferences: Preferences,
 ) : CommandRunner.Listener,
@@ -281,12 +279,6 @@ class ListHabitsScreen
     override fun showSettingsScreen() {
         val intent = intentFactory.startSettingsActivity(activity)
         activity.startActivityForResult(intent, REQUEST_SETTINGS)
-    }
-
-    override fun showColorPicker(defaultColor: PaletteColor, callback: OnColorPickedCallback) {
-        val picker = colorPickerFactory.create(defaultColor, themeSwitcher.currentTheme!!)
-        picker.setListener(callback)
-        picker.dismissCurrentAndShow(activity.supportFragmentManager, "picker")
     }
 
     override fun showNumberPopup(

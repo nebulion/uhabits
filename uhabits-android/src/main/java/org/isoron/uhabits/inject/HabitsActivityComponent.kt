@@ -20,7 +20,6 @@
 package org.isoron.uhabits.inject
 
 import dagger.Component
-import org.isoron.uhabits.activities.common.dialogs.ColorPickerDialogFactory
 import org.isoron.uhabits.activities.habits.list.ListHabitsMenu
 import org.isoron.uhabits.activities.habits.list.ListHabitsModule
 import org.isoron.uhabits.activities.habits.list.ListHabitsScreen
@@ -35,7 +34,6 @@ import org.isoron.uhabits.core.ui.screens.habits.list.ListHabitsSelectionMenuBeh
     dependencies = [HabitsApplicationComponent::class]
 )
 interface HabitsActivityComponent {
-    val colorPickerDialogFactory: ColorPickerDialogFactory
     val habitCardListModel: HabitCardListModel
     val listHabitsBehavior: ListHabitsBehavior
     val listHabitsMenu: ListHabitsMenu

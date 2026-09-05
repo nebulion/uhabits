@@ -64,4 +64,14 @@
     -->
     <color name="ic_launcher_background">#FFFFFF</color>
     <color name="color_background">@color/white</color>
+
+    <!--
+      ~ Survivors of pickers.xml, deleted along with the bundled radial
+      ~ date/time picker it coloured. That file held the last literal greys in
+      ~ the app: #8c8c8c clock numerals baked into a resource, where no theme
+      ~ could reach them. These two are pure alpha rather than colour, and are
+      ~ still referenced from styles.xml and by Material itself.
+      -->
+    <color name="transparent">#00000000</color>
+    <color name="transparent_black">#7f000000</color>
 </resources>

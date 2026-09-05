@@ -55,14 +55,6 @@ class ListHabitsSelectionMenuBehavior @Inject constructor(
         adapter.clearSelection()
     }
 
-    fun onChangeColor() {
-        val (color) = adapter.getSelected()[0]
-        screen.showColorPicker(color) { selectedColor: PaletteColor ->
-            commandRunner.run(ChangeHabitColorCommand(habitList, adapter.getSelected(), selectedColor))
-            adapter.clearSelection()
-        }
-    }
-
     fun onDeleteHabits() {
         // Captured once, deliberately. This used to call getSelected() twice,
         // side by side, and delete silently stopped working when the habits
@@ -101,11 +93,6 @@ class ListHabitsSelectionMenuBehavior @Inject constructor(
     }
 
     interface Screen {
-        fun showColorPicker(
-            defaultColor: PaletteColor,
-            callback: OnColorPickedCallback
-        )
-
         fun showDeleteConfirmationScreen(
             callback: OnConfirmedCallback,
             quantity: Int

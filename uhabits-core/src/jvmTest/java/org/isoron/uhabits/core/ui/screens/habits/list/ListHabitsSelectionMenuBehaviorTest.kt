@@ -87,19 +87,6 @@ class ListHabitsSelectionMenuBehaviorTest : BaseUnitTest() {
 
     @Test
     @Throws(Exception::class)
-    fun onChangeColor() {
-        assertThat(habit1.color, equalTo(PaletteColor(8)))
-        assertThat(habit2.color, equalTo(PaletteColor(8)))
-        whenever(adapter.getSelected()).thenReturn(listOf(habit1, habit2))
-        behavior.onChangeColor()
-        verify(screen)
-            .showColorPicker(eq(PaletteColor(8)), colorPickerCallback.capture())
-        colorPickerCallback.lastValue.onColorPicked(PaletteColor(30))
-        assertThat(habit1.color, equalTo(PaletteColor(30)))
-    }
-
-    @Test
-    @Throws(Exception::class)
     fun onDeleteHabits() {
         val id = habit1.id!!
         habitList.getById(id)!!
