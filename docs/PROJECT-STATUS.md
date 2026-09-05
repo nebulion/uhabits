@@ -111,11 +111,12 @@ to put inline inside a sentence.
 
 | | |
 | --- | --- |
-| Layout files | **38** (from 45) — target 0 |
-| viewBinding | still `true`; the ShowHabit screen is most of what is left |
-| Screens on MMD | Settings, Habits list, Intro, EditHabit, ShowHabit |
-| Popups on MMD | Checkmark, Number, Confirm-delete, Frequency, Reminder, Weekdays, Snackbar |
-| Still on Views | ShowHabit card *contents*, About, Automation, HistoryEditor, HabitType, snooze |
+| Layout files | **25** (from 45) — target 0 |
+| viewBinding | still `true`; the ShowHabit cards are most of what is left |
+| Screens on MMD | Settings, Habits list, Intro, EditHabit, ShowHabit, Snooze |
+| Popups on MMD | Checkmark, Number, Confirm-delete, Frequency, Reminder, Weekdays, Snackbar, HabitType, HistoryEditor |
+| Still on Views | ShowHabit card *contents*, Automation |
+| Of the 25 layouts | 12 are dead widget layouts, 10 are ShowHabit cards, 3 are Automation/edit/toolbar |
 
 ### Done
 
@@ -750,44 +751,47 @@ habits it always scrolls, so **the interesting case has never been rendered**.
    house style, and the 16-unit corner radius may be off too. MMD ships no icon
    set and no drawing guideline, so this needs Mudita's design documentation or
    measurements taken off the system icons themselves.
-2. **The `Week` / `Month` spinners** in the Score, Bar and History cards are
-   still `android.widget.Spinner`, which is the most visible non-MMD thing
-   left on a screen that otherwise looks finished. A stock Spinner also drags
-   in a grey `?android:attr/listDivider` in its popup and a shadowed
-   `ListPopupWindow` background, neither of which the Compose theme can reach.
-   **`TabsMMD` is the target, not `DropdownMenuMMD`** — two to four
-   always-visible options is a tab row, and MuditaOS K has no overflow-menu
-   concept to justify a dropdown.
-3. **The dialogs still on Views**: `HistoryEditorDialog` (chrome swap only —
-   its chart already dithers), `HabitTypeDialog` (copy `ChoiceSheet`), and
-   `SnoozeDelayPickerActivity`, which is the worst of them: a Material
-   `setItems` list *and* the third-party radial time picker whose clock face
-   is literal `#8c8c8c` numerals baked into `pickers.xml`. That radial dial is
-   the one `TimeInputMMD` was adopted to replace; it survived here only
-   because nobody looked at the snooze flow.
-4. **Delete the dead**: `WeekdayPickerDialog` (superseded, only the stray
-   import in `EditHabitActivity` still names it) and `ColorPickerDialog` with
-   the whole bundled `com.android.colorpicker` package —
-   `ListHabitsSelectionMenuBehavior.onChangeColor()` has no callers at all.
-5. **Give export a home.** It was dropped from ShowHabit's header to get the
-   remaining actions back to full size, and is currently unreachable.
-6. **Settings, second pass.** Restore first-weekday, reminder sound, sticky
-   notifications, public backup folder, reverse-days, midnight delay and the
-   developer section, lost when the preference XML was gutted. `RadioButtonMMD`
-   rows for one-of-N; `PanelMMD` or a page for the rest.
-7. **Drag-to-reorder, or its replacement.** `HabitCardListModel.performReorder`
-   is still there and still unreachable. With selection in the header, the
-   obvious home for move-up / move-down is `SelectionTopBar` when exactly one
-   habit is selected.
-8. **The charts port** (below), then ShowHabit's card contents → Compose.
-9. **About** — port it, or delete it. Nothing links to it any more, and it is
-   now emptier than it was: `AboutScreen` is deleted, so `AboutView` is a
-   layout with a version number and a contributor list behind an activity with
-   no way in. Deleting is the honest option unless it gets a Settings row back.
-10. **`EditSettingActivity`** (Tasker plugin, easy to forget) and
-    **`Automation`**.
-11. **Rewrite the habits-screen tests** on `createAndroidComposeRule`.
-12. **Then** `buildFeatures.viewBinding = false`.
+2. **Finish drag-to-reorder.** It works and it is not right; the three
+   problems and the structural fix are written up under "Half-done" above.
+   The page-turn one makes the feature unusable past a screenful, so it is
+   the real item here.
+3. **Delete the dead widgets.** Twelve of the 25 remaining layouts belong to
+   the six home-screen widgets, which are unregistered from the manifest and
+   unreachable. The Kotlin under `widgets/` goes with them, but
+   **`WidgetReceiver` must stay** — despite the name, the reminder
+   *notification* buttons use its actions. This is now the single biggest
+   step left towards `viewBinding = false`, and it is mechanical.
+4. **The charts port** (below), then ShowHabit's card contents → Compose,
+   then its ten `show_habit_*` layouts.
+5. **`EditSettingActivity`** (Tasker plugin, easy to forget) and
+   **`Automation`**, the last non-widget screens on Views.
+6. **`ktlintCheck` is red** — 287 violations, nearly all trailing commas.
+   `ktlintFormat` fixes it mechanically but rewrites most of the restyled
+   files, so it wants its own pass when nothing else is in flight.
+7. **Rewrite the habits-screen tests** on `createAndroidComposeRule`.
+8. **Then** `buildFeatures.viewBinding = false`.
+
+### Done since this list was written
+
+- **The `Week`/`Month` spinners are gone.** `TabsMMD` was the stated target
+  and it does not fit: five spans, a row that divides the width evenly, and
+  16dp off each side of a tab leaves about 40dp of label — enough for "Week",
+  not "Quarter". They are `ModalBottomSheetMMD` sheets of `RadioButtonMMD`
+  rows instead, following the other rule (*a choice is a sheet*), which is
+  also what the frequency picker and first-weekday setting do.
+- **All three View dialogs are MMD.** Snooze is a sheet with `TimeInputMMD`
+  for its custom time; `HabitTypeDialog` and `HistoryEditorDialog` are both
+  `MmdPanelDialogFragment`.
+- **Both bundled pickers are deleted** — `com.android.datetimepicker` (26
+  files) and `com.android.colorpicker`, with `pickers.xml` and every layout,
+  colour and drawable they owned. That file held the last literal greys in
+  the app.
+- **Export has a home** (habits-list selection bar, and it takes any subset).
+- **Settings' second pass** restored reverse-days, midnight delay, sticky
+  notifications and first-weekday. Reminder sound needed no row: "Customize
+  notification" opens the system channel, where Android has kept sound since
+  8.0. The developer section is not restored — developer mode is deleted.
+- **About is deleted**, its version line moved to the foot of Settings.
 
 ### Two things the audits flagged that are decisions, not bugs
 

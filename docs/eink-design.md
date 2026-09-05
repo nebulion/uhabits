@@ -209,6 +209,11 @@ that undoing a mistap is expensive.
   `toDp()`. Those same values also drive layout arithmetic
   (`y - theme.smallTextSize * 0.80`), so making them scale needs the charts
   re-laid-out.
+- **The last stock Android widget is gone.** The `Week`/`Month` spinners on
+  ShowHabit were the final `android.widget` control in the app; they are MMD
+  sheets now, and the bundled radial date picker and colour picker are deleted
+  outright. `pickers.xml` went with them, and with it the last literal greys
+  in the tree: `#8c8c8c` clock numerals no theme could reach.
 - **The widget Kotlin is dead, not deleted.** Unregistered in the manifest and
   unreachable, but `WidgetUpdater` is still called from `ListHabitsActivity`
   and `AutoBackup`, so the classes remain.
