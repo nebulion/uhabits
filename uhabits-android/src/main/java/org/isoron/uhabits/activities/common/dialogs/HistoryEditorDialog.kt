@@ -18,10 +18,15 @@
  */
 package org.isoron.uhabits.activities.common.dialogs
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.viewinterop.AndroidView
 import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatDialogFragment
 import org.isoron.platform.gui.AndroidDataView
 import org.isoron.platform.time.JavaLocalDateFormatter
 import org.isoron.uhabits.HabitsApplication
@@ -37,9 +42,25 @@ import org.isoron.uhabits.core.ui.views.HistoryChart
 import org.isoron.uhabits.core.ui.views.OnDateClickedListener
 import org.isoron.uhabits.core.utils.DateUtils
 import java.util.Locale
-import kotlin.math.min
 
-class HistoryEditorDialog : AppCompatDialogFragment(), CommandRunner.Listener {
+/**
+ * The calendar you tap to correct a day you missed marking.
+ *
+ * Its chart was never the problem -- `HistoryChart` draws through the core
+ * `Canvas` and screens its own midtones, so it has looked right since the
+ * halftone pass. The chrome around it did not: a bare `Dialog` with Android's
+ * default background behind the chart and its default dim over everything
+ * else, which is a flat mid-grey wash on a panel whose palette contains no
+ * grey at all.
+ *
+ * So the chart is hosted inside [MmdPanelDialogFragment] now, through
+ * `AndroidView`, exactly as ShowHabit hosts its own View-drawn cards. That
+ * gives it the same white fill, 3dp black border, 8dp corners and absence of
+ * dim as every other popup here -- and it takes those from `PanelMMD` rather
+ * than from a hand-drawn XML shape repeating MMD's numbers, which is the
+ * mistake this fork already made once with its switch and header drawables.
+ */
+class HistoryEditorDialog : MmdPanelDialogFragment(), CommandRunner.Listener {
 
     private lateinit var commandRunner: CommandRunner
     private lateinit var habit: Habit
@@ -49,6 +70,14 @@ class HistoryEditorDialog : AppCompatDialogFragment(), CommandRunner.Listener {
     private var chart: HistoryChart? = null
     private var onDateClickedListener: OnDateClickedListener? = null
 
+    /**
+     * Builds the chart, then hands the dialog itself to [MmdPanelDialogFragment].
+     *
+     * The registration below is not tidiness. This dialog can be raised
+     * *underneath* another one -- tapping a day opens the number editor over
+     * it -- so it tracks its own instance rather than relying on the shared
+     * "dismiss whatever is showing" path, which would take the wrong one.
+     */
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         clearCurrentDialog()
         val component = (requireActivity().application as HabitsApplication).component
@@ -74,15 +103,25 @@ class HistoryEditorDialog : AppCompatDialogFragment(), CommandRunner.Listener {
         dataView = AndroidDataView(requireContext(), null)
         dataView.view = chart!!
 
-        val dialog = Dialog(requireContext()).apply {
-            val metrics = resources.displayMetrics
-            val maxHeight = resources.getDimensionPixelSize(R.dimen.history_editor_max_height)
-            setContentView(dataView)
-            window!!.setLayout(metrics.widthPixels, min(metrics.heightPixels, maxHeight))
-        }
-
+        val dialog = super.onCreateDialog(savedInstanceState)
         currentDialog = dialog
         return dialog
+    }
+
+    @Composable
+    override fun PanelContent() {
+        // The chart sizes itself to its width and would otherwise grow to
+        // whatever the year's history needs, so it keeps the height cap the
+        // dialog window used to impose.
+        val maxHeight = with(LocalDensity.current) {
+            resources.getDimensionPixelSize(R.dimen.history_editor_max_height).toDp()
+        }
+        AndroidView(
+            factory = { dataView },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxHeight),
+        )
     }
 
     override fun onDismiss(dialog: DialogInterface) {
