@@ -149,14 +149,14 @@ class ListHabitsScreen
     /**
      * A drag-to-reorder just finished.
      *
-     * This one flashes outright rather than taking a place in the queue, and
-     * it is the only gesture that does. A drop rewrites every row between
-     * where the habit left and where it landed -- far more of the panel than a
-     * checkmark touches -- so it is exactly the case the flash exists for. It
-     * still obeys the Settings toggle, and it restarts the twelve-change count
-     * from the moment the panel is cleared.
+     * Counted like everything else rather than flashed outright. Flashing on
+     * every drop was tried and it is too much: reordering is something you do
+     * several times in a row, and a full-screen black frame after each one
+     * turns a minute of tidying into a strobe. A drop is one thing the owner
+     * did, so it takes its place alongside checkmarks and pages of scrolling
+     * and the panel clears on the twelfth.
      */
-    fun onReorderFinished() = einkRefresh.flashNow(activity)
+    fun onReorderFinished() = einkRefresh.onChange(activity)
 
     fun onAttached() {
         commandRunner.addListener(this)

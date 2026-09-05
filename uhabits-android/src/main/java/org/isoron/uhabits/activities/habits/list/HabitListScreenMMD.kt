@@ -19,11 +19,9 @@
 
 package org.isoron.uhabits.activities.habits.list
 
+import kotlinx.coroutines.Job
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.rememberCoroutineScope
@@ -334,6 +332,12 @@ fun HabitListScreenMMD(
                         scrollStep = SCROLL_STEP,
                     ) {
                         itemsIndexed(habits, key = { _, it -> it.id }) { index, habit ->
+                            // The boundary above the very first row has no
+                            // separator of its own -- the header's rule sits
+                            // there -- so the list carries an empty one, which
+                            // exists only to be bolded when a habit is being
+                            // dropped at the top.
+                            if (index == 0) RowSeparator(bold = dropBoundary == 0, drawn = false)
                             HabitRow(
                                 habit = habit,
                                 index = index,
@@ -345,24 +349,25 @@ fun HabitListScreenMMD(
                                 // instead, so the two never claim at once.
                                 isDragging = habit.id == draggingId &&
                                     dropBoundary == null,
-                                dropAbove = dropBoundary == index,
-                                dropBelow = index == habits.lastIndex &&
-                                    dropBoundary == habits.size,
                                 onDragChange = { id, boundary ->
                                     draggingId = id
                                     dropBoundary = boundary
                                 },
                                 isSelected = habit.id in selectedIds,
+                                // Only ever one habit at a time. Dragging is
+                                // about one habit's place in the order, and a
+                                // selection of several has no single place to
+                                // put down -- so with two or more selected the
+                                // detector is not installed at all.
+                                canDrag = selectedIds.size == 1 &&
+                                    habit.id in selectedIds,
                                 dayLabels = dayLabels,
                                 dataOffset = dataOffset,
                                 isShortToggleEnabled = isShortToggleEnabled,
                                 areQuestionMarksEnabled = areQuestionMarksEnabled,
                                 actions = actions,
                             )
-                            HorizontalDividerMMD(
-                                modifier = Modifier.padding(start = HABIT_NAME_WIDTH),
-                                thickness = 1.dp,
-                            )
+                            RowSeparator(bold = dropBoundary == index + 1)
                         }
                     }
                 }
@@ -601,10 +606,9 @@ private fun HabitRow(
     index: Int,
     listState: LazyListState,
     isDragging: Boolean,
-    dropAbove: Boolean,
-    dropBelow: Boolean,
     onDragChange: (Long?, Int?) -> Unit,
     isSelected: Boolean,
+    canDrag: Boolean,
     dayLabels: List<DayLabel>,
     dataOffset: Int,
     isShortToggleEnabled: Boolean,
@@ -631,11 +635,6 @@ private fun HabitRow(
                     isSelected -> Modifier.border(2.dp, MaterialTheme.colorScheme.onBackground)
                     else -> Modifier
                 }
-            )
-            .dropIndicator(
-                above = dropAbove,
-                below = dropBelow,
-                ink = MaterialTheme.colorScheme.onBackground,
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -660,7 +659,7 @@ private fun HabitRow(
                     habit = habit,
                     index = index,
                     listState = listState,
-                    enabled = isSelected,
+                    enabled = canDrag,
                     onDragChange = onDragChange,
                     actions = actions,
                 )
@@ -943,6 +942,7 @@ private fun Modifier.reorderDragHandle(
             val start = currentIndex.value
             var boundary: Int? = null
             var lastScrollAt = 0L
+            var pageTurn: Job? = null
             onDragChange(habit.id, null)
             while (true) {
                 val event = awaitPointerEvent()
@@ -992,10 +992,20 @@ private fun Modifier.reorderDragHandle(
                     }
                     if (target != null) {
                         lastScrollAt = now
-                        scope.launch { listState.scrollToItem(target.coerceAtLeast(0)) }
+                        // Held, so it can be called off. A page turn is
+                        // launched separately from the gesture, and one
+                        // started an instant before the finger lifted used to
+                        // land *after* the drop -- so releasing at the edge
+                        // scrolled the list out from under the habit that had
+                        // just been placed.
+                        pageTurn?.cancel()
+                        pageTurn = scope.launch {
+                            listState.scrollToItem(target.coerceAtLeast(0))
+                        }
                     }
                 }
             }
+            pageTurn?.cancel()
             val landed = boundary
             onDragChange(null, null)
             if (landed != null) {
@@ -1039,11 +1049,17 @@ private fun LazyListLayoutInfo.nearestBoundary(pointerY: Float, start: Int): Int
 /**
  * How near an edge counts as being at it, while dragging.
  *
- * Small on purpose. This is not a zone the drag reacts to across, it is the
- * last sliver of the screen: everywhere else a drag moves the drop line and
- * nothing else, and the list stays exactly where it was put.
+ * A row's worth. It was 12dp, and that was too mean to aim at: the last
+ * separator on screen sits a whole row above the bottom, so reaching the strip
+ * below it meant dragging your finger off the panel. A row means the list
+ * offers to move as soon as you are past the last boundary you can see, which
+ * is exactly the moment you need it to.
+ *
+ * This is not the creeping scroll it replaced. Crossing into this zone turns
+ * one page and then waits; everywhere above it, a drag moves the drop line and
+ * the list stays exactly where it was put.
  */
-private val EDGE_MARGIN = 12.dp
+private val EDGE_MARGIN = CELL_HEIGHT
 
 /**
  * How often holding at an edge turns another page.
@@ -1055,25 +1071,44 @@ private val EDGE_MARGIN = 12.dp
 private const val PAGE_TURN_INTERVAL_MS = 700L
 
 /**
- * Draws the drop line for a drag, over the row rather than in it.
+ * The rule between two habits, and the thing a drag points at.
  *
- * An overlay, not a real divider, so that showing and hiding it cannot change
- * anyone's height. An indicator that took up space would push every row below
- * it down the moment it appeared, which is a screen repaint to say where one
- * habit would land.
+ * A drop is shown by **bolding the separator that is already there**, not by
+ * drawing a second line beside it. The two are easy to confuse in code and
+ * impossible to confuse on screen: an overlaid indicator sat at the row's own
+ * top edge and ran the full width, while the real rules are inset to start
+ * under the day columns, so it read as an extra line that had appeared rather
+ * than as this gap being the one.
+ *
+ * The slot is always [DividerDefaultsMMD.Thickness] tall whether it is bolded
+ * or not, and the hairline is centred inside it. Growing a 1dp rule into a 3dp
+ * one would otherwise push every row below it down by 2dp the moment a drag
+ * passed over -- a whole-screen repaint to say where one habit would land.
+ *
+ * [drawn] is false for the one above the first row, which exists only to be
+ * bolded: the header's own rule is already sitting in that position.
  */
-private fun Modifier.dropIndicator(
-    above: Boolean,
-    below: Boolean,
-    ink: Color,
-): Modifier = if (!above && !below) {
-    this
-} else {
-    drawWithContent {
-        drawContent()
-        val thickness = DividerDefaultsMMD.Thickness.toPx()
-        val y = if (above) 0f else size.height - thickness
-        drawRect(color = ink, topLeft = Offset(0f, y), size = Size(size.width, thickness))
+@Composable
+private fun RowSeparator(bold: Boolean, drawn: Boolean = true) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(DividerDefaultsMMD.Thickness)
+            // Inset exactly like every other rule on this screen, bolded or
+            // not. A drop marker that ran the full width would not be *this*
+            // separator getting heavier, it would be a different line
+            // appearing in the same place.
+            .padding(start = HABIT_NAME_WIDTH),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (bold || drawn) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (bold) DividerDefaultsMMD.Thickness else 1.dp)
+                    .background(MaterialTheme.colorScheme.onBackground),
+            )
+        }
     }
 }
 
