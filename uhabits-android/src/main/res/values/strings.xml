@@ -22,7 +22,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation">
 
-    <string name="app_name" >Loop Habit Tracker</string>
+    <string name="app_name" >Habits</string>
     <string name="main_activity_title">Habits</string>
     <string name="action_settings">Settings</string>
     <string name="edit">Edit</string>

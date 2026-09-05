@@ -610,22 +610,39 @@ private const val NO = 0
 private const val UNKNOWN = -1
 
 /**
+ * Line weight of every outlined glyph, in pixels.
+ *
+ * Shared so the hollow cross an unrecorded day draws and the hollow check an
+ * automatic yes draws cannot drift apart: the only thing separating either
+ * from its filled counterpart should be that it is an outline, never how heavy
+ * that outline is.
+ */
+private const val HOLLOW_STROKE_WIDTH = 2f
+
+/**
  * One day's state for one habit.
  *
  * Everything is black on white, so the states are told apart by glyph and by
  * fill rather than by colour: a solid check for a manual yes, a hollow one for
  * an automatic yes, a dash for a skip, and a cross for a no.
  *
- * Unknown is a **hollow circle**. MMD ships no icon set to take one from —
- * only chevrons and a loader — so this follows its state *language* instead:
- * `SwitchMMD`, `CheckboxMMD` and `RadioButtonMMD` all separate states by
- * outline versus fill, never by a weight of grey. An unrecorded day is
- * therefore the unfilled shape. It also reads far quieter than the question
- * mark it replaces, which mattered because most cells in an imported database
- * are unknown and the screen was a wall of them.
+ * Unknown is a **hollow cross**: the same `fa_times` a recorded no draws, at
+ * the same size, outlined instead of filled. MMD ships no icon set to take a
+ * glyph from — only chevrons and a loader — so this follows its state
+ * *language* instead: `SwitchMMD`, `CheckboxMMD` and `RadioButtonMMD` all
+ * separate states by outline versus fill, never by a weight of grey. A day
+ * that was never recorded is therefore the unfilled version of the mark a
+ * missed day gets.
  *
- * The `areQuestionMarksEnabled` gate is kept: with it off, unknown still reads
- * as a cross, which is what the old button did.
+ * It was a hollow circle, which said "no data" clearly enough but introduced a
+ * third shape to the row for a state that is really just an unconfirmed no —
+ * and, being a different glyph, it needed its own size to stop out-weighing
+ * the check beside it. Sharing the cross's shape and size means the only
+ * difference left between a missed day and an unrecorded one is fill, which is
+ * exactly the distinction MMD draws everywhere else.
+ *
+ * The `areQuestionMarksEnabled` gate is kept: with it off, unknown draws as a
+ * *solid* cross, which is what the old button did.
  */
 @Composable
 private fun CheckmarkCell(
@@ -640,15 +657,11 @@ private fun CheckmarkCell(
     val glyph = when (value) {
         SKIP -> stringResource(R.string.fa_skipped)
         NO -> stringResource(R.string.fa_times)
-        UNKNOWN -> if (areQuestionMarksEnabled) {
-            stringResource(R.string.fa_circle)
-        } else {
-            stringResource(R.string.fa_times)
-        }
+        UNKNOWN -> stringResource(R.string.fa_times)
         else -> stringResource(R.string.fa_check)
     }
-    // The two hollow states are told apart by shape, not by weight: a check
-    // that was credited automatically, and a circle for a day never recorded.
+    // The two hollow states are told apart by shape: a check that was credited
+    // automatically, and a cross for a day never recorded.
     val isHollow = value == YES_AUTO || (value == UNKNOWN && areQuestionMarksEnabled)
     Box(
         modifier = modifier
@@ -658,11 +671,12 @@ private fun CheckmarkCell(
     ) {
         GlyphText(
             glyph = glyph,
-            // The circle is drawn smaller than a glyph: at 18sp it is a
-            // heavier mark than the check it sits beside. 14sp is as small as
-            // this is allowed to go -- it is MMD's own floor, `labelSmall` in
-            // TypographyMMD, and it was 13sp here until that was caught.
-            size = if (value == UNKNOWN && areQuestionMarksEnabled) 14.sp else 18.sp,
+            // One size for every state now. The circle needed its own smaller
+            // one because at 18sp a filled disc out-weighed the check beside
+            // it; a cross has no such problem, and an unrecorded day drawn
+            // smaller than a missed one would be saying something this design
+            // does not mean.
+            size = 18.sp,
             hollow = isHollow,
         )
         if (hasNotes) {
@@ -690,8 +704,10 @@ private fun GlyphText(
         fontSize = size,
         textAlign = TextAlign.Center,
         fontFamily = fontAwesome(),
+        // One stroke width for every hollow glyph, so the outlined cross and
+        // the outlined check read as the same weight of line.
         style = if (hollow) {
-            LocalTextStyle.current.copy(drawStyle = Stroke(width = 2f))
+            LocalTextStyle.current.copy(drawStyle = Stroke(width = HOLLOW_STROKE_WIDTH))
         } else {
             LocalTextStyle.current
         },
