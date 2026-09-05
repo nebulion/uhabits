@@ -19,83 +19,125 @@
 
 package org.isoron.uhabits.activities.common.dialogs
 
-import android.app.Dialog
 import android.content.DialogInterface
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View.GONE
-import android.view.View.VISIBLE
-import androidx.appcompat.app.AppCompatDialogFragment
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.mudita.mmd.components.text.TextMMD
+import com.mudita.mmd.components.text_field.TextFieldMMD
 import org.isoron.uhabits.HabitsApplication
 import org.isoron.uhabits.R
 import org.isoron.uhabits.core.models.Entry.Companion.NO
 import org.isoron.uhabits.core.models.Entry.Companion.SKIP
 import org.isoron.uhabits.core.models.Entry.Companion.UNKNOWN
 import org.isoron.uhabits.core.models.Entry.Companion.YES_MANUAL
-import org.isoron.uhabits.databinding.CheckmarkPopupBinding
-import org.isoron.uhabits.utils.InterfaceUtils.getFontAwesome
-import org.isoron.uhabits.utils.sres
 
-class CheckmarkDialog : AppCompatDialogFragment() {
+/**
+ * The editor for one day of a yes-or-no habit, as MMD.
+ *
+ * It was a `Dialog` holding an XML layout whose border and button divider were
+ * `?contrast40` — literally `#BDBDBD` — with two of its four buttons tinted
+ * `contrast60` grey, over Android's default grey window dim. Three separate
+ * greys on a panel whose design has none.
+ *
+ * Now it is a [PanelMMD] on [MmdPanelDialogFragment], so it floats in the
+ * middle of the screen with nothing dimmed behind it, and the states are told
+ * apart the way MMD tells any state apart — by fill, not by tint. **Yes is the
+ * solid button**, because it is the affirmative and the one this popup exists
+ * to record; No, Skip and Unknown are outlined. That is `eink-design.md`'s
+ * button hierarchy applied literally.
+ *
+ * The two optional buttons keep their old gates: Skip only when
+ * `isSkipEnabled`, Unknown only when `areQuestionMarksEnabled`.
+ */
+class CheckmarkDialog : MmdPanelDialogFragment() {
     var onToggle: (Int, String) -> Unit = { _, _ -> }
     var onDismiss: () -> Unit = {}
 
     private var dismissedViaSaveAction = false
     private var originalNotes: String = ""
     private var originalValue: Int = 0
-    private lateinit var view: CheckmarkPopupBinding
+    private var currentNotes: String = ""
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val appComponent = (requireActivity().application as HabitsApplication).component
-        val prefs = appComponent.preferences
-        view = CheckmarkPopupBinding.inflate(LayoutInflater.from(context))
-        val color = requireArguments().getInt("color")
-        arrayOf(view.yesBtn, view.skipBtn).forEach {
-            it.setTextColor(color)
-        }
-        arrayOf(view.noBtn, view.unknownBtn).forEach {
-            it.setTextColor(view.root.sres.getColor(R.attr.contrast60))
-        }
-        arrayOf(view.yesBtn, view.noBtn, view.skipBtn, view.unknownBtn).forEach {
-            it.typeface = getFontAwesome(requireContext())
-        }
-        originalNotes = requireArguments().getString("notes")!!
+    @Composable
+    override fun PanelContent() {
+        val prefs = (requireActivity().application as HabitsApplication).component.preferences
+        originalNotes = requireArguments().getString("notes").orEmpty()
         originalValue = requireArguments().getInt("value")
-        view.notes.setText(originalNotes)
-        if (!prefs.isSkipEnabled) view.skipBtn.visibility = GONE
-        if (!prefs.areQuestionMarksEnabled) view.unknownBtn.visibility = GONE
-        view.booleanButtons.visibility = VISIBLE
-        val dialog = Dialog(requireContext())
-        dialog.setContentView(view.root)
-        dialog.window?.apply {
-            setBackgroundDrawableResource(android.R.color.transparent)
-        }
-        fun onClick(v: Int) {
+
+        var notes by rememberSaveable { mutableStateOf(originalNotes) }
+        currentNotes = notes
+
+        fun commit(value: Int) {
             dismissedViaSaveAction = true
-            val notes = view.notes.text.toString().trim()
-            onToggle(v, notes)
-            requireDialog().dismiss()
-        }
-        view.yesBtn.setOnClickListener { onClick(YES_MANUAL) }
-        view.noBtn.setOnClickListener { onClick(NO) }
-        view.skipBtn.setOnClickListener { onClick(SKIP) }
-        view.unknownBtn.setOnClickListener { onClick(UNKNOWN) }
-        view.notes.setOnEditorActionListener { v, actionId, event ->
-            onClick(requireArguments().getInt("value"))
-            true
+            onToggle(value, notes.trim())
+            dismiss()
         }
 
-        return dialog
+        TextFieldMMD(
+            value = notes,
+            onValueChange = { notes = it },
+            label = {
+                TextMMD(
+                    text = stringResource(R.string.notes),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            },
+            singleLine = true,
+            colors = panelTextFieldColors(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+        )
+
+        PanelActions {
+            PanelPrimaryAction(
+                label = stringResource(R.string.yes),
+                onClick = { commit(YES_MANUAL) },
+                modifier = Modifier.weight(1f),
+            )
+            PanelSecondaryAction(
+                label = stringResource(R.string.no),
+                onClick = { commit(NO) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (prefs.isSkipEnabled || prefs.areQuestionMarksEnabled) {
+            PanelActions {
+                if (prefs.isSkipEnabled) {
+                    PanelSecondaryAction(
+                        label = stringResource(R.string.skip_day),
+                        onClick = { commit(SKIP) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (prefs.areQuestionMarksEnabled) {
+                    PanelSecondaryAction(
+                        label = stringResource(R.string.unknown_label),
+                        onClick = { commit(UNKNOWN) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
     }
 
+    /**
+     * Dismissing without choosing still saves an edited note, which is what
+     * the old dialog did and the one behaviour here worth preserving exactly.
+     */
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-
-        if (!dismissedViaSaveAction) {
-            val currentNotes = view.notes.text.toString().trim()
-            if (currentNotes != originalNotes) {
-                onToggle(originalValue, currentNotes)
-            }
+        if (!dismissedViaSaveAction && currentNotes.trim() != originalNotes) {
+            onToggle(originalValue, currentNotes.trim())
         }
         onDismiss()
     }

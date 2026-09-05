@@ -25,10 +25,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.TextView.OnEditorActionListener
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
+import org.isoron.uhabits.R
 
 object InterfaceUtils {
     private var fontAwesome: Typeface? = null
+    private var lato: Typeface? = null
+    private var latoBold: Typeface? = null
     private var fixedResolution: Float? = null
 
     @JvmStatic
@@ -42,6 +46,23 @@ object InterfaceUtils {
             fontAwesome = Typeface.createFromAsset(context.assets, "fontawesome-webfont.ttf")
         }
         return fontAwesome
+    }
+
+    /**
+     * Lato, the family Mudita's own Kompakt apps render in. Views pick it up
+     * from the theme's fontFamily; the canvas-drawn charts have to ask for it
+     * here, because they never inflate a view.
+     */
+    @JvmStatic
+    fun latoRegular(context: Context): Typeface? {
+        if (lato == null) lato = ResourcesCompat.getFont(context, R.font.lato_regular)
+        return lato
+    }
+
+    @JvmStatic
+    fun latoBold(context: Context): Typeface? {
+        if (latoBold == null) latoBold = ResourcesCompat.getFont(context, R.font.lato_bold)
+        return latoBold
     }
 
     @JvmStatic

@@ -1,142 +1,163 @@
+/*
+ * Copyright (C) 2016-2025 Álinson Santos Xavier <git@axavier.org>
+ *
+ * This file is part of Loop Habit Tracker.
+ *
+ * Loop Habit Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * Loop Habit Tracker is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.isoron.uhabits.activities.common.dialogs
 
-import android.app.Dialog
 import android.content.DialogInterface
-import android.os.Bundle
-import android.provider.Settings
-import android.text.method.DigitsKeyListener
-import android.view.KeyEvent
-import android.view.LayoutInflater
-import android.view.MotionEvent
-import android.view.View
-import android.view.inputmethod.EditorInfo
-import androidx.appcompat.app.AppCompatDialogFragment
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import com.mudita.mmd.components.text.TextMMD
+import com.mudita.mmd.components.text_field.TextFieldMMD
 import org.isoron.uhabits.HabitsApplication
 import org.isoron.uhabits.R
 import org.isoron.uhabits.core.models.Entry
-import org.isoron.uhabits.databinding.CheckmarkPopupBinding
-import org.isoron.uhabits.utils.InterfaceUtils
-import org.isoron.uhabits.utils.getCenter
-import org.isoron.uhabits.utils.requestFocusWithKeyboard
-import org.isoron.uhabits.utils.sres
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
-import java.text.NumberFormat
-import java.text.ParseException
 
-class NumberDialog : AppCompatDialogFragment() {
-
+/**
+ * The editor for one day of a measurable habit, as MMD.
+ *
+ * Same story as [CheckmarkDialog]: it shared that dialog's XML layout, so it
+ * carried the same `#BDBDBD` border and divider, the same `contrast60` grey
+ * button tints, and the same grey window dim. It is now the same [PanelMMD]
+ * on the same [MmdPanelDialogFragment], which is the point — the two editors
+ * a habit can raise should not look like two different apps.
+ *
+ * **Save is the solid button**; Skip and Unknown are outlined, matching the
+ * checkmark panel's hierarchy exactly.
+ *
+ * The value is parsed with `toDoubleOrNull`, not `toDouble`. The old screen's
+ * target field taught that lesson the hard way: `KeyboardType` only chooses a
+ * keyboard, it does not filter what arrives, and an unguarded `toDouble()`
+ * takes the whole app down on "1.2.3".
+ */
+class NumberDialog : MmdPanelDialogFragment() {
     var onToggle: (Double, String) -> Unit = { _, _ -> }
     var onDismiss: () -> Unit = {}
 
     private var dismissedViaSaveAction = false
     private var originalNotes: String = ""
     private var originalValue: Double = 0.0
-    private lateinit var view: CheckmarkPopupBinding
+    private var currentNotes: String = ""
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val appComponent = (requireActivity().application as HabitsApplication).component
-        val prefs = appComponent.preferences
-        view = CheckmarkPopupBinding.inflate(LayoutInflater.from(context))
-        arrayOf(view.yesBtn).forEach {
-            it.setTextColor(requireArguments().getInt("color"))
-        }
-        arrayOf(view.noBtn, view.unknownBtnNumber).forEach {
-            it.setTextColor(view.root.sres.getColor(R.attr.contrast60))
-        }
-        arrayOf(view.yesBtn, view.noBtn, view.unknownBtnNumber).forEach {
-            it.typeface = InterfaceUtils.getFontAwesome(requireContext())
-        }
-        if (!prefs.isSkipEnabled) view.skipBtnNumber.visibility = View.GONE
-        if (!prefs.areQuestionMarksEnabled) view.unknownBtnNumber.visibility = View.GONE
-        view.numberButtons.visibility = View.VISIBLE
-        fixDecimalSeparator(view)
-        originalNotes = requireArguments().getString("notes")!!
+    @Composable
+    override fun PanelContent() {
+        val prefs = (requireActivity().application as HabitsApplication).component.preferences
+        originalNotes = requireArguments().getString("notes").orEmpty()
         originalValue = requireArguments().getDouble("value")
-        view.notes.setText(originalNotes)
-        view.value.setText(
-            when {
-                originalValue < 0.01 -> "0"
-                else -> DecimalFormat("#.##").format(originalValue)
-            }
+
+        var value by rememberSaveable {
+            mutableStateOf(
+                if (originalValue < 0.01) "" else DecimalFormat("#.##").format(originalValue)
+            )
+        }
+        var notes by rememberSaveable { mutableStateOf(originalNotes) }
+        currentNotes = notes
+
+        fun commit(parsed: Double) {
+            dismissedViaSaveAction = true
+            onToggle(parsed, notes.trim())
+            dismiss()
+        }
+
+        TextFieldMMD(
+            value = value,
+            onValueChange = { text -> value = text.filter { it.isDigit() || it in DECIMAL_MARKS } },
+            label = {
+                TextMMD(
+                    text = stringResource(R.string.value),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            colors = panelTextFieldColors(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
         )
-        view.value.setOnKeyListener { _, keyCode, event ->
-            if (event.action == MotionEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                save()
-                return@setOnKeyListener true
+
+        TextFieldMMD(
+            value = notes,
+            onValueChange = { notes = it },
+            label = {
+                TextMMD(
+                    text = stringResource(R.string.notes),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            },
+            singleLine = true,
+            colors = panelTextFieldColors(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+        )
+
+        PanelActions {
+            PanelPrimaryAction(
+                label = stringResource(R.string.save),
+                // An unparseable or empty value saves nothing rather than
+                // crashing or guessing.
+                onClick = { value.normalized().toDoubleOrNull()?.let(::commit) },
+                modifier = Modifier.weight(1f),
+            )
+            if (prefs.isSkipEnabled) {
+                PanelSecondaryAction(
+                    label = stringResource(R.string.skip_day),
+                    onClick = { commit(Entry.SKIP.toDouble() / 1000) },
+                    modifier = Modifier.weight(1f),
+                )
             }
-            return@setOnKeyListener false
+            if (prefs.areQuestionMarksEnabled) {
+                PanelSecondaryAction(
+                    label = stringResource(R.string.unknown_label),
+                    onClick = { commit(Entry.UNKNOWN.toDouble() / 1000) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
-        view.saveBtn.setOnClickListener {
-            save()
-        }
-        view.skipBtnNumber.setOnClickListener {
-            view.value.setText(DecimalFormat("#.###").format((Entry.SKIP.toDouble() / 1000)))
-            save()
-        }
-
-        view.unknownBtnNumber.setOnClickListener {
-            view.value.setText(DecimalFormat("#.###").format((Entry.UNKNOWN.toDouble() / 1000)))
-            save()
-        }
-
-        view.notes.setOnEditorActionListener { v, actionId, event ->
-            save()
-            true
-        }
-        view.value.requestFocusWithKeyboard()
-        val dialog = Dialog(requireContext())
-        dialog.setContentView(view.root)
-        dialog.window?.apply {
-            setBackgroundDrawableResource(android.R.color.transparent)
-        }
-        return dialog
     }
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-
-        if (!dismissedViaSaveAction) {
-            val currentNotes = view.notes.text.toString().trim()
-            if (currentNotes != originalNotes) {
-                onToggle(originalValue, currentNotes)
-            }
+        if (!dismissedViaSaveAction && currentNotes.trim() != originalNotes) {
+            onToggle(originalValue, currentNotes.trim())
         }
         onDismiss()
     }
 
-    private fun fixDecimalSeparator(view: CheckmarkPopupBinding) {
-        // https://stackoverflow.com/a/34256139
-        val separator = DecimalFormatSymbols.getInstance().decimalSeparator
-        view.value.keyListener = DigitsKeyListener.getInstance("0123456789$separator")
+    /** Accepts whichever separator this locale's keyboard offers. */
+    private fun String.normalized() = replace(',', '.')
 
-        // https://github.com/flutter/flutter/issues/61175
-        val currKeyboard = Settings.Secure.getString(
-            requireContext().contentResolver,
-            Settings.Secure.DEFAULT_INPUT_METHOD
-        )
-        if (currKeyboard.contains("swiftkey") || currKeyboard.contains("samsung")) {
-            view.value.inputType = EditorInfo.TYPE_CLASS_TEXT
-        }
-    }
-
-    fun save() {
-        dismissedViaSaveAction = true
-        var value = originalValue
-        try {
-            val numberFormat = NumberFormat.getInstance()
-            val valueStr = view.value.text.toString()
-            value = if (valueStr.isNotEmpty()) {
-                numberFormat.parse(valueStr)!!.toDouble()
-            } else {
-                Entry.UNKNOWN.toDouble() / 1000
-            }
-        } catch (e: ParseException) {
-            // NOP
-        }
-        val notes = view.notes.text.toString().trim()
-        val location = view.saveBtn.getCenter()
-        onToggle(value, notes)
-        requireDialog().dismiss()
+    companion object {
+        private val DECIMAL_MARKS =
+            charArrayOf('.', ',', DecimalFormatSymbols.getInstance().decimalSeparator)
     }
 }

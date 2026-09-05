@@ -21,16 +21,11 @@ package org.isoron.uhabits.activities
 
 import android.app.Activity
 import android.content.Context
-import android.content.res.Configuration.UI_MODE_NIGHT_MASK
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import android.os.Build.VERSION.SDK_INT
 import androidx.core.content.ContextCompat
 import org.isoron.uhabits.R
 import org.isoron.uhabits.core.preferences.Preferences
 import org.isoron.uhabits.core.ui.ThemeSwitcher
-import org.isoron.uhabits.core.ui.views.DarkTheme
-import org.isoron.uhabits.core.ui.views.LightTheme
-import org.isoron.uhabits.core.ui.views.PureBlackTheme
+import org.isoron.uhabits.core.ui.views.EInkTheme
 import org.isoron.uhabits.core.ui.views.Theme
 import org.isoron.uhabits.inject.ActivityContext
 import org.isoron.uhabits.inject.ActivityScope
@@ -42,34 +37,17 @@ constructor(
     preferences: Preferences
 ) : ThemeSwitcher(preferences) {
 
-    override var currentTheme: Theme = LightTheme()
+    override var currentTheme: Theme = EInkTheme()
 
-    override fun getSystemTheme(): Int {
-        if (SDK_INT < 29) return THEME_LIGHT
-        val uiMode = context.resources.configuration.uiMode
-        return if ((uiMode and UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES) {
-            THEME_DARK
-        } else {
-            THEME_LIGHT
-        }
-    }
-
-    override fun applyDarkTheme() {
-        currentTheme = DarkTheme()
-        context.setTheme(R.style.AppBaseThemeDark)
-        (context as Activity).window.navigationBarColor =
-            ContextCompat.getColor(context, R.color.grey_900)
-    }
-
-    override fun applyLightTheme() {
-        currentTheme = LightTheme()
+    /**
+     * The system's own night setting is deliberately ignored. The app is
+     * white-paper-only, and `forceDarkAllowed` is off in the theme so that
+     * the platform cannot invert it either.
+     */
+    override fun applyTheme() {
+        currentTheme = EInkTheme()
         context.setTheme(R.style.AppBaseTheme)
-    }
-
-    override fun applyPureBlackTheme() {
-        currentTheme = PureBlackTheme()
-        context.setTheme(R.style.AppBaseThemeDark_PureBlack)
         (context as Activity).window.navigationBarColor =
-            ContextCompat.getColor(context, R.color.black)
+            ContextCompat.getColor(context, R.color.white)
     }
 }

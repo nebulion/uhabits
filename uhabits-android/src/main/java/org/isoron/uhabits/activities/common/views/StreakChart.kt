@@ -26,6 +26,7 @@ import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
+import org.isoron.platform.gui.Halftone
 import org.isoron.uhabits.R
 import org.isoron.uhabits.core.models.Streak
 import org.isoron.uhabits.core.models.Timestamp
@@ -156,7 +157,7 @@ class StreakChart : View {
         barWidth = max(barWidth, minBarWidth)
         val gap = (internalWidth - barWidth) / 2
         val paddingTopBottom = baseSize * 0.05f
-        paint!!.color = percentageToColor(percentage)
+        Halftone.apply(paint!!, percentageToColor(percentage))
         val round = dpToPixels(context, 2f)
         canvas.drawRoundRect(
             rect!!.left + gap,
@@ -168,7 +169,7 @@ class StreakChart : View {
             paint!!
         )
         val yOffset = rect.centerY() + 0.3f * em
-        paint!!.color = percentageToTextColor(percentage)
+        Halftone.apply(paint!!, percentageToTextColor(percentage))
         paint!!.textAlign = Paint.Align.CENTER
         canvas.drawText(
             streak.length.toLong().toString(),
@@ -179,7 +180,7 @@ class StreakChart : View {
         if (shouldShowLabels) {
             val startLabel = dateFormat!!.format(streak.start.toJavaDate())
             val endLabel = dateFormat!!.format(streak.end.toJavaDate())
-            paint!!.color = textColors[1]
+            Halftone.apply(paint!!, textColors[1])
             paint!!.textAlign = Paint.Align.RIGHT
             canvas.drawText(startLabel, gap - textMargin, yOffset, paint!!)
             paint!!.textAlign = Paint.Align.LEFT

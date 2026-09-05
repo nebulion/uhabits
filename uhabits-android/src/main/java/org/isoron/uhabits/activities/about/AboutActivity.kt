@@ -31,12 +31,7 @@ class AboutActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val app = application as HabitsApplication
-        val screen = AboutScreen(
-            this,
-            app.component.intentFactory,
-            app.component.preferences
-        )
         AndroidThemeSwitcher(this, app.component.preferences).apply()
-        setContentView(AboutView(this, screen))
+        setContentView(AboutView(this))
     }
 }

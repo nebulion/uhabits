@@ -26,8 +26,9 @@ import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
+import org.isoron.platform.gui.Halftone
 import org.isoron.uhabits.R
-import org.isoron.uhabits.activities.habits.list.views.toShortString
+import org.isoron.uhabits.utils.toShortString
 import org.isoron.uhabits.utils.InterfaceUtils.dpToPixels
 import org.isoron.uhabits.utils.InterfaceUtils.getDimension
 import org.isoron.uhabits.utils.StyledResources
@@ -99,7 +100,7 @@ class TargetChart : View {
         val padding = dpToPixels(context, 4f)
         val round = dpToPixels(context, 2f)
         val stop = maxLabelSize + padding * 2
-        paint!!.color = mediumContrastTextColor
+        Halftone.apply(paint!!, mediumContrastTextColor)
 
         // Draw label
         paint!!.textSize = tinyTextSize
@@ -113,7 +114,7 @@ class TargetChart : View {
         )
 
         // Draw background box
-        paint!!.color = lowContrastTextColor
+        Halftone.apply(paint!!, lowContrastTextColor)
         barRect[rect.left + stop + padding, rect.top + baseSize * 0.05f, rect.right - padding] =
             rect.bottom - baseSize * 0.05f
         canvas.drawRoundRect(barRect, round, round, paint!!)
@@ -130,12 +131,12 @@ class TargetChart : View {
             completedWidth = 2 * round
         }
         val remainingWidth = barRect.width() - completedWidth
-        paint!!.color = primaryColor
+        Halftone.apply(paint!!, primaryColor)
         barRect[barRect.left, barRect.top, barRect.left + completedWidth] = barRect.bottom
         canvas.drawRoundRect(barRect, round, round, paint!!)
 
         // Draw values
-        paint!!.color = Color.WHITE
+        Halftone.apply(paint!!, Color.WHITE)
         paint!!.textSize = tinyTextSize
         paint!!.textAlign = Paint.Align.CENTER
         yTextAdjust = (paint!!.descent() + paint!!.ascent()) / 2.0f
@@ -143,7 +144,7 @@ class TargetChart : View {
         val completedText = values[row].toShortString()
         val remainingText = remaining.toShortString()
         if (completedWidth > paint!!.measureText(completedText) + 2 * padding) {
-            paint!!.color = highContrastReverseTextColor
+            Halftone.apply(paint!!, highContrastReverseTextColor)
             canvas.drawText(
                 completedText,
                 barRect.centerX(),
@@ -152,7 +153,7 @@ class TargetChart : View {
             )
         }
         if (remainingWidth > paint!!.measureText(remainingText) + 2 * padding) {
-            paint!!.color = mediumContrastTextColor
+            Halftone.apply(paint!!, mediumContrastTextColor)
             barRect[rect.left + stop + padding + completedWidth, barRect.top, rect.right - padding] =
                 barRect.bottom
             canvas.drawText(

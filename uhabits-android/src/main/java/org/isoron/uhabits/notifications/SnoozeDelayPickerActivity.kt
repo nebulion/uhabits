@@ -33,8 +33,7 @@ import org.isoron.uhabits.HabitsApplication
 import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.AndroidThemeSwitcher
 import org.isoron.uhabits.core.models.Habit
-import org.isoron.uhabits.core.ui.views.DarkTheme
-import org.isoron.uhabits.core.ui.views.LightTheme
+import org.isoron.uhabits.core.ui.views.EInkTheme
 import org.isoron.uhabits.receivers.ReminderController
 import org.isoron.uhabits.utils.SystemUtils
 import java.util.Calendar
@@ -74,13 +73,8 @@ class SnoozeDelayPickerActivity : FragmentActivity(), OnItemClickListener {
     }
 
     private fun AndroidThemeSwitcher.setTheme() {
-        if (this.isNightMode) {
-            setTheme(R.style.BaseDialogDark)
-            this.currentTheme = DarkTheme()
-        } else {
-            setTheme(R.style.BaseDialog)
-            this.currentTheme = LightTheme()
-        }
+        setTheme(R.style.BaseDialog)
+        this.currentTheme = EInkTheme()
     }
 
     private fun showTimePicker() {

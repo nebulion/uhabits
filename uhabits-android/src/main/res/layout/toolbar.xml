@@ -18,11 +18,17 @@
   ~ with this program. If not, see <http://www.gnu.org/licenses/>.
   -->
 
+<!--
+  ~ The screen header. Bold title on white, closed by a heavy black rule, as
+  ~ Notes, Settings, Library and Weather all do on a Kompakt.
+  -->
 <androidx.appcompat.widget.Toolbar
     android:id="@+id/toolbar"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="?actionBarSize"
-    android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-    app:popupTheme="?toolbarPopupTheme"/>
+    android:background="@drawable/toolbar_eink_background"
+    android:theme="@style/ThemeOverlay.EInk.Toolbar"
+    app:titleTextAppearance="@style/ToolbarTitle"
+    app:popupTheme="?toolbarPopupTheme" />

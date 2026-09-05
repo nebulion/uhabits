@@ -25,7 +25,7 @@
         android:left="0dp"
         android:right="0dp">
         <shape>
-            <solid android:color="#d6d6d6" />
+            <solid android:color="#FFFFFF" />
         </shape>
     </item>
     <item
@@ -34,7 +34,7 @@
         android:left="0dp"
         android:right="0dp">
         <shape>
-            <solid android:color="#c0c0c0" />
+            <solid android:color="#000000" />
         </shape>
     </item>
     <item
@@ -43,7 +43,7 @@
         android:left="0dp"
         android:right="0dp">
         <shape>
-            <solid android:color="#d6d6d6"/>
+            <solid android:color="#FFFFFF"/>
         </shape>
     </item>
     <item

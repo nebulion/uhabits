@@ -21,8 +21,6 @@ package org.isoron.uhabits.activities.habits.show
 import android.content.ContentUris
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.CoroutineScope
@@ -42,6 +40,7 @@ import org.isoron.uhabits.core.commands.Command
 import org.isoron.uhabits.core.commands.CommandRunner
 import org.isoron.uhabits.core.models.Habit
 import org.isoron.uhabits.core.models.PaletteColor
+import org.isoron.platform.gui.EinkRefresh
 import org.isoron.uhabits.core.preferences.Preferences
 import org.isoron.uhabits.core.ui.callbacks.OnConfirmedCallback
 import org.isoron.uhabits.core.ui.screens.habits.list.ListHabitsBehavior
@@ -55,17 +54,16 @@ import org.isoron.uhabits.utils.dismissCurrentAndShow
 import org.isoron.uhabits.utils.dismissCurrentDialog
 import org.isoron.uhabits.utils.showMessage
 import org.isoron.uhabits.utils.showSendFileScreen
-import org.isoron.uhabits.widgets.WidgetUpdater
 
 class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
 
     private lateinit var commandRunner: CommandRunner
-    private lateinit var menu: ShowHabitMenu
+    private lateinit var menuPresenter: ShowHabitMenuPresenter
     private lateinit var view: ShowHabitView
     private lateinit var habit: Habit
     private lateinit var preferences: Preferences
+    private val einkRefresh by lazy { EinkRefresh(preferences) }
     private lateinit var themeSwitcher: AndroidThemeSwitcher
-    private lateinit var widgetUpdater: WidgetUpdater
 
     private val scope = CoroutineScope(Dispatchers.Main)
     private lateinit var presenter: ShowHabitPresenter
@@ -79,7 +77,6 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
         habit = habitList.getById(ContentUris.parseId(intent.data!!))!!
         preferences = appComponent.preferences
         commandRunner = appComponent.commandRunner
-        widgetUpdater = appComponent.widgetUpdater
 
         themeSwitcher = AndroidThemeSwitcher(this, preferences)
         themeSwitcher.apply()
@@ -103,23 +100,24 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
             taskRunner = appComponent.taskRunner
         )
 
-        menu = ShowHabitMenu(
-            activity = this,
-            presenter = menuPresenter,
-            preferences = preferences
+        // No options menu: the actions live in TopAppBarMMD, because MuditaOS
+        // has no overflow anywhere for them to hide behind.
+        view.setTopBar(
+            actions = ShowHabitActions(
+                onBack = { finish() },
+                onEdit = { menuPresenter.onEditHabit() },
+                onArchive = { menuPresenter.onArchiveHabits() },
+                onUnarchive = { menuPresenter.onUnarchiveHabits() },
+                onDelete = { menuPresenter.onDeleteHabit() },
+                onExport = { menuPresenter.onExportCSV() },
+            ),
+            onScrolled = { einkRefresh.onChange(this) },
         )
+        this.menuPresenter = menuPresenter
 
         view.setListener(presenter)
         view.applyRootViewInsets()
         setContentView(view)
-    }
-
-    override fun onCreateOptionsMenu(m: Menu): Boolean {
-        return menu.onCreateOptionsMenu(m)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return menu.onOptionsItemSelected(item)
     }
 
     override fun onResume() {
@@ -139,11 +137,14 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
 
     override fun onCommandFinished(command: Command) {
         screen.refresh()
+        einkRefresh.onChange(this)
     }
 
     inner class Screen : ShowHabitMenuPresenter.Screen, ShowHabitPresenter.Screen {
         override fun updateWidgets() {
-            widgetUpdater.updateWidgets()
+            // Nothing to update: the widget providers are unregistered from
+            // the manifest. The core cards still call this on a span change,
+            // so the override stays and does nothing.
         }
 
         override fun refresh() {
@@ -154,6 +155,13 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
                         preferences = preferences,
                         theme = themeSwitcher.currentTheme
                     )
+                )
+                // Archive and unarchive are mutually exclusive and swap as
+                // soon as the command lands, so the header is told on every
+                // refresh rather than once at construction.
+                view.setMenuState(
+                    canArchive = menuPresenter.canArchive(),
+                    canUnarchive = menuPresenter.canUnarchive(),
                 )
             }
         }
@@ -245,7 +253,7 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
         }
 
         override fun showDeleteConfirmationScreen(callback: OnConfirmedCallback) {
-            ConfirmDeleteDialog(this@ShowHabitActivity, callback, 1).dismissCurrentAndShow()
+            ConfirmDeleteDialog.show(supportFragmentManager, callback, 1)
         }
 
         override fun close() {

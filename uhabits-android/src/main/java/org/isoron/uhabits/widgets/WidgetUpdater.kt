@@ -71,11 +71,6 @@ class WidgetUpdater
         commandRunner.removeListener(this)
     }
 
-    fun scheduleStartDayWidgetUpdate() {
-        val timestamp = DateUtils.getStartOfTomorrowWithOffset()
-        intentScheduler.scheduleWidgetUpdate(timestamp)
-    }
-
     fun updateWidgets(modifiedHabitId: Long?) {
         taskRunner.execute {
             updateWidgets(modifiedHabitId, CheckmarkWidgetProvider::class.java)

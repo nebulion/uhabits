@@ -37,7 +37,6 @@ import org.isoron.uhabits.core.tasks.TaskRunner
 import org.isoron.uhabits.core.utils.DateUtils.Companion.getToday
 import org.isoron.uhabits.core.utils.DateUtils.Companion.setFixedLocalTime
 import org.isoron.uhabits.core.utils.DateUtils.Companion.setStartDayOffset
-import org.isoron.uhabits.inject.ActivityContextModule
 import org.isoron.uhabits.inject.AppContextModule
 import org.isoron.uhabits.inject.HabitsModule
 import org.isoron.uhabits.utils.DatabaseUtils.getDatabaseFile
@@ -68,7 +67,6 @@ abstract class BaseAndroidTest : TestCase() {
     protected lateinit var latch: CountDownLatch
     protected lateinit var appComponent: HabitsApplicationTestComponent
     protected lateinit var modelFactory: ModelFactory
-    protected lateinit var component: HabitsActivityTestComponent
     private lateinit var device: UiDevice
 
     @Before
@@ -97,11 +95,6 @@ abstract class BaseAndroidTest : TestCase() {
         fixtures = HabitFixtures(modelFactory, habitList)
         fixtures.purgeHabits(appComponent.habitList)
         fixtures.createEmptyHabit()
-        component = DaggerHabitsActivityTestComponent
-            .builder()
-            .activityContextModule(ActivityContextModule(targetContext))
-            .habitsApplicationComponent(appComponent)
-            .build()
     }
 
     protected fun assertWidgetProviderIsInstalled(componentClass: Class<out BaseWidgetProvider?>?) {

@@ -84,19 +84,9 @@ class AndroidDataView(
         velocityX: Float,
         velocityY: Float
     ): Boolean {
-        scroller.fling(
-            scroller.currX,
-            scroller.currY,
-            velocityX.toInt() / 2,
-            0,
-            0,
-            Integer.MAX_VALUE,
-            0,
-            0
-        )
-        invalidate()
-        scrollAnimator.duration = scroller.duration.toLong()
-        scrollAnimator.start()
+        // No momentum. Coasting after the finger lifts is a run of partial
+        // repaints that the panel resolves into a smear; dragging still tracks
+        // the finger one-to-one via onScroll.
         return false
     }
 

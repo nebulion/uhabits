@@ -27,7 +27,7 @@ import android.widget.LinearLayout
 import org.isoron.platform.gui.toInt
 import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.habits.edit.formatFrequency
-import org.isoron.uhabits.activities.habits.list.views.toShortString
+import org.isoron.uhabits.utils.toShortString
 import org.isoron.uhabits.core.models.NumericalHabitType
 import org.isoron.uhabits.core.ui.screens.habits.show.views.SubtitleCardState
 import org.isoron.uhabits.databinding.ShowHabitSubtitleBinding

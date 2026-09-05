@@ -114,11 +114,6 @@ open class Preferences(private val storage: Storage) {
 
     val launchCount: Int
         get() = storage.getInt("launch_count", 0)
-    var isDeveloper: Boolean
-        get() = storage.getBoolean("pref_developer", false)
-        set(isDeveloper) {
-            storage.putBoolean("pref_developer", isDeveloper)
-        }
     var isFirstRun: Boolean
         get() = storage.getBoolean("pref_first_run", true)
         set(isFirstRun) {
@@ -209,6 +204,34 @@ open class Preferences(private val storage: Storage) {
         set(value) {
             storage.putBoolean("pref_unknown_enabled", value)
             for (l in listeners) l.onQuestionMarksChanged()
+        }
+
+    /**
+     * Whether to flash the screen periodically to clear E Ink ghosting.
+     *
+     * Off by default, which is what InkOS does with the same feature: the
+     * flash is itself a visible interruption, so it should be something the
+     * owner turns on because they can see ghosting, not something imposed.
+     */
+    var isEinkRefreshEnabled: Boolean
+        get() = storage.getBoolean("pref_eink_refresh_enabled", false)
+        set(value) {
+            storage.putBoolean("pref_eink_refresh_enabled", value)
+        }
+
+    /**
+     * How many recorded changes between flashes.
+     *
+     * There is no established convention to copy here — InkOS fires on app
+     * exit rather than on a counter — so this is ours. Twelve is a couple of
+     * screenfuls of checkmark taps: the flash itself costs a full repaint and
+     * is the most intrusive thing the app does, so it is spent less often than
+     * the first pass assumed. It was five, which interrupted a run of taps.
+     */
+    var einkRefreshInterval: Int
+        get() = storage.getInt("pref_eink_refresh_interval", 12)
+        set(value) {
+            storage.putInt("pref_eink_refresh_interval", value.coerceAtLeast(1))
         }
 
     /**

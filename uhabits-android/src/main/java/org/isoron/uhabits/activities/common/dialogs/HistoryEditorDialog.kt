@@ -32,8 +32,8 @@ import org.isoron.uhabits.core.commands.CommandRunner
 import org.isoron.uhabits.core.models.Habit
 import org.isoron.uhabits.core.preferences.Preferences
 import org.isoron.uhabits.core.ui.screens.habits.show.views.HistoryCardPresenter
+import org.isoron.uhabits.core.ui.views.EInkTheme
 import org.isoron.uhabits.core.ui.views.HistoryChart
-import org.isoron.uhabits.core.ui.views.LightTheme
 import org.isoron.uhabits.core.ui.views.OnDateClickedListener
 import org.isoron.uhabits.core.utils.DateUtils
 import java.util.Locale
@@ -110,7 +110,7 @@ class HistoryEditorDialog : AppCompatDialogFragment(), CommandRunner.Listener {
         val model = HistoryCardPresenter.buildState(
             habit,
             preferences.firstWeekday,
-            theme = LightTheme()
+            theme = EInkTheme()
         )
         chart?.series = model.series
         chart?.defaultSquare = model.defaultSquare

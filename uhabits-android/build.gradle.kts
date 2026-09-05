@@ -21,6 +21,7 @@ plugins {
     alias(libs.plugins.agp)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ktlint.plugin)
 }
 
@@ -44,8 +45,16 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        versionCode = 20301
-        versionName = "2.3.1"
+        // Upstream numbers its releases major*10000 + minor*100 + patch, so
+        // 2.3.1 is 20301 and even a hypothetical 99.99.99 would only reach
+        // 999999. F-Droid and Aurora Store are both installed on the Kompakt
+        // and both decide "update available" by comparing their index's
+        // versionCode against the installed one, so parking this fork above
+        // everything upstream can ever publish means neither store will offer
+        // to replace it. See docs/PROJECT-STATUS.md, "Keeping the stores off
+        // this build", for the two defences behind this one.
+        versionCode = 1000000
+        versionName = "2.3.1-mmd"
         minSdk = 28
         targetSdk = 36
         applicationId = "org.isoron.uhabits"
@@ -84,14 +93,16 @@ android {
     }
 
     kotlinOptions.jvmTarget = JavaVersion.VERSION_17.toString()
+    kotlinOptions.freeCompilerArgs +=
+        listOf("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
     buildFeatures.viewBinding = true
+    buildFeatures.compose = true
     lint.abortOnError = false
 }
 
 dependencies {
     compileOnly(libs.jsr250.api)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
-    implementation(libs.appIntro)
     implementation(libs.jsr305)
     implementation(libs.dagger)
     implementation(libs.guava)
@@ -110,6 +121,17 @@ dependencies {
     implementation(libs.opencsv)
     implementation(libs.konfetti.xml)
     implementation(project(":uhabits-core"))
+
+    // Mudita Mindful Design: Mudita's own E Ink component library (Apache 2.0),
+    // the same one their Kompakt apps are built with. Compose-only, which is
+    // why Compose is enabled above.
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.activity.compose)
+    implementation(libs.mmd)
+
     ksp(libs.dagger.compiler)
 
     androidTestImplementation(libs.bundles.androidTest)

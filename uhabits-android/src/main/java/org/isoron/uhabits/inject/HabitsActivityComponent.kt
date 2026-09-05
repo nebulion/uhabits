@@ -23,12 +23,11 @@ import dagger.Component
 import org.isoron.uhabits.activities.common.dialogs.ColorPickerDialogFactory
 import org.isoron.uhabits.activities.habits.list.ListHabitsMenu
 import org.isoron.uhabits.activities.habits.list.ListHabitsModule
-import org.isoron.uhabits.activities.habits.list.ListHabitsRootView
 import org.isoron.uhabits.activities.habits.list.ListHabitsScreen
-import org.isoron.uhabits.activities.habits.list.ListHabitsSelectionMenu
-import org.isoron.uhabits.activities.habits.list.views.HabitCardListAdapter
+import org.isoron.uhabits.activities.habits.list.HabitCardListModel
 import org.isoron.uhabits.core.ui.ThemeSwitcher
 import org.isoron.uhabits.core.ui.screens.habits.list.ListHabitsBehavior
+import org.isoron.uhabits.core.ui.screens.habits.list.ListHabitsSelectionMenuBehavior
 
 @ActivityScope
 @Component(
@@ -37,11 +36,10 @@ import org.isoron.uhabits.core.ui.screens.habits.list.ListHabitsBehavior
 )
 interface HabitsActivityComponent {
     val colorPickerDialogFactory: ColorPickerDialogFactory
-    val habitCardListAdapter: HabitCardListAdapter
+    val habitCardListModel: HabitCardListModel
     val listHabitsBehavior: ListHabitsBehavior
     val listHabitsMenu: ListHabitsMenu
-    val listHabitsRootView: ListHabitsRootView
     val listHabitsScreen: ListHabitsScreen
-    val listHabitsSelectionMenu: ListHabitsSelectionMenu
+    val listHabitsSelectionMenuBehavior: ListHabitsSelectionMenuBehavior
     val themeSwitcher: ThemeSwitcher
 }

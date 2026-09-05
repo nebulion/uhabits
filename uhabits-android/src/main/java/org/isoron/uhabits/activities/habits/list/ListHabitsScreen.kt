@@ -29,6 +29,10 @@ import dagger.Lazy
 import nl.dionsegijn.konfetti.core.Party
 import nl.dionsegijn.konfetti.core.Position
 import nl.dionsegijn.konfetti.core.emitter.Emitter
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import org.isoron.platform.gui.EinkRefresh
 import org.isoron.platform.gui.toInt
 import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.common.dialogs.CheckmarkDialog
@@ -36,7 +40,6 @@ import org.isoron.uhabits.activities.common.dialogs.ColorPickerDialogFactory
 import org.isoron.uhabits.activities.common.dialogs.ConfirmDeleteDialog
 import org.isoron.uhabits.activities.common.dialogs.NumberDialog
 import org.isoron.uhabits.activities.habits.edit.HabitTypeDialog
-import org.isoron.uhabits.activities.habits.list.views.HabitCardListAdapter
 import org.isoron.uhabits.core.commands.ArchiveHabitsCommand
 import org.isoron.uhabits.core.commands.ChangeHabitColorCommand
 import org.isoron.uhabits.core.commands.Command
@@ -95,20 +98,53 @@ class ListHabitsScreen
     private val commandRunner: CommandRunner,
     private val intentFactory: IntentFactory,
     private val themeSwitcher: ThemeSwitcher,
-    private val adapter: HabitCardListAdapter,
+    private val model: HabitCardListModel,
     private val taskRunner: TaskRunner,
     private val exportDBFactory: ExportDBTaskFactory,
     private val importTaskFactory: ImportDataTaskFactory,
     private val colorPickerFactory: ColorPickerDialogFactory,
     private val behavior: Lazy<ListHabitsBehavior>,
     private val preferences: Preferences,
-    private val rootView: Lazy<ListHabitsRootView>
 ) : CommandRunner.Listener,
     ListHabitsBehavior.Screen,
     ListHabitsMenuBehavior.Screen,
     ListHabitsSelectionMenuBehavior.Screen {
 
     val activity = (context as AppCompatActivity)
+
+    private val einkRefresh = EinkRefresh(preferences)
+
+    /**
+     * The transient message the screen is currently showing, if any.
+     *
+     * These used to go straight to a Material `Snackbar` -- a dark grey card
+     * with an elevation shadow, neither of which exists anywhere else in this
+     * app, and the last Material surface still reachable from a live path
+     * (a failed CSV import, a finished export). They are handed to the Compose
+     * screen now, which shows them in `SnackbarMMD`.
+     */
+    var message by mutableStateOf<String?>(null)
+        private set
+
+    private fun postMessage(text: String) {
+        message = text
+    }
+
+    /** Called once the screen has shown [message]. */
+    fun onMessageShown() {
+        message = null
+    }
+
+    /**
+     * One page of scrolling, counted towards the E Ink flash.
+     *
+     * Scrolling is where ghosting is worst — a command repaints a cell or two,
+     * where a scroll moves the whole page and leaves the old rows behind it —
+     * so it feeds the same counter rather than a separate one. `LazyColumnMMD`
+     * pages by item instead of scrolling freely, so "a scroll" is already a
+     * discrete jump and there is nothing to debounce.
+     */
+    fun onScrolled() = einkRefresh.onChange(activity)
 
     fun onAttached() {
         commandRunner.addListener(this)
@@ -118,9 +154,15 @@ class ListHabitsScreen
         commandRunner.removeListener(this)
     }
 
+    /**
+     * Every habit change lands here, which makes it the one place worth
+     * counting for the E Ink flash: one command is one thing the owner did,
+     * as opposed to a redraw, of which there are many and which mean nothing.
+     */
     override fun onCommandFinished(command: Command) {
         val msg = getExecuteString(command)
-        if (msg != null) activity.showMessage(msg)
+        if (msg != null) postMessage(msg)
+        einkRefresh.onChange(activity)
     }
 
     fun onResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -140,7 +182,7 @@ class ListHabitsScreen
             inStream.copyTo(tempFile)
             onImportData(tempFile) { tempFile.delete() }
         } catch (e: IOException) {
-            activity.showMessage(activity.resources.getString(R.string.could_not_import))
+            postMessage(activity.resources.getString(R.string.could_not_import))
             e.printStackTrace()
         }
     }
@@ -171,7 +213,7 @@ class ListHabitsScreen
     }
 
     override fun showDeleteConfirmationScreen(callback: OnConfirmedCallback, quantity: Int) {
-        ConfirmDeleteDialog(activity, callback, quantity).dismissCurrentAndShow()
+        ConfirmDeleteDialog.show(activity.supportFragmentManager, callback, quantity)
     }
 
     override fun showEditHabitsScreen(selected: List<Habit>) {
@@ -179,10 +221,6 @@ class ListHabitsScreen
         activity.startActivity(intent)
     }
 
-    override fun showFAQScreen() {
-        val intent = intentFactory.viewFAQ(activity)
-        activity.startActivity(intent)
-    }
 
     override fun showHabitScreen(h: Habit) {
         val intent = intentFactory.startShowHabitActivity(activity, h)
@@ -200,7 +238,7 @@ class ListHabitsScreen
     }
 
     override fun showMessage(m: ListHabitsBehavior.Message) {
-        activity.showMessage(
+        postMessage(
             activity.resources.getString(
                 when (m) {
                     COULD_NOT_EXPORT -> R.string.could_not_export
@@ -224,37 +262,14 @@ class ListHabitsScreen
         activity.showSendFileScreen(filename)
     }
 
-    override fun showConfetti(color: PaletteColor, x: Float, y: Float) {
-        if (x == 0f && y == 0f) return
-        if (preferences.isConfettiAnimationDisabled) return
-        if (Settings.Global.getFloat(
-                activity.contentResolver,
-                Settings.Global.ANIMATOR_DURATION_SCALE,
-                1f
-            ) == 0f
-        ) {
-            return
-        }
-        val baseColor = themeSwitcher.currentTheme!!.color(color).toInt()
-        rootView.get().konfettiView.start(
-            Party(
-                speed = 0f,
-                maxSpeed = 16f,
-                damping = 0.9f,
-                spread = 360,
-                angle = 0,
-                colors = listOf(
-                    ColorUtils.changeHue(baseColor, 180f),
-                    ColorUtils.changeHue(baseColor, 20f),
-                    ColorUtils.changeHue(baseColor, -20f),
-                    baseColor
-                ),
-                position = Position.Absolute(x, y),
-                emitter = Emitter(duration = 25, TimeUnit.MILLISECONDS).max(25),
-                timeToLive = 0
-            )
-        )
-    }
+    /**
+     * Does nothing. A confetti burst is hundreds of small coloured particles
+     * animating over the list for a second -- on an E Ink panel it is the
+     * single most expensive thing the app could draw, and it leaves a visible
+     * ghost of the whole spray behind. The callback is kept because the core
+     * behaviour still fires it on completion.
+     */
+    override fun showConfetti(color: PaletteColor, x: Float, y: Float) = Unit
 
     override fun showSettingsScreen() {
         val intent = intentFactory.startSettingsActivity(activity)
@@ -288,7 +303,9 @@ class ListHabitsScreen
         color: PaletteColor,
         callback: ListHabitsBehavior.CheckMarkDialogCallback
     ) {
-        val theme = rootView.get().currentTheme()
+        // Non-null for AndroidThemeSwitcher, which is the only implementation
+        // bound here and always holds an EInkTheme.
+        val theme = themeSwitcher.currentTheme!!
         val fm = (context as AppCompatActivity).supportFragmentManager
         val dialog = CheckmarkDialog()
         dialog.arguments = Bundle().apply {
@@ -347,16 +364,16 @@ class ListHabitsScreen
             importTaskFactory.create(file) { result ->
                 when (result) {
                     ImportDataTask.SUCCESS -> {
-                        adapter.refresh()
-                        activity.showMessage(activity.resources.getString(R.string.habits_imported))
+                        model.refresh()
+                        postMessage(activity.resources.getString(R.string.habits_imported))
                     }
 
                     ImportDataTask.NOT_RECOGNIZED -> {
-                        activity.showMessage(activity.resources.getString(R.string.file_not_recognized))
+                        postMessage(activity.resources.getString(R.string.file_not_recognized))
                     }
 
                     else -> {
-                        activity.showMessage(activity.resources.getString(R.string.could_not_import))
+                        postMessage(activity.resources.getString(R.string.could_not_import))
                     }
                 }
                 onFinished()
@@ -370,7 +387,7 @@ class ListHabitsScreen
                 if (filename != null) {
                     activity.showSendFileScreen(filename)
                 } else {
-                    activity.showMessage(activity.resources.getString(R.string.could_not_export))
+                    postMessage(activity.resources.getString(R.string.could_not_export))
                 }
             }
         )

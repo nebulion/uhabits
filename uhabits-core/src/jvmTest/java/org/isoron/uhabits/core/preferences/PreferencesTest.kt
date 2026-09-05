@@ -102,12 +102,10 @@ class PreferencesTest : BaseUnitTest() {
     @Test
     @Throws(Exception::class)
     fun testTheme() {
+        // The app has a single E Ink theme now, so there is no dark or
+        // pure-black setting left to assert. The stored key is kept because
+        // existing databases still have a value under it.
         assertThat(prefs.theme, equalTo(ThemeSwitcher.THEME_AUTOMATIC))
-        prefs.theme = ThemeSwitcher.THEME_DARK
-        assertThat(prefs.theme, equalTo(ThemeSwitcher.THEME_DARK))
-        assertFalse(prefs.isPureBlackEnabled)
-        prefs.isPureBlackEnabled = true
-        assertTrue(prefs.isPureBlackEnabled)
     }
 
     @Test
@@ -141,14 +139,6 @@ class PreferencesTest : BaseUnitTest() {
         assertFalse(prefs.isShortToggleEnabled)
         prefs.isShortToggleEnabled = true
         assertTrue(prefs.isShortToggleEnabled)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testDeveloper() {
-        assertFalse(prefs.isDeveloper)
-        prefs.isDeveloper = true
-        assertTrue(prefs.isDeveloper)
     }
 
     @Test

@@ -62,7 +62,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:minHeight="48dp"
-            android:textColor="#333"
+            android:textColor="@color/black"
             android:text="@string/clear_label"
             android:textSize="@dimen/done_label_size" />
 
@@ -73,7 +73,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:minHeight="48dp"
-            android:textColor="#333"
+            android:textColor="@color/black"
             android:text="@string/done_label"
             android:textSize="@dimen/done_label_size" />
     </androidx.appcompat.widget.LinearLayoutCompat>

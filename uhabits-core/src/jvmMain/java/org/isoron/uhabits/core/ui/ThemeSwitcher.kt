@@ -21,46 +21,29 @@ package org.isoron.uhabits.core.ui
 import org.isoron.uhabits.core.preferences.Preferences
 import org.isoron.uhabits.core.ui.views.Theme
 
+/**
+ * Applies the app's single theme.
+ *
+ * The dark and pure-black themes, the night-mode toggle and the follow-the-
+ * system behaviour were all removed when the app moved to an E Ink design.
+ * A reflective panel has no backlight to dim, so an inverted theme buys the
+ * reader nothing while costing a full-screen repaint on every update.
+ *
+ * The class is kept rather than folded into its caller because the platform
+ * still has to be told which resources to install, and the charts still need
+ * somewhere to read [currentTheme] from.
+ */
 abstract class ThemeSwitcher(private val preferences: Preferences) {
-    fun apply() {
-        if (isNightMode) {
-            if (preferences.isPureBlackEnabled) applyPureBlackTheme() else applyDarkTheme()
-        } else {
-            applyLightTheme()
-        }
-    }
+    fun apply() = applyTheme()
 
-    abstract fun applyDarkTheme()
-    abstract fun applyLightTheme()
-    abstract fun applyPureBlackTheme()
-    abstract fun getSystemTheme(): Int
+    abstract fun applyTheme()
     abstract val currentTheme: Theme?
-    val isNightMode: Boolean
-        get() {
-            val systemTheme = getSystemTheme()
-            val userTheme = preferences.theme
-            return userTheme == THEME_DARK ||
-                systemTheme == THEME_DARK && userTheme == THEME_AUTOMATIC
-        }
-
-    fun toggleNightMode() {
-        val systemTheme = getSystemTheme()
-        val userTheme = preferences.theme
-        if (userTheme == THEME_AUTOMATIC) {
-            if (systemTheme == THEME_LIGHT) preferences.theme = THEME_DARK
-            if (systemTheme == THEME_DARK) preferences.theme = THEME_LIGHT
-        } else if (userTheme == THEME_LIGHT) {
-            if (systemTheme == THEME_LIGHT) preferences.theme = THEME_DARK
-            if (systemTheme == THEME_DARK) preferences.theme = THEME_AUTOMATIC
-        } else if (userTheme == THEME_DARK) {
-            if (systemTheme == THEME_LIGHT) preferences.theme = THEME_AUTOMATIC
-            if (systemTheme == THEME_DARK) preferences.theme = THEME_LIGHT
-        }
-    }
 
     companion object {
-        const val THEME_DARK = 1
-        const val THEME_LIGHT = 2
+        /**
+         * Retained because [Preferences.theme] persists it and older
+         * databases still have a value stored under that key.
+         */
         const val THEME_AUTOMATIC = 0
     }
 }

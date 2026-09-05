@@ -29,6 +29,7 @@ import android.graphics.RectF
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import org.isoron.platform.gui.Halftone
 import org.isoron.uhabits.R
 import org.isoron.uhabits.utils.AttributeSetUtils.getAttribute
 import org.isoron.uhabits.utils.AttributeSetUtils.getBooleanAttribute
@@ -146,23 +147,25 @@ class RingView : View {
         } else {
             activeCanvas = canvas
         }
-        pRing!!.color = color
+        Halftone.apply(pRing!!, color)
         rect!![0f, 0f, diameter.toFloat()] = diameter.toFloat()
         val angle = 360 * (percentage / precision).roundToLong() * precision
         activeCanvas!!.drawArc(rect!!, -90f, angle, true, pRing!!)
-        pRing!!.color = inactiveColor!!
+        Halftone.apply(pRing!!, inactiveColor!!)
         activeCanvas.drawArc(rect!!, angle - 90, 360 - angle, true, pRing!!)
         if (thickness > 0) {
             if (isTransparencyEnabled) {
                 pRing!!.xfermode = XFERMODE_CLEAR
             } else {
-                pRing!!.color =
-                    backgroundColor!!
+                // Must go through Halftone too: the inactive arc above leaves
+                // a shader on this paint, and a bare colour assignment would
+                // punch the ring's centre out as a dot field instead of paper.
+                Halftone.apply(pRing!!, backgroundColor!!)
             }
             rect!!.inset(thickness, thickness)
             activeCanvas.drawArc(rect!!, 0f, 360f, true, pRing!!)
             pRing!!.xfermode = null
-            pRing!!.color = color
+            Halftone.apply(pRing!!, color)
             pRing!!.textSize = textSize
 
             if (isStrokedTextEnabled) {
@@ -199,7 +202,7 @@ class RingView : View {
     private fun init() {
         pRing = TextPaint()
         pRing!!.isAntiAlias = true
-        pRing!!.color = color
+        Halftone.apply(pRing!!, color)
         pRing!!.textAlign = Paint.Align.CENTER
         val res = StyledResources(context)
         if (backgroundColor == null) backgroundColor = res.getColor(R.attr.cardBgColor)

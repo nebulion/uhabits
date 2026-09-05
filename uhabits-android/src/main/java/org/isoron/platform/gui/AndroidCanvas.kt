@@ -26,6 +26,8 @@ import android.graphics.Rect
 import android.graphics.Typeface
 import android.text.TextPaint
 import org.isoron.uhabits.utils.InterfaceUtils.getFontAwesome
+import org.isoron.uhabits.utils.InterfaceUtils.latoBold
+import org.isoron.uhabits.utils.InterfaceUtils.latoRegular
 
 class AndroidCanvas : Canvas {
 
@@ -49,9 +51,35 @@ class AndroidCanvas : Canvas {
 
     private fun Double.toDp() = (this * innerDensity).toFloat()
 
+    /**
+     * Sets the drawing colour, snapping everything to pure black or pure white
+     * and expressing anything in between as a halftone of black dots.
+     *
+     * The panel has no midtones. A grey handed to it is dithered by the
+     * hardware into a muddy, ghost-prone patch, which is why Mudita's own apps
+     * never send one: the e-reader draws its placeholder covers and its
+     * disabled scroll arrow as visible dot patterns instead. Doing the
+     * dithering here rather than leaving it to the panel keeps it crisp and
+     * predictable at 1-bit.
+     *
+     * Text is never halftoned -- a screened glyph is unreadable at body sizes
+     * -- so it snaps to whichever of black or white is nearer. Every text
+     * colour in the app is already black, so in practice this only guards
+     * against a stray one.
+     */
     override fun setColor(color: Color) {
-        paint.color = color.toInt()
-        textPaint.color = color.toInt()
+        val argb = color.toInt()
+        val r = (argb shr 16) and 0xFF
+        val g = (argb shr 8) and 0xFF
+        val b = argb and 0xFF
+        val luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+        textPaint.color = if (luminance >= 128) android.graphics.Color.WHITE
+        else android.graphics.Color.BLACK
+
+        // Ink coverage runs opposite to luminance: a light grey becomes a
+        // sparse scatter of black dots, a dark one a dense field.
+        Halftone.apply(paint, argb)
     }
 
     override fun drawLine(x1: Double, y1: Double, x2: Double, y2: Double) {
@@ -121,9 +149,12 @@ class AndroidCanvas : Canvas {
     }
 
     override fun setFont(font: Font) {
+        // The charts are drawn straight onto a Canvas, so they never see the
+        // theme's fontFamily and were still rendering in the platform face
+        // while every other view had switched to Lato. Match them up.
         textPaint.typeface = when (font) {
-            Font.REGULAR -> Typeface.DEFAULT
-            Font.BOLD -> Typeface.DEFAULT_BOLD
+            Font.REGULAR -> latoRegular(context)
+            Font.BOLD -> latoBold(context)
             Font.FONT_AWESOME -> getFontAwesome(context)
         }
         updateMHeight()

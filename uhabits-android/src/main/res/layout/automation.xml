@@ -34,12 +34,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?attr/colorPrimary"
-            android:elevation="2dp"
+            android:elevation="0dp"
             android:gravity="end"
             android:minHeight="?attr/actionBarSize"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            android:theme="@style/ThemeOverlay.EInk.Toolbar"
             app:title="@string/app_name"
-            app:titleTextColor="@color/white">
+            app:titleTextColor="@color/black">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonSave"
@@ -49,9 +49,9 @@
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
                 android:text="@string/save"
-                android:textColor="@color/white"
-                app:rippleColor="@color/white"
-                app:strokeColor="@color/white" />
+                android:textColor="@color/black"
+                app:rippleColor="@color/black"
+                app:strokeColor="@color/black" />
         </androidx.appcompat.widget.Toolbar>
 
     </com.google.android.material.appbar.AppBarLayout>

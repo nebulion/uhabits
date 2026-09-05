@@ -83,34 +83,10 @@
         <activity
             android:name=".activities.intro.IntroActivity"
             android:label=""
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            android:theme="@style/AppBaseTheme" />
 
-        <activity
-            android:name=".widgets.activities.HabitPickerDialog"
-            android:exported="true"
-            android:theme="@style/Theme.AppCompat.Light.Dialog">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
 
-        <activity
-            android:name=".widgets.activities.BooleanHabitPickerDialog"
-            android:exported="true"
-            android:theme="@style/Theme.AppCompat.Light.Dialog">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
 
-        <activity
-            android:name=".widgets.activities.NumericalHabitPickerDialog"
-            android:exported="true"
-            android:theme="@style/Theme.AppCompat.Light.Dialog">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
 
         <activity
             android:name=".activities.about.AboutActivity"
@@ -127,89 +103,21 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
-        <receiver
-            android:name=".widgets.CheckmarkWidgetProvider"
-            android:exported="true"
-            android:label="@string/checkmark">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
 
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_checkmark_info" />
-        </receiver>
 
-        <service
-            android:name=".widgets.StackWidgetService"
-            android:exported="false"
-            android:permission="android.permission.BIND_REMOTEVIEWS" />
 
-        <receiver
-            android:name=".widgets.HistoryWidgetProvider"
-            android:exported="true"
-            android:label="@string/history">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
 
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_history_info" />
-        </receiver>
 
-        <receiver
-            android:name=".widgets.ScoreWidgetProvider"
-            android:exported="true"
-            android:label="@string/score">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
 
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_score_info" />
-        </receiver>
 
-        <receiver
-            android:name=".widgets.StreakWidgetProvider"
-            android:exported="true"
-            android:label="@string/streaks">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
 
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_streak_info" />
-        </receiver>
-
-        <receiver
-            android:name=".widgets.FrequencyWidgetProvider"
-            android:exported="true"
-            android:label="@string/frequency">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_frequency_info" />
-        </receiver>
-
-        <receiver
-            android:name=".widgets.TargetWidgetProvider"
-            android:exported="true"
-            android:label="@string/target">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_target_info" />
-        </receiver>
-
+        <!--
+          ~ Every home-screen widget was unregistered here. A Kompakt-class
+          ~ launcher has no widget host, so the six providers, their
+          ~ configuration dialogs and the stack-widget service could only ever
+          ~ advertise capability the device does not have. The widget classes
+          ~ under .widgets are left in the tree but are now unreachable.
+          -->
         <receiver
             android:name=".receivers.ReminderReceiver"
             android:exported="true">

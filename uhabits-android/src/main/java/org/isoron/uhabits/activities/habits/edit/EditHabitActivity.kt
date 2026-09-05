@@ -20,7 +20,6 @@
 package org.isoron.uhabits.activities.habits.edit
 
 import android.annotation.SuppressLint
-import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
 import android.text.Html
@@ -30,7 +29,11 @@ import android.view.View
 import android.widget.ArrayAdapter
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.fragment.app.DialogFragment
 import com.android.datetimepicker.time.RadialPickerLayout
 import com.android.datetimepicker.time.TimePickerDialog
@@ -38,8 +41,6 @@ import org.isoron.platform.gui.toInt
 import org.isoron.uhabits.HabitsApplication
 import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.AndroidThemeSwitcher
-import org.isoron.uhabits.activities.common.dialogs.ColorPickerDialogFactory
-import org.isoron.uhabits.activities.common.dialogs.FrequencyPickerDialog
 import org.isoron.uhabits.activities.common.dialogs.WeekdayPickerDialog
 import org.isoron.uhabits.core.commands.CommandRunner
 import org.isoron.uhabits.core.commands.CreateHabitCommand
@@ -86,6 +87,20 @@ class EditHabitActivity : AppCompatActivity() {
     var reminderDays: WeekdayList = WeekdayList.EVERY_DAY
     var targetType = NumericalHabitType.AT_LEAST
 
+    // The form's text now lives here rather than in EditText widgets.
+    private var nameText by mutableStateOf("")
+    private var questionText by mutableStateOf("")
+    private var notesText by mutableStateOf("")
+    private var unitText by mutableStateOf("")
+    private var targetText by mutableStateOf("")
+    private var nameError by mutableStateOf<String?>(null)
+    private var targetError by mutableStateOf<String?>(null)
+    private var revision by mutableStateOf(0)
+
+    // A pending one-of-N choice, rendered by the screen as a sheet.
+    private var choiceOptions by mutableStateOf<List<String>?>(null)
+    private var choiceCallback: (Int) -> Unit = {}
+
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
 
@@ -93,13 +108,7 @@ class EditHabitActivity : AppCompatActivity() {
         themeSwitcher = AndroidThemeSwitcher(this, component.preferences)
         themeSwitcher.apply()
 
-        binding = ActivityEditHabitBinding.inflate(layoutInflater)
-        binding.root.applyRootViewInsets()
-        binding.toolbar.applyToolbarInsets()
-        setContentView(binding.root)
-
         if (intent.hasExtra("habitId")) {
-            binding.toolbar.title = getString(R.string.edit_habit)
             habitId = intent.getLongExtra("habitId", -1)
             val habit = component.habitList.getById(habitId)!!
             habitType = habit.type
@@ -112,11 +121,11 @@ class EditHabitActivity : AppCompatActivity() {
                 reminderMin = it.minute
                 reminderDays = it.days
             }
-            binding.nameInput.setText(habit.name)
-            binding.questionInput.setText(habit.question)
-            binding.notesInput.setText(habit.description)
-            binding.unitInput.setText(habit.unit)
-            binding.targetInput.setText(habit.targetValue.toString())
+            nameText = habit.name
+            questionText = habit.question
+            notesText = habit.description
+            unitText = habit.unit
+            targetText = habit.targetValue.toString()
         } else {
             habitType = HabitType.fromInt(intent.getIntExtra("habitType", HabitType.YES_NO.value))
         }
@@ -134,123 +143,68 @@ class EditHabitActivity : AppCompatActivity() {
 
         updateColors()
 
-        when (habitType) {
-            HabitType.YES_NO -> {
-                binding.unitOuterBox.visibility = View.GONE
-                binding.targetOuterBox.visibility = View.GONE
-                binding.targetTypeOuterBox.visibility = View.GONE
-            }
-            HabitType.NUMERICAL -> {
-                binding.nameInput.hint = getString(R.string.measurable_short_example)
-                binding.questionInput.hint = getString(R.string.measurable_question_example)
-                binding.frequencyOuterBox.visibility = View.GONE
-            }
-        }
-
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setDisplayShowHomeEnabled(true)
-        supportActionBar?.elevation = 10.0f
-
-        val colorPickerDialogFactory = ColorPickerDialogFactory(this)
-        binding.colorButton.setOnClickListener {
-            val picker = colorPickerDialogFactory.create(color, themeSwitcher.currentTheme)
-            picker.setListener { paletteColor ->
-                this.color = paletteColor
-                updateColors()
-            }
-            picker.dismissCurrentAndShow(supportFragmentManager, "colorPicker")
-        }
-
-        populateFrequency()
-        binding.booleanFrequencyPicker.setOnClickListener {
-            val picker = FrequencyPickerDialog(freqNum, freqDen)
-            picker.onFrequencyPicked = { num, den ->
-                freqNum = num
-                freqDen = den
-                populateFrequency()
-            }
-            picker.dismissCurrentAndShow(supportFragmentManager, "frequencyPicker")
-        }
-
-        populateTargetType()
-        binding.targetTypePicker.setOnClickListener {
-            val builder = AlertDialog.Builder(this)
-            val arrayAdapter = ArrayAdapter<String>(this, android.R.layout.select_dialog_item)
-            arrayAdapter.add(getString(R.string.target_type_at_least))
-            arrayAdapter.add(getString(R.string.target_type_at_most))
-            builder.setAdapter(arrayAdapter) { dialog, which ->
-                targetType = when (which) {
-                    0 -> NumericalHabitType.AT_LEAST
-                    else -> NumericalHabitType.AT_MOST
-                }
-                populateTargetType()
-                dialog.dismiss()
-            }
-            val dialog = builder.create()
-            dialog.dismissCurrentAndShow()
-        }
-
-        binding.numericalFrequencyPicker.setOnClickListener {
-            val builder = AlertDialog.Builder(this)
-            val arrayAdapter = ArrayAdapter<String>(this, android.R.layout.select_dialog_item)
-            arrayAdapter.add(getString(R.string.every_day))
-            arrayAdapter.add(getString(R.string.every_week))
-            arrayAdapter.add(getString(R.string.every_month))
-            builder.setAdapter(arrayAdapter) { dialog, which ->
-                freqDen = when (which) {
-                    1 -> 7
-                    2 -> 30
-                    else -> 1
-                }
-                populateFrequency()
-                dialog.dismiss()
-            }
-            builder.show()
-        }
-
-        populateReminder()
-        binding.reminderTimePicker.setOnClickListener {
-            val currentHour = if (reminderHour >= 0) reminderHour else 8
-            val currentMin = if (reminderMin >= 0) reminderMin else 0
-            val is24HourMode = DateFormat.is24HourFormat(this)
-            val dialog = TimePickerDialog.newInstance(
-                object : TimePickerDialog.OnTimeSetListener {
-                    override fun onTimeSet(view: RadialPickerLayout?, hourOfDay: Int, minute: Int) {
-                        reminderHour = hourOfDay
-                        reminderMin = minute
-                        populateReminder()
-                    }
-
-                    override fun onTimeCleared(view: RadialPickerLayout?) {
+        setContent {
+            @Suppress("UNUSED_EXPRESSION") revision
+            EditHabitScreenMMD(
+                isEditing = habitId >= 0,
+                state = EditHabitFormState(
+                    isNumerical = habitType == HabitType.NUMERICAL,
+                    name = nameText,
+                    question = questionText,
+                    notes = notesText,
+                    unit = unitText,
+                    target = targetText,
+                    freqNum = freqNum,
+                    freqDen = freqDen,
+                    frequencyLabel = frequencyLabel(),
+                    targetTypeLabel = targetTypeLabel(),
+                    reminderLabel = reminderLabel(),
+                    reminderDaysLabel = reminderDays.toFormattedString(this),
+                    hasReminder = reminderHour >= 0,
+                    nameError = nameError,
+                    targetError = targetError,
+                ),
+                actions = EditHabitFormActions(
+                    onName = { nameText = it; nameError = null },
+                    onQuestion = { questionText = it },
+                    onNotes = { notesText = it },
+                    onUnit = { unitText = it },
+                    onTarget = { targetText = it.asPartialNumber(); targetError = null },
+                    onPickFrequency = { pickFrequency() },
+                    onFrequencyPicked = { num, den ->
+                        freqNum = num
+                        freqDen = den
+                        revision++
+                    },
+                    onPickTargetType = { pickTargetType() },
+                    onReminderPicked = { h, m ->
+                        reminderHour = h
+                        reminderMin = m
+                        revision++
+                    },
+                    onReminderCleared = {
                         reminderHour = -1
                         reminderMin = -1
                         reminderDays = WeekdayList.EVERY_DAY
-                        populateReminder()
-                    }
+                        revision++
+                    },
+                    onWeekdaysPicked = { days ->
+                        var picked = WeekdayList(days)
+                        if (picked.isEmpty) picked = WeekdayList.EVERY_DAY
+                        reminderDays = picked
+                        revision++
+                    },
+                    weekdaysSelected = { reminderDays.toArray() },
+                    onSave = { if (validate()) save() },
+                    onBack = { finish() },
+                ),
+                choiceOptions = choiceOptions,
+                onChoicePicked = { which ->
+                    choiceOptions = null
+                    choiceCallback(which)
                 },
-                currentHour,
-                currentMin,
-                is24HourMode,
-                androidColor
+                onChoiceDismissed = { choiceOptions = null },
             )
-            dialog.dismissCurrentAndShow(supportFragmentManager, "timePicker")
-        }
-
-        binding.reminderDatePicker.setOnClickListener {
-            val dialog = WeekdayPickerDialog()
-
-            dialog.setListener { days: WeekdayList ->
-                reminderDays = days
-                if (reminderDays.isEmpty) reminderDays = WeekdayList.EVERY_DAY
-                populateReminder()
-            }
-            dialog.setSelectedDays(reminderDays)
-            dialog.dismissCurrentAndShow(supportFragmentManager, "dayPicker")
-        }
-
-        binding.buttonSave.setOnClickListener {
-            if (validate()) save()
         }
 
         for (fragment in supportFragmentManager.fragments) {
@@ -268,9 +222,9 @@ class EditHabitActivity : AppCompatActivity() {
             habit.copyFrom(original)
         }
 
-        habit.name = binding.nameInput.text.trim().toString()
-        habit.question = binding.questionInput.text.trim().toString()
-        habit.description = binding.notesInput.text.trim().toString()
+        habit.name = nameText.trim()
+        habit.question = questionText.trim()
+        habit.description = notesText.trim()
         habit.color = color
         if (reminderHour >= 0) {
             habit.reminder = Reminder(reminderHour, reminderMin, reminderDays)
@@ -280,9 +234,14 @@ class EditHabitActivity : AppCompatActivity() {
 
         habit.frequency = Frequency(freqNum, freqDen)
         if (habitType == HabitType.NUMERICAL) {
-            habit.targetValue = binding.targetInput.text.toString().toDouble()
+            // validate() has already rejected anything unparseable, so this
+            // cannot normally be null. It is still not allowed to throw: this
+            // line used to be `toDouble()`, and "1.2.3" -- which the field
+            // accepted, because KeyboardType only picks a keyboard and filters
+            // nothing -- crashed the app on Save.
+            habit.targetValue = parsedTarget() ?: return
             habit.targetType = targetType
-            habit.unit = binding.unitInput.text.trim().toString()
+            habit.unit = unitText.trim()
         }
         habit.type = habitType
 
@@ -305,62 +264,128 @@ class EditHabitActivity : AppCompatActivity() {
 
     private fun validate(): Boolean {
         var isValid = true
-        if (binding.nameInput.text.isEmpty()) {
-            binding.nameInput.error = getFormattedValidationError(R.string.validation_cannot_be_blank)
+        if (nameText.isBlank()) {
+            nameError = getString(R.string.validation_cannot_be_blank)
             isValid = false
         }
         if (habitType == HabitType.NUMERICAL) {
-            if (binding.targetInput.text.isEmpty()) {
-                binding.targetInput.error = getString(R.string.validation_cannot_be_blank)
+            if (targetText.isBlank()) {
+                targetError = getString(R.string.validation_cannot_be_blank)
+                isValid = false
+            } else if (parsedTarget() == null) {
+                // Blank was the only thing this used to check, which is why a
+                // malformed target reached toDouble() and crashed.
+                targetError = getString(R.string.validation_number_expected)
                 isValid = false
             }
         }
         return isValid
     }
 
-    private fun populateReminder() {
-        if (reminderHour < 0) {
-            binding.reminderTimePicker.text = getString(R.string.reminder_off)
-            binding.reminderDatePicker.visibility = View.GONE
-            binding.reminderDivider.visibility = View.GONE
-        } else {
-            val time = formatTime(this, reminderHour, reminderMin)
-            binding.reminderTimePicker.text = time
-            binding.reminderDatePicker.visibility = View.VISIBLE
-            binding.reminderDivider.visibility = View.VISIBLE
-            binding.reminderDatePicker.text = reminderDays.toFormattedString(this)
+    /**
+     * The target as a number, or null if it is not one.
+     *
+     * The separator is normalised because a locale whose keyboard offers ","
+     * types "1,5", which is a perfectly good number to the person typing it
+     * and not one at all to [String.toDoubleOrNull].
+     */
+    private fun parsedTarget(): Double? =
+        targetText.trim().replace(',', '.').toDoubleOrNull()
+
+    /**
+     * Keeps what someone can plausibly be part-way through typing: digits, and
+     * at most one separator. It has to accept "1." — that is what "1.5" looks
+     * like halfway through — so this is not the same test as [parsedTarget],
+     * and it does not replace it.
+     */
+    private fun String.asPartialNumber(): String {
+        var separatorSeen = false
+        return buildString {
+            for (c in this@asPartialNumber) {
+                when {
+                    c.isDigit() -> append(c)
+                    (c == '.' || c == ',') && !separatorSeen -> {
+                        separatorSeen = true
+                        append(c)
+                    }
+                }
+            }
         }
     }
+
+    private fun reminderLabel(): String =
+        if (reminderHour < 0) {
+            getString(R.string.reminder_off)
+        } else {
+            formatTime(this, reminderHour, reminderMin) ?: getString(R.string.reminder_off)
+        }
 
     @SuppressLint("StringFormatMatches")
-    private fun populateFrequency() {
-        binding.booleanFrequencyPicker.text = formatFrequency(freqNum, freqDen, resources)
-        binding.numericalFrequencyPicker.text = when (freqDen) {
-            1 -> getString(R.string.every_day)
-            7 -> getString(R.string.every_week)
-            30 -> getString(R.string.every_month)
-            else -> "$freqNum/$freqDen"
+    private fun frequencyLabel(): String =
+        if (habitType == HabitType.NUMERICAL) {
+            when (freqDen) {
+                1 -> getString(R.string.every_day)
+                7 -> getString(R.string.every_week)
+                30 -> getString(R.string.every_month)
+                else -> "$freqNum/$freqDen"
+            }
+        } else {
+            formatFrequency(freqNum, freqDen, resources)
+        }
+
+    private fun targetTypeLabel(): String = when (targetType) {
+        NumericalHabitType.AT_MOST -> getString(R.string.target_type_at_most)
+        else -> getString(R.string.target_type_at_least)
+    }
+
+    /**
+     * A numerical habit only chooses a period, so it is a one-of-N sheet. A
+     * boolean habit's frequency is an arbitrary numerator and denominator
+     * ("3 times in 7 days"), which is a form rather than a list, so the screen
+     * raises `FrequencySheet` for it directly and never reaches this.
+     */
+    private fun pickFrequency() {
+        val options = listOf(
+            getString(R.string.every_day) to 1,
+            getString(R.string.every_week) to 7,
+            getString(R.string.every_month) to 30,
+        )
+        showChoiceSheet(options.map { it.first }) { which ->
+            freqDen = options[which].second
+            revision++
         }
     }
 
-    private fun populateTargetType() {
-        binding.targetTypePicker.text = when (targetType) {
-            NumericalHabitType.AT_MOST -> getString(R.string.target_type_at_most)
-            else -> getString(R.string.target_type_at_least)
+    private fun pickTargetType() {
+        val options = listOf(
+            getString(R.string.target_type_at_least),
+            getString(R.string.target_type_at_most),
+        )
+        showChoiceSheet(options) { which ->
+            targetType =
+                if (which == 0) NumericalHabitType.AT_LEAST else NumericalHabitType.AT_MOST
+            revision++
         }
     }
 
+    /** A one-of-N choice, raised as a sheet. */
+    private fun showChoiceSheet(options: List<String>, onPicked: (Int) -> Unit) {
+        choiceOptions = options
+        choiceCallback = onPicked
+        revision++
+    }
+
+    /**
+     * Every habit is drawn in the same black ink, so there is nothing to tint
+     * and no swatch to update. [androidColor] is still resolved because the
+     * time picker takes an accent colour.
+     */
     private fun updateColors() {
         androidColor = themeSwitcher.currentTheme.color(color).toInt()
-        binding.colorButton.backgroundTintList = ColorStateList.valueOf(androidColor)
-        if (!themeSwitcher.isNightMode) {
-            window.statusBarColor = androidColor
-            binding.toolbar.setBackgroundColor(androidColor)
-        }
     }
 
     private fun getFormattedValidationError(@StringRes resId: Int): Spanned {
-        val html = "<font color=#FFFFFF>${getString(resId)}</font>"
+        val html = "<font color=#000000>${getString(resId)}</font>"
         return Html.fromHtml(html)
     }
 

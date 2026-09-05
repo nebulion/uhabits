@@ -25,7 +25,7 @@
         <shape android:shape="rectangle">
             <stroke android:width="2dp" android:color="?android:textColor"/>
             <solid android:color="?cardBgColor"/>
-            <corners android:radius="5dp" />
+            <corners android:radius="0dp" />
         </shape>
     </item>
 </ripple>

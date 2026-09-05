@@ -44,6 +44,7 @@ import android.widget.RelativeLayout.BELOW
 import android.widget.TextView
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
@@ -156,11 +157,16 @@ fun Activity.showSendEmailScreen(
     )
 }
 
+/**
+ * Restarts the activity with no transition. The name is kept because callers
+ * refer to it, but there is no longer a fade: a cross-fade between two full
+ * screens is the most expensive thing an E Ink panel can be asked to draw.
+ */
 fun Activity.restartWithFade(cls: Class<*>?) {
     Handler().postDelayed(
         {
             finish()
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            overridePendingTransition(0, 0)
             startActivity(Intent(this, cls))
         },
         500
@@ -174,18 +180,17 @@ fun View.setupToolbar(
     theme: Theme,
     displayHomeAsUpEnabled: Boolean = true
 ) {
-    toolbar.elevation = InterfaceUtils.dpToPixels(context, 2f)
-    val res = StyledResources(context)
+    // Flat, and backed by the header drawable rather than a plain fill: the
+    // 3dp black rule under the title is what separates the header from the
+    // body on every Mudita screen, and assigning a ColorDrawable here used to
+    // throw it away. Elevation is zero because a shadow dithers into a smear.
+    toolbar.elevation = 0f
     toolbar.title = title
-    val toolbarColor = if (!res.getBoolean(R.attr.useHabitColorAsPrimary)) {
-        StyledResources(context).getColor(R.attr.colorPrimary)
-    } else {
-        theme.color(color).toInt()
-    }
-    toolbar.background = ColorDrawable(toolbarColor)
+    toolbar.background = ContextCompat.getDrawable(context, R.drawable.toolbar_eink_background)
+    toolbar.setTitleTextAppearance(context, R.style.ToolbarTitle)
     toolbar.applyToolbarInsets()
     val activity = context as AppCompatActivity
-    activity.window.statusBarColor = toolbarColor
+    activity.window.statusBarColor = ContextCompat.getColor(context, R.color.white)
     activity.setSupportActionBar(toolbar)
     activity.supportActionBar?.setDisplayHomeAsUpEnabled(displayHomeAsUpEnabled)
 }

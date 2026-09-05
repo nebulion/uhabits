@@ -64,13 +64,22 @@ class ListHabitsSelectionMenuBehavior @Inject constructor(
     }
 
     fun onDeleteHabits() {
+        // Captured once, deliberately. This used to call getSelected() twice,
+        // side by side, and delete silently stopped working when the habits
+        // list moved from a RecyclerView adapter to HabitCardListModel:
+        // getSelected() there is derived from the *displayed* list, and
+        // performRemove drops those habits from it synchronously, so by the
+        // second call the selection was empty and the command was handed
+        // nothing to delete. The confirmation appeared, the row vanished, and
+        // the habit came back on the next refresh.
+        val selected = adapter.getSelected()
         screen.showDeleteConfirmationScreen(
             {
-                adapter.performRemove(adapter.getSelected())
-                commandRunner.run(DeleteHabitsCommand(habitList, adapter.getSelected()))
+                adapter.performRemove(selected)
+                commandRunner.run(DeleteHabitsCommand(habitList, selected))
                 adapter.clearSelection()
             },
-            adapter.getSelected().size
+            selected.size
         )
     }
 

@@ -27,6 +27,7 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.util.AttributeSet
+import org.isoron.platform.gui.Halftone
 import org.isoron.uhabits.R
 import org.isoron.uhabits.core.models.Score
 import org.isoron.uhabits.core.models.Timestamp
@@ -132,8 +133,8 @@ class ScoreChart : ScrollableChart {
         rect!![0f, 0f, nColumns * columnWidth] = columnHeight.toFloat()
         rect!!.offset(0f, internalPaddingTop.toFloat())
         drawGrid(activeCanvas, rect)
-        pText!!.color = textColor
-        pGraph!!.color = primaryColor
+        Halftone.apply(pText!!, textColor)
+        Halftone.apply(pGraph!!, primaryColor)
         prevRect!!.setEmpty()
         previousMonthText = ""
         previousYearText = ""
@@ -246,8 +247,8 @@ class ScoreChart : ScrollableChart {
         val nRows = 5
         val rowHeight = rGrid!!.height() / nRows
         pText!!.textAlign = Paint.Align.LEFT
-        pText!!.color = textColor
-        pGrid!!.color = gridColor
+        Halftone.apply(pText!!, textColor)
+        Halftone.apply(pGrid!!, gridColor)
         for (i in 0 until nRows) {
             canvas!!.drawText(
                 String.format("%d%%", 100 - i * 100 / nRows),
@@ -268,7 +269,7 @@ class ScoreChart : ScrollableChart {
     }
 
     private fun drawLine(canvas: Canvas?, rectFrom: RectF?, rectTo: RectF?) {
-        pGraph!!.color = primaryColor
+        Halftone.apply(pGraph!!, primaryColor)
         canvas!!.drawLine(
             rectFrom!!.centerX(),
             rectFrom.centerY(),
@@ -367,7 +368,7 @@ class ScoreChart : ScrollableChart {
     }
 
     private fun setModeOrColor(p: Paint?, mode: PorterDuffXfermode, color: Int) {
-        if (isTransparencyEnabled) p!!.xfermode = mode else p!!.color = color
+        if (isTransparencyEnabled) p!!.xfermode = mode else Halftone.apply(p!!, color)
     }
 
     companion object {

@@ -66,25 +66,21 @@ abstract class ScrollableChart : View, GestureDetector.OnGestureListener, Animat
         return true
     }
 
+    /**
+     * Flinging is disabled. Momentum scrolling keeps repainting the chart for
+     * up to a second after the finger has left the glass, and every one of
+     * those frames is a partial update that the panel resolves into a smear.
+     *
+     * Dragging still works: [onScroll] moves the chart one-to-one with the
+     * finger and stops the moment it stops, so the reader controls exactly how
+     * many repaints they pay for.
+     */
     override fun onFling(
         e1: MotionEvent?,
         e2: MotionEvent,
         velocityX: Float,
         velocityY: Float
     ): Boolean {
-        scroller.fling(
-            scroller.currX,
-            scroller.currY,
-            direction * velocityX.toInt() / 2,
-            0,
-            0,
-            maxX,
-            0,
-            0
-        )
-        invalidate()
-        scrollAnimator.duration = scroller.duration.toLong()
-        scrollAnimator.start()
         return false
     }
 

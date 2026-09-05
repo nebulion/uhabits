@@ -27,11 +27,6 @@
         android:icon="?iconEdit"/>
 
     <item
-        android:id="@+id/action_color"
-        android:title="@string/color_picker_default_title"
-        android:icon="?iconChangeColor"/>
-
-    <item
         android:id="@+id/action_archive_habit"
         android:title="@string/archive"
         app:showAsAction="never" />

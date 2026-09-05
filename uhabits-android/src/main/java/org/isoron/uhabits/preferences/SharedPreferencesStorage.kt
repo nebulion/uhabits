@@ -41,7 +41,9 @@ class SharedPreferencesStorage
 
     init {
         sharedPrefs.registerOnSharedPreferenceChangeListener(this)
-        PreferenceManager.setDefaultValues(context, R.xml.preferences, false)
+        // There is no preference XML to seed defaults from any more: the
+        // settings screen is Compose. Every accessor in Preferences already
+        // supplies its own default, so nothing is lost.
     }
 
     override fun clear() = sharedPrefs.edit().clear().apply()

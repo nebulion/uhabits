@@ -24,7 +24,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:background="#a0000000"
+    android:background="@color/transparent"
     android:clickable="true"
     android:id="@+id/background"
     >

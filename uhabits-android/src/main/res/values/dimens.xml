@@ -19,12 +19,30 @@
 
 <resources>
     <dimen name="baseSize">20dp</dimen>
-    <dimen name="checkmarkWidth">48dp</dimen>
-    <dimen name="checkmarkHeight">48dp</dimen>
+
+    <!--
+      ~ Touch targets follow the theme's checkmarkButtonSize (56dp), raised
+      ~ from the Material 48dp default: a refresh is slow enough that undoing a
+      ~ mistap is expensive.
+      -->
+    <dimen name="checkmarkWidth">56dp</dimen>
+    <dimen name="checkmarkHeight">56dp</dimen>
+
     <dimen name="history_editor_max_height">350dp</dimen>
-    <dimen name="regularTextSize">16sp</dimen>
-    <dimen name="smallTextSize">14sp</dimen>
-    <dimen name="smallerTextSize">12sp</dimen>
-    <dimen name="tinyTextSize">10sp</dimen>
+
+    <!--
+      ~ The MMD type scale, from mudita/MMD TypographyMMD.kt. Their smallest
+      ~ role, labelSmall, is 14sp; bodySmall is 15sp; bodyMedium 18sp; bodyLarge
+      ~ and titleMedium 20sp. There is nothing below 14sp anywhere in it, which
+      ~ is why the 10sp and 12sp steps this app used had no counterpart on the
+      ~ device. Kept in sp so the system font setting still applies.
+      -->
+    <dimen name="regularTextSize">18sp</dimen>
+    <dimen name="smallTextSize">15sp</dimen>
+    <dimen name="smallerTextSize">14sp</dimen>
+    <dimen name="tinyTextSize">14sp</dimen>
+    <dimen name="titleTextSize">20sp</dimen>
+    <dimen name="headlineTextSize">24sp</dimen>
+
     <dimen name="habitNameWidth">160dp</dimen>
 </resources>

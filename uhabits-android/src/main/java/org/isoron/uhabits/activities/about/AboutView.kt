@@ -33,8 +33,7 @@ import org.isoron.uhabits.utils.setupToolbar
 
 @SuppressLint("ViewConstructor")
 class AboutView(
-    context: Context,
-    private val screen: AboutScreen
+    context: Context
 ) : FrameLayout(context) {
 
     private var binding = AboutBinding.inflate(LayoutInflater.from(context))
@@ -48,13 +47,6 @@ class AboutView(
             theme = currentTheme()
         )
         val version = resources.getString(R.string.version_n)
-        binding.tvContributors.setOnClickListener { screen.showCodeContributorsWebsite() }
-        binding.tvFeedback.setOnClickListener { screen.showSendFeedbackScreen() }
-        binding.tvPrivacy.setOnClickListener { screen.showPrivacyPolicyWebsite() }
-        binding.tvRate.setOnClickListener { screen.showRateAppWebsite() }
-        binding.tvSource.setOnClickListener { screen.showSourceCodeWebsite() }
-        binding.tvTranslate.setOnClickListener { screen.showTranslationWebsite() }
-        binding.tvVersion.setOnClickListener { screen.onPressDeveloperCountdown() }
         binding.tvVersion.text = String.format(version, BuildConfig.VERSION_NAME)
         binding.outerLinearLayout.applyBottomInset()
         applyRootViewInsets()

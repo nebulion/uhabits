@@ -45,8 +45,8 @@
 	<!--<string translatable="false" name="fa_search_minus">&#xf010;</string>-->
 	<!--<string translatable="false" name="fa_power_off">&#xf011;</string>-->
 	<!--<string translatable="false" name="fa_signal">&#xf012;</string>-->
-	<!--<string translatable="false" name="fa_cog">&#xf013;</string>-->
-	<!--<string translatable="false" name="fa_trash_o">&#xf014;</string>-->
+	<string translatable="false" name="fa_cog">&#xf013;</string>
+	<string translatable="false" name="fa_trash">&#xf1f8;</string>
 	<!--<string translatable="false" name="fa_home">&#xf015;</string>-->
 	<!--<string translatable="false" name="fa_file_o">&#xf016;</string>-->
 	<!--<string translatable="false" name="fa_clock_o">&#xf017;</string>-->
@@ -263,7 +263,7 @@
 	<!--<string translatable="false" name="fa_quote_left">&#xf10d;</string>-->
 	<!--<string translatable="false" name="fa_quote_right">&#xf10e;</string>-->
 	<!--<string translatable="false" name="fa_spinner">&#xf110;</string>-->
-	<!--<string translatable="false" name="fa_circle">&#xf111;</string>-->
+	<string translatable="false" name="fa_circle">&#xf111;</string>
 	<!--<string translatable="false" name="fa_reply">&#xf112;</string>-->
 	<!--<string translatable="false" name="fa_github_alt">&#xf113;</string>-->
 	<!--<string translatable="false" name="fa_folder_o">&#xf114;</string>-->

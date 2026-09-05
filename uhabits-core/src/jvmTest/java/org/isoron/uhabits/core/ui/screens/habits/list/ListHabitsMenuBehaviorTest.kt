@@ -159,21 +159,8 @@ class ListHabitsMenuBehaviorTest : BaseUnitTest() {
     }
 
     @Test
-    fun testOnViewFAQ() {
-        behavior.onViewFAQ()
-        verify(screen).showFAQScreen()
-    }
-
-    @Test
     fun testOnViewSettings() {
         behavior.onViewSettings()
         verify(screen).showSettingsScreen()
-    }
-
-    @Test
-    fun testOnToggleNightMode() {
-        behavior.onToggleNightMode()
-        verify(themeSwitcher).toggleNightMode()
-        verify(screen).applyTheme()
     }
 }

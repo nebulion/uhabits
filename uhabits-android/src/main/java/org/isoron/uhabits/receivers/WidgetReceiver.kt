@@ -44,14 +44,14 @@ class WidgetReceiver : BroadcastReceiver() {
         val parser = app.component.intentParser
         val controller = component.widgetController
         val prefs = app.component.preferences
-        val widgetUpdater = app.component.widgetUpdater
         Log.i(TAG, String.format("Received intent: %s", intent.toString()))
         lastReceivedIntent = intent
         try {
-            var data: CheckmarkIntentData? = null
-            if (intent.action !== ACTION_UPDATE_WIDGETS_VALUE) {
-                data = parser.parseCheckmarkIntent(intent)
-            }
+            // Only the checkmark actions reach this receiver now. Despite the
+            // name it is kept for the reminder *notification* buttons, which
+            // fire ACTION_ADD_REPETITION and friends; the widget-update action
+            // is no longer scheduled by anything.
+            val data: CheckmarkIntentData = parser.parseCheckmarkIntent(intent)
             when (intent.action) {
                 ACTION_ADD_REPETITION -> {
                     Log.d(
@@ -94,10 +94,6 @@ class WidgetReceiver : BroadcastReceiver() {
                         data.habit,
                         data.timestamp
                     )
-                }
-                ACTION_UPDATE_WIDGETS_VALUE -> {
-                    widgetUpdater.updateWidgets()
-                    widgetUpdater.scheduleStartDayWidgetUpdate()
                 }
             }
         } catch (e: RuntimeException) {

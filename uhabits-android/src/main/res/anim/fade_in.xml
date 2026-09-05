@@ -17,12 +17,18 @@
   ~ You should have received a copy of the GNU General Public License along
   ~ with this program. If not, see <http://www.gnu.org/licenses/>.
   -->
+
+<!--
+  ~ Instant. A cross-fade asks an E Ink panel for a run of intermediate grey
+  ~ frames it cannot draw cleanly; what the reader sees is the old view
+  ~ smeared under the new one. The view appears in place instead.
+  -->
 <set
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:interpolator="@android:anim/linear_interpolator">
     <alpha
-        android:duration="150"
-        android:fromAlpha="0"
+        android:duration="0"
+        android:fromAlpha="1"
         android:toAlpha="1">
     </alpha>
 </set>

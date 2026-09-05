@@ -70,6 +70,9 @@
     <string name="intro_description_2">Every day, after performing your habit, put a checkmark on the app.</string>
     <string name="intro_title_4">Track your progress</string>
     <string name="intro_description_4">Detailed graphs show you how your habits improved over time.</string>
+    <string name="intro_skip">Skip</string>
+    <string name="intro_back">Back</string>
+    <string name="intro_next">Next</string>
     <string name="interval_15_minutes">15 minutes</string>
     <string name="interval_30_minutes">30 minutes</string>
     <string name="interval_1_hour">1 hour</string>
@@ -211,6 +214,12 @@
     <string name="x_times_per_week">%d times per week</string>
     <string name="x_times_per_month">%d times per month</string>
     <string name="x_times_per_y_days">%d times in %d days</string>
+    <string name="frequency_times_label">Times</string>
+    <string name="frequency_days_label">Days</string>
+    <string name="unknown_label">Unknown</string>
+    <string name="pref_eink_refresh_title">Flash screen to clear ghosting</string>
+    <string name="best_streak_short">Best</string>
+    <string name="trends">Trends</string>
     <string name="yes_or_no_short_example">e.g. Exercise</string>
     <string name="color">Color</string>
     <string name="example_target">e.g. 15</string>
@@ -219,6 +228,7 @@
     <string name="measurable_units_example">e.g. miles</string>
     <string name="every_month">Every month</string>
     <string name="validation_cannot_be_blank">Cannot be blank</string>
+    <string name="validation_number_expected">Must be a number</string>
     <string name="today">Today</string>
     <string name="enter">Enter</string>
     <string name="no_habits">No habits found</string>
@@ -231,7 +241,6 @@
     <string name="pref_skip_description">Toggle twice to add a skip instead of a checkmark. Skips keep your score unchanged and don\'t break your streak.</string>
     <string name="pref_unknown_title">Show question marks for missing data</string>
     <string name="pref_unknown_description">Differentiate days without data from actual lapses. To enter a lapse, toggle twice.</string>
-    <string name="you_are_now_a_developer">You are now a developer</string>
     <string name="activity_not_found">No app was found to support this action</string>
     <string name="pref_midnight_delay_title">Extend day a few hours past midnight</string>
     <string name="pref_midnight_delay_description">Wait until 3:00 AM to show a new day. Useful if you typically go to sleep after midnight. Requires app restart.</string>

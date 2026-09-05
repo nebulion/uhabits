@@ -38,12 +38,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?attr/colorPrimary"
-            android:elevation="2dp"
+            android:elevation="0dp"
             android:gravity="end"
             android:minHeight="?attr/actionBarSize"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            android:theme="@style/ThemeOverlay.EInk.Toolbar"
             app:title="@string/create_habit"
-            app:titleTextColor="@color/white">
+            app:titleTextColor="@color/black">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonSave"
@@ -53,9 +53,9 @@
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
                 android:text="@string/save"
-                android:textColor="@color/white"
-                app:rippleColor="@color/white"
-                app:strokeColor="@color/white" />
+                android:textColor="@color/black"
+                app:rippleColor="@color/black"
+                app:strokeColor="@color/black" />
         </androidx.appcompat.widget.Toolbar>
 
     </com.google.android.material.appbar.AppBarLayout>
@@ -102,27 +102,11 @@
                     </LinearLayout>
                 </FrameLayout>
 
-                <!-- Habit Color -->
-                <FrameLayout
-                    style="@style/FormOuterBox"
-                    android:layout_width="80dp"
-                    android:layout_height="match_parent">
-                    <LinearLayout style="@style/FormInnerBox">
-                        <TextView
-                            style="@style/FormLabel"
-                            android:text="@string/color" />
-                        <androidx.appcompat.widget.AppCompatButton
-                            android:id="@+id/colorButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_marginLeft="16dp"
-                            android:layout_marginTop="8dp"
-                            android:layout_marginRight="16dp"
-                            android:layout_marginBottom="8dp"
-                            android:backgroundTint="#E23673" />
-
-                    </LinearLayout>
-                </FrameLayout>
+                <!--
+                  ~ The habit colour picker was removed with the E Ink
+                  ~ redesign. Every habit is drawn in the same black ink, so
+                  ~ the swatch offered a choice with no visible consequence.
+                  -->
             </LinearLayout>
 
             <!-- Habit Question -->

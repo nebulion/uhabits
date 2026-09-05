@@ -23,6 +23,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
+import org.isoron.platform.gui.Halftone
 import org.isoron.uhabits.R
 import org.isoron.uhabits.core.models.Timestamp
 import org.isoron.uhabits.core.utils.DateUtils.Companion.getShortWeekdayNames
@@ -128,8 +129,8 @@ class FrequencyChart : ScrollableChart {
         rect!!.offset(0f, internalPaddingTop.toFloat())
         drawGrid(canvas, rect)
         pText!!.textAlign = Paint.Align.CENTER
-        pText!!.color = textColor
-        pGraph!!.color = primaryColor
+        Halftone.apply(pText!!, textColor)
+        Halftone.apply(pGraph!!, primaryColor)
         prevRect!!.setEmpty()
         val currentDate: GregorianCalendar =
             getStartOfTodayCalendarWithOffset()
@@ -211,8 +212,8 @@ class FrequencyChart : ScrollableChart {
         val nRows = 7
         val rowHeight = rGrid!!.height() / (nRows + 1)
         pText!!.textAlign = Paint.Align.LEFT
-        pText!!.color = textColor
-        pGrid!!.color = gridColor
+        Halftone.apply(pText!!, textColor)
+        Halftone.apply(pGrid!!, gridColor)
         for (day in getShortWeekdayNames(firstWeekday)) {
             canvas.drawText(
                 day,
@@ -245,7 +246,7 @@ class FrequencyChart : ScrollableChart {
         val scale = 1.0f / scalingFactor * valueCopy!!
         val radius = maxRadius * scale
         val colorIndex = min((colors.size - 1), ((colors.size - 1) * scale).roundToInt())
-        pGraph!!.color = colors[colorIndex]
+        Halftone.apply(pGraph!!, colors[colorIndex])
         canvas.drawCircle(rect.centerX(), rect.centerY(), radius, pGraph!!)
     }
 

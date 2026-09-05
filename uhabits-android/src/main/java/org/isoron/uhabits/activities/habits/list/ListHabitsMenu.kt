@@ -46,10 +46,8 @@ class ListHabitsMenu @Inject constructor(
     fun onCreate(inflater: MenuInflater, menu: Menu) {
         menu.clear()
         inflater.inflate(R.menu.list_habits, menu)
-        val nightModeItem = menu.findItem(R.id.actionToggleNightMode)
         val hideArchivedItem = menu.findItem(R.id.actionHideArchived)
         val hideCompletedItem = menu.findItem(R.id.actionHideCompleted)
-        nightModeItem.isChecked = themeSwitcher.isNightMode
         hideArchivedItem.isChecked = !preferences.showArchived
         hideCompletedItem.isChecked = !preferences.showCompleted
         if (preferences.areQuestionMarksEnabled || preferences.isSkipEnabled) {
@@ -64,7 +62,6 @@ class ListHabitsMenu @Inject constructor(
         val styledResources = StyledResources(activity)
         val sortManual = menu.findItem(R.id.actionSortManual)
         val sortName = menu.findItem(R.id.actionSortName)
-        val sortColor = menu.findItem(R.id.actionSortColor)
         val sortScore = menu.findItem(R.id.actionSortScore)
         val sortStatus = menu.findItem(R.id.actionSortStatus)
         val arrowUp = styledResources.getDrawable(R.attr.iconArrowUp)
@@ -72,35 +69,24 @@ class ListHabitsMenu @Inject constructor(
         when (preferences.defaultPrimaryOrder) {
             HabitList.Order.BY_NAME_ASC -> sortName.icon = arrowDown
             HabitList.Order.BY_NAME_DESC -> sortName.icon = arrowUp
-            HabitList.Order.BY_COLOR_ASC -> sortColor.icon = arrowDown
-            HabitList.Order.BY_COLOR_DESC -> sortColor.icon = arrowUp
             HabitList.Order.BY_SCORE_ASC -> sortScore.icon = arrowDown
             HabitList.Order.BY_SCORE_DESC -> sortScore.icon = arrowUp
             HabitList.Order.BY_STATUS_ASC -> sortStatus.icon = arrowDown
             HabitList.Order.BY_STATUS_DESC -> sortStatus.icon = arrowUp
             HabitList.Order.BY_POSITION -> sortManual.icon = arrowUp
+
+            // Sorting by colour is no longer offered -- every habit is the
+            // same black ink -- but the ordering survives in stored
+            // preferences, so it still has to be handled here.
+            HabitList.Order.BY_COLOR_ASC,
+            HabitList.Order.BY_COLOR_DESC -> Unit
         }
     }
 
     fun onItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.actionToggleNightMode -> {
-                behavior.onToggleNightMode()
-                return true
-            }
-
             R.id.actionCreateHabit -> {
                 behavior.onCreateHabit()
-                return true
-            }
-
-            R.id.actionFAQ -> {
-                behavior.onViewFAQ()
-                return true
-            }
-
-            R.id.actionAbout -> {
-                behavior.onViewAbout()
                 return true
             }
 
@@ -118,11 +104,6 @@ class ListHabitsMenu @Inject constructor(
             R.id.actionHideCompleted -> {
                 behavior.onToggleShowCompleted()
                 activity.invalidateOptionsMenu()
-                return true
-            }
-
-            R.id.actionSortColor -> {
-                behavior.onSortByColor()
                 return true
             }
 

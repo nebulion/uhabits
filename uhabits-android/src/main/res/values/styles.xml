@@ -18,24 +18,71 @@
   -->
 
 <resources xmlns:tools="http://schemas.android.com/tools">
+
+
+
+
+
+
+    <!--
+      ~ The application theme, for the screens still on Android Views.
+      ~
+      ~ Screens already converted take their appearance from MMD's ThemeMMD
+      ~ (eInkColorScheme, eInkTypography) instead, so this theme shrinks as the
+      ~ conversion proceeds and disappears entirely once the last XML screen
+      ~ goes. It exists to keep the remaining screens consistent with MMD in
+      ~ the meantime.
+      ~
+      ~ One theme only: an E Ink panel is reflective, so a dark variant dims
+      ~ nothing and costs a full repaint. forceDark stays off so the OS cannot
+      ~ invert it either.
+      -->
     <style name="AppBaseTheme" parent="@style/Theme.MaterialComponents.Light.NoActionBar">
-        <item name="aboutScreenColor">@color/blue_800</item>
+        <!--
+          The startup screen, made to look like nothing at all.
+
+          Android 12 and up draws one whether the app asks for it or not, and
+          left alone it builds one from the launcher icon: an icon appears,
+          pauses, and vanishes before the app arrives. Instead the background
+          is the same white the app itself opens on and the icon slot is given
+          an empty drawable, so the startup screen is a blank white page
+          indistinguishable from the app's own first frame. Nothing appears and
+          nothing is dismissed; the content simply arrives on it.
+
+          These three attributes were added in API 31 and are ignored by
+          anything older, which is why they can live in the base theme rather
+          than in a values-v31 copy of it — a second AppBaseTheme there would
+          replace this one wholesale and take every colour with it.
+
+          Holding that blank page up until the app has actually finished
+          drawing is the other half, and it is in ListHabitsActivity.
+        -->
+        <item name="android:windowSplashScreenBackground" tools:targetApi="s">@color/white</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="s">@drawable/splash_nothing</item>
+        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="s">@color/white</item>
+        <item name="aboutScreenColor">@color/black</item>
         <item name="actionBarPopupTheme">@style/ThemeOverlay.AppCompat.Light</item>
-        <item name="actionModeBackground">@color/grey_700</item>
+        <item name="actionModeBackground">@color/white</item>
         <item name="android:alertDialogTheme">@style/Theme.AppCompat.Light.Dialog</item>
         <item name="android:dialogTheme">@style/Theme.AppCompat.Light.Dialog</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
         <item name="android:itemBackground">?attr/contrast0</item>
-        <item name="android:navigationBarColor">?attr/colorPrimary</item>
-        <item name="android:textColor">@color/grey_800</item>
-        <item name="cardBackground">@drawable/card_light_background</item>
-        <item name="cardBgColor">@color/grey_50</item>
-        <item name="colorAccent">?aboutScreenColor</item>
-        <item name="colorPrimary">#363636</item>
-        <item name="colorPrimaryDark">#303030</item>
+
+        <!-- Lato, the family MMD's TypographyMMD declares. -->
+        <item name="android:fontFamily">@font/lato</item>
+        <item name="fontFamily">@font/lato</item>
+
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="android:fadeScrollbars">false</item>
+        <item name="cardBackground">@drawable/card_eink_background</item>
+        <item name="cardBgColor">@color/white</item>
+        <item name="colorAccent">@color/black</item>
+        <item name="colorPrimary">@color/white</item>
+        <item name="colorPrimaryDark">@color/white</item>
         <item name="dialogIconChangeColor">@drawable/ic_action_color_light</item>
-        <item name="headerBackgroundColor">@color/grey_200</item>
-        <item name="highlightedBackgroundColor">@color/grey_100</item>
+        <item name="headerBackgroundColor">@color/white</item>
+        <item name="highlightedBackgroundColor">@color/white</item>
         <item name="iconAdd">@drawable/ic_action_add_dark</item>
         <item name="iconArchive">@drawable/ic_action_archive_dark</item>
         <item name="iconChangeColor">@drawable/ic_action_color_dark</item>
@@ -45,139 +92,116 @@
         <item name="iconUnarchive">@drawable/ic_action_unarchive_dark</item>
         <item name="iconArrowUp">@drawable/ic_arrow_up_light</item>
         <item name="iconArrowDown">@drawable/ic_arrow_down_light</item>
+
+        <!-- Black, white, and one hairline grey for rules. Nothing else. -->
         <item name="contrast0">@color/white</item>
-        <item name="contrast20">@color/grey_300</item>
-        <item name="contrast40">@color/grey_350</item>
-        <item name="contrast60">@color/grey_500</item>
-        <item name="contrast80">@color/grey_700</item>
-        <item name="contrast100">@color/grey_800</item>
-        <item name="palette">@array/lightPalette</item>
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
+        <item name="contrast20">@color/eink_rule</item>
+        <item name="contrast40">@color/eink_rule</item>
+        <item name="contrast60">@color/black</item>
+        <item name="contrast80">@color/black</item>
+        <item name="contrast100">@color/black</item>
+
+        <item name="palette">@array/einkPalette</item>
         <item name="scrollableRecyclerViewStyle">@style/ScrollableRecyclerViewStyle</item>
-        <item name="selectedBackground">@drawable/selected_box</item>
+        <item name="selectedBackground">@drawable/selected_box_eink</item>
         <item name="toolbarPopupTheme">@style/ThemeOverlay.AppCompat.Light</item>
-        <item name="useHabitColorAsPrimary">true</item>
+
+        <!-- The toolbar stays white; a habit has no colour to lend it. -->
+        <item name="useHabitColorAsPrimary">false</item>
+
         <item name="widgetBackgroundAlpha">1</item>
-        <item name="widgetShadowAlpha">0.25</item>
+        <item name="widgetShadowAlpha">0</item>
         <item name="windowActionModeOverlay">true</item>
-        <item name="windowBackgroundColor">@color/grey_200</item>
-        <item name="android:colorBackground">@color/color_background</item>
-        <item name="android:textColorAlertDialogListItem">@color/grey_800</item>
+        <item name="windowBackgroundColor">@color/white</item>
+        <item name="android:colorBackground">@color/white</item>
+        <item name="android:textColorAlertDialogListItem">@color/black</item>
         <item name="singleLineTitle">false</item>
         <item name="dialogFormLabelColor">@color/white</item>
-    </style>
 
-    <style name="AppBaseThemeDark" parent="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
-        <item name="aboutScreenColor">@color/blue_300</item>
-        <item name="actionModeBackground">@color/grey_800</item>
-        <item name="android:alertDialogTheme">@style/Theme.AppCompat.Dialog</item>
-        <item name="android:dialogTheme">@style/Theme.AppCompat.Dialog</item>
-        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
-        <item name="android:textColor">@color/grey_100</item>
-        <item name="cardBackground">@drawable/card_dark_background</item>
-        <item name="cardBgColor">@color/grey_850</item>
-        <item name="colorAccent">?aboutScreenColor</item>
-        <item name="colorPrimary">@color/grey_950</item>
-        <item name="colorPrimaryDark">@color/black</item>
-        <item name="dialogIconChangeColor">@drawable/ic_action_color_dark</item>
-        <item name="headerBackgroundColor">@color/grey_900</item>
-        <item name="highlightedBackgroundColor">@color/grey_800</item>
-        <item name="iconAdd">@drawable/ic_action_add_dark</item>
-        <item name="iconArchive">@drawable/ic_action_archive_dark</item>
-        <item name="iconChangeColor">@drawable/ic_action_color_dark</item>
-        <item name="iconEdit">@drawable/ic_action_edit_dark</item>
-        <item name="iconFilter">@drawable/ic_action_filter_dark</item>
-        <item name="iconUnarchive">@drawable/ic_action_unarchive_dark</item>
-        <item name="iconArrowUp">@drawable/ic_arrow_up_dark</item>
-        <item name="iconArrowDown">@drawable/ic_arrow_down_dark</item>
-        <item name="contrast0">@color/grey_900</item>
-        <item name="contrast20">@color/grey_800</item>
-        <item name="contrast40">@color/grey_750</item>
-        <item name="contrast60">@color/grey_500</item>
-        <item name="contrast80">@color/grey_300</item>
-        <item name="contrast100">@color/grey_100</item>
-        <item name="palette">@array/darkPalette</item>
-        <item name="popupMenuBackground">@color/black</item>
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
-        <item name="scrollableRecyclerViewStyle">@style/ScrollableRecyclerViewStyle</item>
-        <item name="selectedBackground">@drawable/selected_box</item>
-        <item name="textColorAlertDialogListItem">@color/grey_100</item>
-        <item name="toolbarPopupTheme">@style/ThemeOverlay.AppCompat</item>
-        <item name="useHabitColorAsPrimary">false</item>
-        <item name="widgetBackgroundAlpha">1</item>
-        <item name="widgetShadowAlpha">0.25</item>
-        <item name="windowActionModeOverlay">true</item>
-        <item name="windowBackgroundColor">@color/grey_900</item>
-        <item name="buttonBarNegativeButtonStyle">@style/DialogButtonStyle</item>
-        <item name="buttonBarPositiveButtonStyle">@style/DialogButtonStyle</item>
-        <item name="android:textColorAlertDialogListItem">@color/grey_100</item>
-        <item name="singleLineTitle">false</item>
-        <item name="dialogFormLabelColor">@color/grey_800</item>
-    </style>
+        <!-- Dark status and navigation icons, since both bars are white. -->
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
 
-    <style name="AppBaseThemeDark.PureBlack">
-        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
-        <item name="android:textColor">@color/grey_200</item>
-        <item name="cardBackground">@drawable/card_amoled_background</item>
-        <item name="cardBgColor">@color/black</item>
-        <item name="colorPrimary">@color/black</item>
-        <item name="colorPrimaryDark">@color/black</item>
-        <item name="headerBackgroundColor">@color/black</item>
-        <item name="highlightedBackgroundColor">@color/black</item>
-        <item name="contrast0">@color/black</item>
-        <item name="contrast20">@color/grey_900</item>
-        <item name="contrast40">@color/grey_800</item>
-        <item name="contrast60">@color/grey_500</item>
-        <item name="contrast80">@color/grey_400</item>
-        <item name="contrast100">@color/grey_200</item>
-        <item name="selectedBackground">@drawable/selected_box</item>
-        <item name="textColorAlertDialogListItem">@color/grey_100</item>
-        <item name="windowBackgroundColor">@color/black</item>
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material.PureBlack</item>
-        <item name="dialogFormLabelColor">@color/grey_800</item>
+        <!--
+          ~ The platform's own text roles, all forced to black. Material
+          ~ supplies these greys itself, so anything that did not name a colour
+          ~ explicitly was still picking one up: EditText hints, dialog body
+          ~ copy, disabled labels. None of those appear in a layout file, which
+          ~ is why auditing the layouts came back clean while the screens did
+          ~ not.
+          -->
+        <item name="android:textColorPrimary">@color/black</item>
+        <item name="android:textColorSecondary">@color/black</item>
+        <item name="android:textColorTertiary">@color/black</item>
+        <item name="android:textColorHint">@color/black</item>
+        <item name="android:textColorLink">@color/black</item>
+        <item name="android:colorForeground">@color/black</item>
+        <item name="colorOnSurface">@color/black</item>
+        <item name="colorOnBackground">@color/black</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSurface">@color/white</item>
+
+        <!-- Knockout text, for the few places sitting on a black fill. -->
+        <item name="android:textColorPrimaryInverse">@color/white</item>
+        <item name="android:textColorSecondaryInverse">@color/white</item>
+
+        <item name="colorControlNormal">@color/black</item>
+        <item name="colorControlActivated">@color/black</item>
+        <item name="android:colorControlNormal">@color/black</item>
+        <item name="android:colorControlActivated">@color/black</item>
+
+        <!-- No ripple: a spreading circle is a partial repaint that ghosts. -->
+        <item name="colorControlHighlight">@color/transparent</item>
+
+        <!-- No activity transitions. -->
+        <item name="android:windowAnimationStyle">@null</item>
     </style>
 
     <style name="BaseDialog" parent="Theme.AppCompat.Light.Dialog">
         <item name="contrast0">@color/white</item>
-        <item name="contrast20">@color/grey_300</item>
-        <item name="contrast40">@color/grey_350</item>
-        <item name="contrast60">@color/grey_500</item>
-        <item name="contrast80">@color/grey_700</item>
-        <item name="contrast100">@color/grey_800</item>
-        <item name="palette">@array/lightPalette</item>
+        <item name="contrast20">@color/eink_rule</item>
+        <item name="contrast40">@color/eink_rule</item>
+        <item name="contrast60">@color/black</item>
+        <item name="contrast80">@color/black</item>
+        <item name="contrast100">@color/black</item>
+        <item name="palette">@array/einkPalette</item>
         <item name="dialogFormLabelColor">@color/white</item>
+        <item name="colorControlHighlight">@color/transparent</item>
     </style>
 
-    <style name="BaseDialogDark" parent="Theme.AppCompat.Dialog">
-        <item name="contrast0">@color/grey_900</item>
-        <item name="contrast20">@color/grey_800</item>
-        <item name="contrast40">@color/grey_750</item>
-        <item name="contrast60">@color/grey_500</item>
-        <item name="contrast80">@color/grey_300</item>
-        <item name="contrast100">@color/grey_100</item>
-        <item name="palette">@array/darkPalette</item>
-        <item name="dialogFormLabelColor">@color/grey_800</item>
-    </style>
-
-    <style name="PreferenceThemeOverlay.v14.Material.PureBlack">
-        <item name="colorControlHighlight">@color/white_a0</item>
-    </style>
-
-
-    <style name="WidgetTheme" parent="AppBaseThemeDark">
-        <item name="cardBgColor">@color/grey_850</item>
+    <style name="WidgetTheme" parent="AppBaseTheme">
+        <item name="cardBgColor">@color/white</item>
         <item name="contrast0">@color/white</item>
-        <item name="contrast20">@color/white_a0</item>
-        <item name="contrast60">@color/white_aa</item>
-        <item name="contrast80">@color/grey_800</item>
-        <item name="contrast100">@color/white</item>
-        <item name="palette">@array/transparentWidgetPalette</item>
+        <item name="contrast20">@color/eink_rule</item>
+        <item name="contrast60">@color/black</item>
+        <item name="contrast80">@color/black</item>
+        <item name="contrast100">@color/black</item>
+        <item name="palette">@array/einkPalette</item>
         <item name="widgetShadowAlpha">0</item>
+    </style>
+
+    <!--
+      ~ A white header closed by a heavy black rule with a bold title, so the
+      ~ remaining Views screens match TopAppBarMMD until they are converted.
+      -->
+    <style name="Toolbar">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/toolbar_eink_background</item>
+        <item name="android:theme">@style/ThemeOverlay.EInk.Toolbar</item>
+        <item name="titleTextAppearance">@style/ToolbarTitle</item>
+    </style>
+
+    <style name="ToolbarTitle" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:fontFamily">@font/lato_bold</item>
     </style>
 
     <style name="DialogButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
         <item name="android:textSize">@dimen/regularTextSize</item>
-        <item name="android:textColor">@color/grey_100</item>
+        <item name="android:textColor">@color/black</item>
     </style>
 
     <style name="SmallSpinner">
@@ -206,10 +230,11 @@
         <item name="android:background">?cardBackground</item>
     </style>
 
+    <!-- No elevation: the shadow renders as a dithered smear. -->
     <style name="Card" parent="CardCommon">
         <item name="android:layout_marginBottom">1dp</item>
-        <item name="android:elevation">1dp</item>
-        <item name="android:background">?attr/cardBgColor</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:background">?cardBackground</item>
     </style>
 
     <style name="CardHeader">
@@ -244,28 +269,18 @@
         <item name="android:background">@drawable/ripple_transparent</item>
     </style>
 
-    <style name="Toolbar">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:background">?colorPrimary</item>
-        <item name="android:theme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
-    </style>
-
-    <style name="Preference.Category.Material">
-        <item name="android:layout">@layout/preference_category_custom</item>
-    </style>
-
     <style name="DialogWithTitle" parent="@style/Theme.AppCompat.Light.Dialog">
         <item name="windowNoTitle">false</item>
     </style>
 
-    <style name="DarkDialogWithTitle"
-           parent="@style/Theme.AppCompat.Dialog">
-        <item name="windowNoTitle">false</item>
-    </style>
-
+    <!-- "Always show UI controls": the scrollbar stays put instead of fading
+         in and out, which also spares the panel two repaints per scroll. -->
     <style name="ScrollableRecyclerViewStyle" parent="android:Widget">
         <item name="android:scrollbars">vertical</item>
+        <item name="android:fadeScrollbars">false</item>
+        <item name="android:scrollbarSize">6dp</item>
+        <item name="android:scrollbarStyle">outsideOverlay</item>
+        <item name="android:overScrollMode">never</item>
     </style>
 
     <style name="SelectHabitTypeButton">
@@ -278,8 +293,8 @@
         <item name="android:layout_marginRight">16dp</item>
         <item name="android:layout_marginBottom">8dp</item>
         <item name="android:layout_marginTop">8dp</item>
-        <item name="android:elevation">6dp</item>
-        <item name="android:background">@drawable/round_ripple</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:background">@drawable/selected_box_eink</item>
         <item name="android:clickable">true</item>
         <item name="android:selectable">true</item>
     </style>
@@ -424,6 +439,20 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:backgroundDimEnabled">false</item>
         <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+
+    <!--
+      ~ The header's own overlay. AppCompat's Light overlay tints the
+      ~ navigation arrow and the overflow dots #757575, which is a midtone the
+      ~ panel has no way to render: it arrives as a smudge. Everything in the
+      ~ header is black ink, as it is in Notes and Settings on the device.
+      -->
+    <style name="ThemeOverlay.EInk.Toolbar" parent="ThemeOverlay.AppCompat.Light">
+        <item name="colorControlNormal">@color/black</item>
+        <item name="android:colorControlNormal">@color/black</item>
+        <item name="android:textColorPrimary">@color/black</item>
+        <item name="android:textColorSecondary">@color/black</item>
     </style>
 
 </resources>

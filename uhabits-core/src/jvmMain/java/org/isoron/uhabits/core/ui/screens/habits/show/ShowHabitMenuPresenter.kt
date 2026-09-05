@@ -22,17 +22,12 @@ import org.isoron.uhabits.core.commands.ArchiveHabitsCommand
 import org.isoron.uhabits.core.commands.CommandRunner
 import org.isoron.uhabits.core.commands.DeleteHabitsCommand
 import org.isoron.uhabits.core.commands.UnarchiveHabitsCommand
-import org.isoron.uhabits.core.models.Entry
 import org.isoron.uhabits.core.models.Habit
 import org.isoron.uhabits.core.models.HabitList
 import org.isoron.uhabits.core.tasks.ExportCSVTask
 import org.isoron.uhabits.core.tasks.TaskRunner
 import org.isoron.uhabits.core.ui.callbacks.OnConfirmedCallback
-import org.isoron.uhabits.core.utils.DateUtils
 import java.io.File
-import java.util.Random
-import kotlin.math.max
-import kotlin.math.min
 
 class ShowHabitMenuPresenter(
     private val commandRunner: CommandRunner,
@@ -83,24 +78,6 @@ class ShowHabitMenuPresenter(
     fun onUnarchiveHabits() {
         commandRunner.run(UnarchiveHabitsCommand(habitList, listOf(habit)))
         screen.showMessage(Message.HABIT_UNARCHIVED)
-    }
-
-    fun onRandomize() {
-        val random = Random()
-        habit.originalEntries.clear()
-        var strength = 50.0
-        for (i in 0 until 365 * 5) {
-            if (i % 7 == 0) strength = max(0.0, min(100.0, strength + 10 * random.nextGaussian()))
-            if (random.nextInt(100) > strength) continue
-            var value = Entry.YES_MANUAL
-            if (habit.isNumerical) {
-                value =
-                    (1000 + 250 * random.nextGaussian() * strength / 100).toInt() * 1000
-            }
-            habit.originalEntries.add(Entry(DateUtils.getToday().minus(i), value))
-        }
-        habit.recompute()
-        screen.refresh()
     }
 
     enum class Message {

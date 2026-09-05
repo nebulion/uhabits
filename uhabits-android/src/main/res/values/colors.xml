@@ -19,75 +19,49 @@
   -->
 
 <resources>
-    <array name="lightPalette">
-        <item>@color/red_700</item>
-        <item>@color/deep_orange_700</item>
-        <item>@color/orange_700</item>
-        <item>@color/amber_800</item>
-        <item>@color/yellow_800</item>
-        <item>@color/lime_700</item>
-        <item>@color/light_green_600</item>
-        <item>@color/green_700</item>
-        <item>@color/teal_600</item>
-        <item>@color/cyan_600</item>
-        <item>@color/light_blue_600</item>
-        <item>@color/blue_700</item>
-        <item>@color/indigo_700</item>
-        <item>@color/deep_purple_600</item>
-        <item>@color/purple_600</item>
-        <item>@color/pink_600</item>
-        <item>@color/brown_700</item>
-        <item>@color/grey_800</item>
-        <item>@color/grey_600</item>
-        <item>@color/grey_500</item>
+    <!--
+      ~ The Material colour palettes were removed with the E Ink redesign; see
+      ~ einkPalette below.
+      -->
+
+    <!-- Hairline rules. Structure only, never text. -->
+    <color name="eink_rule">#BDBDBD</color>
+
+    <!--
+      ~ There is no E Ink palette. The panel cannot render hue, so every habit
+      ~ is drawn in the same black ink and told apart by its name and position.
+      ~ The array keeps twenty entries because the colour picker and the widget
+      ~ code index into it directly.
+      -->
+    <array name="einkPalette">
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
+        <item>@color/black</item>
     </array>
 
-    <array name="darkPalette">
-        <item>@color/red_200</item>
-        <item>@color/deep_orange_200</item>
-        <item>@color/orange_200</item>
-        <item>@color/amber_100</item>
-        <item>@color/yellow_200</item>
-        <item>@color/lime_200</item>
-        <item>@color/light_green_200</item>
-        <item>@color/green_A200</item>
-        <item>@color/teal_200</item>
-        <item>@color/cyan_200</item>
-        <item>@color/light_blue_200</item>
-        <item>@color/blue_300</item>
-        <item>@color/indigo_200</item>
-        <item>@color/deep_purple_200</item>
-        <item>@color/purple_200</item>
-        <item>@color/pink_200</item>
-        <item>@color/brown_200</item>
-        <item>@color/grey_100</item>
-        <item>@color/grey_300</item>
-        <item>@color/grey_500</item>
-    </array>
-
-    <array name="transparentWidgetPalette">
-        <item>@color/red_800</item>
-        <item>@color/deep_orange_800</item>
-        <item>@color/orange_800</item>
-        <item>@color/amber_800</item>
-        <item>@color/yellow_800</item>
-        <item>@color/lime_800</item>
-        <item>@color/light_green_600</item>
-        <item>@color/green_700</item>
-        <item>@color/teal_700</item>
-        <item>@color/cyan_700</item>
-        <item>@color/light_blue_700</item>
-        <item>@color/blue_800</item>
-        <item>@color/indigo_800</item>
-        <item>@color/deep_purple_700</item>
-        <item>@color/purple_700</item>
-        <item>@color/pink_700</item>
-        <item>@color/brown_800</item>
-        <item>@color/black_aa</item>
-        <item>@color/black_aa</item>
-        <item>@color/black_aa</item>
-    </array>
-
-    <color name="ic_launcher_background">#1976D2</color>
-    <color name="color_background">@color/grey_200</color>
+    <!--
+      The launcher icon's background. This was Material blue (#1976D2), which
+      is the one piece of colour the app still put on screen: the panel cannot
+      render hue, so the OS composited it to whatever grey its own dithering
+      chose, on a home screen that is otherwise pure black on white.
+    -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="color_background">@color/white</color>
 </resources>

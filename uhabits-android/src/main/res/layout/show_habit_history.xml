@@ -42,7 +42,7 @@
         android:layout_gravity="center"
         android:src="@drawable/ic_action_edit_light"
         android:text="@string/edit"
-        android:textColor="@color/grey_400"
+        android:textColor="@color/black"
         android:textSize="@dimen/smallTextSize"/>
 
 </merge>

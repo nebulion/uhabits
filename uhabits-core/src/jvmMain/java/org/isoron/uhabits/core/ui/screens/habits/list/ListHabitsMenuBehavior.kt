@@ -37,10 +37,6 @@ class ListHabitsMenuBehavior @Inject constructor(
         screen.showSelectHabitTypeDialog()
     }
 
-    fun onViewFAQ() {
-        screen.showFAQScreen()
-    }
-
     fun onViewAbout() {
         screen.showAboutScreen()
     }
@@ -92,11 +88,6 @@ class ListHabitsMenuBehavior @Inject constructor(
         }
     }
 
-    fun onToggleNightMode() {
-        themeSwitcher.toggleNightMode()
-        screen.applyTheme()
-    }
-
     fun onPreferencesChanged() {
         updateAdapterFilter()
     }
@@ -130,7 +121,6 @@ class ListHabitsMenuBehavior @Inject constructor(
     interface Screen {
         fun applyTheme()
         fun showAboutScreen()
-        fun showFAQScreen()
         fun showSettingsScreen()
         fun showSelectHabitTypeDialog()
     }

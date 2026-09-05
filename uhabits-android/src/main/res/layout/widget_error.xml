@@ -36,6 +36,6 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="Error drawing widget"
-        android:textColor="#ffffff"/>
+        android:textColor="@color/black"/>
 
 </LinearLayout>

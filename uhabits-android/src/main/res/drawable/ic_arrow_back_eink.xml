@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright 2025 The Android Open Source Project
+  ~ Based on Material 3. Modified by Mudita Sp. z o.o.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!--
+  ~ Back chevron, taken verbatim from mudita/MMD
+  ~ mmd-core/src/androidMain/res/drawable/chevron_filled_left.xml rather than
+  ~ drawn by eye. MMD ships filled chevrons in all four directions; this is
+  ~ their left one, which is what their screens use for "back".
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <path
+      android:pathData="M6.001,10.653C5.215,11.379 5.215,12.621 6.001,13.347L13.382,20.16C14.556,21.244 16.458,20.411 16.458,18.813V5.187C16.458,3.589 14.556,2.756 13.382,3.84L6.001,10.653Z"
+      android:fillColor="#000000"/>
+</vector>

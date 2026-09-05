@@ -76,14 +76,15 @@ class HabitsApplication : Application() {
             setStartDayOffset(0, 0)
         }
 
-        val habitList = component.habitList
-        for (h in habitList) h.recompute()
-
-        widgetUpdater = component.widgetUpdater.apply {
-            startListening()
-            scheduleStartDayWidgetUpdate()
-        }
-
+        // No widget bookkeeping. Every one of the six providers is
+        // unregistered from the manifest, so there is no widget for any of
+        // this to update -- and the scheduling half of it was not free: it
+        // armed an exact `setExactAndAllowWhileIdle` alarm for the start of
+        // tomorrow, which wakes the CPU out of Doze, and WidgetReceiver
+        // re-armed the next one as it handled it. That made a daily wake, for
+        // the life of the install, whose entire job was to redraw widgets that
+        // cannot exist. Listening to commands is dropped for the same reason:
+        // it ran twelve binder round-trips per checkmark to find no widgets.
         reminderScheduler = component.reminderScheduler
         reminderScheduler.startListening()
 
@@ -92,14 +93,29 @@ class HabitsApplication : Application() {
 
         val taskRunner = component.taskRunner
         taskRunner.execute {
+            // Recomputing every habit used to happen right here in onCreate,
+            // on the main thread, before any Activity existed -- so it gated
+            // first paint by however long it took to walk 41 habits and
+            // several years of entries each. It cannot simply be dropped:
+            // `SQLModelFactory` gives a habit a SQLite-backed
+            // `originalEntries` but a plain in-memory `computedEntries` and
+            // `ScoreList`, so both really are empty on a cold start and
+            // something has to fill them.
+            //
+            // It is safe here because `AndroidTaskRunner` runs tasks on
+            // AsyncTask's serial executor: `HabitCardListCache` queues its own
+            // refresh through the same runner, so it cannot read a habit
+            // before this has finished writing it, and there is no race to
+            // guard. The visible trade is that a cold start can now paint an
+            // empty list for a moment on a large database, where before it
+            // painted nothing at all for longer.
+            for (h in component.habitList) h.recompute()
             reminderScheduler.scheduleAll()
-            widgetUpdater.updateWidgets()
         }
     }
 
     override fun onTerminate() {
         reminderScheduler.stopListening()
-        widgetUpdater.stopListening()
         notificationTray.stopListening()
         super.onTerminate()
     }

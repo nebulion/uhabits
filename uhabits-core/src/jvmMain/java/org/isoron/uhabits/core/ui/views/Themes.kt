@@ -66,9 +66,9 @@ abstract class Theme {
         }
     }
 
-    val checkmarkButtonSize = 48.0
-    val smallTextSize = 10.0
-    val regularTextSize = 17.0
+    open val checkmarkButtonSize = 48.0
+    open val smallTextSize = 10.0
+    open val regularTextSize = 17.0
 }
 
 open class LightTheme : Theme()
