@@ -19,6 +19,8 @@
 
 package org.isoron.uhabits.activities.habits.show
 
+import org.isoron.uhabits.core.ui.screens.habits.show.views.FrequencyCardState
+import org.isoron.uhabits.core.ui.screens.habits.show.views.StreakCardState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.remember
@@ -152,6 +154,19 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
     private var history by mutableStateOf<HistoryCardState?>(null)
 
     /**
+     * The streaks and the weekday grid, held for Compose rather than pushed
+     * into a View.
+     *
+     * Both cards are drawn by [HabitStreaksMMD] and [HabitFrequencyMMD] now.
+     * Their old `StreakChart` and `FrequencyChart` are still in the tree --
+     * they are `android.view.View` subclasses with their own `onDraw`, and the
+     * habits list's checkmark drawing still shares their halftone -- but
+     * nothing on this screen hosts them any more.
+     */
+    private var streaks by mutableStateOf<StreakCardState?>(null)
+    private var frequency by mutableStateOf<FrequencyCardState?>(null)
+
+    /**
      * Which span the score and bar charts are drawn over, and whether the bar
      * chart is showing a numerical habit.
      *
@@ -262,6 +277,18 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
                             cards = panels[selected].cards,
                             onScrolled = onScrolled,
                             modifier = Modifier.weight(1f),
+                            leading = when (selected) {
+                                STREAKS_TAB -> {
+                                    { streaks?.let { HabitStreaksMMD(state = it) } }
+                                }
+                                else -> null
+                            },
+                            trailing = when (selected) {
+                                SCORE_TAB -> {
+                                    { frequency?.let { HabitFrequencyMMD(state = it) } }
+                                }
+                                else -> null
+                            },
                         )
                     }
                 }
@@ -341,13 +368,16 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
         // of which is a field on the edit screen, one tap away, where they can
         // also be changed. A tab that only repeats another page is not worth
         // its width.
+        //
+        // Frequency sits under Score, not Streaks. It is a question about
+        // pattern over time -- which days does this actually happen on -- and
+        // it belongs beside the score line and the bar chart rather than
+        // beside a table of longest runs. Moving it also leaves Streaks as one
+        // clean list.
         return listOf(
             PanelSpec(stringOrEmpty(R.string.calendar), emptyList()),
             PanelSpec(stringOrEmpty(R.string.score), cardsFor("score", "bar")),
-            PanelSpec(
-                stringOrEmpty(R.string.streaks),
-                cardsFor("streak", "frequency", "target"),
-            ),
+            PanelSpec(stringOrEmpty(R.string.streaks), cardsFor("target")),
         )
     }
 
@@ -365,6 +395,10 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
         cards: List<Card>,
         onScrolled: () -> Unit,
         modifier: Modifier = Modifier,
+        /** Compose content above the hosted cards, if this panel has any. */
+        leading: (@Composable () -> Unit)? = null,
+        /** Compose content below them. */
+        trailing: (@Composable () -> Unit)? = null,
     ) {
         val listState = rememberLazyListState()
 
@@ -380,6 +414,9 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
             isScrollbarVisible = false,
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
+            if (leading != null) {
+                item(key = "leading") { leading() }
+            }
             itemsIndexed(cards, key = { _, c -> System.identityHashCode(c.view) }) { index, card ->
                 // The span picker sits above its chart rather than inside the
                 // card, because the card is still an Android View and this is
@@ -416,6 +453,12 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
                 )
                 if (index < cards.lastIndex) HorizontalDividerMMD(thickness = 1.dp)
             }
+            if (trailing != null) {
+                item(key = "trailing") {
+                    if (cards.isNotEmpty()) HorizontalDividerMMD(thickness = 1.dp)
+                    trailing()
+                }
+            }
         }
     }
 
@@ -441,6 +484,8 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
         binding.frequencyCard.setState(data.frequency)
         binding.historyCard.setState(data.history)
         history = data.history
+        streaks = data.streaks
+        frequency = data.frequency
         binding.barCard.setState(data.bar)
         scoreSpan = data.scores.spinnerPosition
         barIsNumerical = data.bar.isNumerical
@@ -495,6 +540,10 @@ private const val CALENDAR_TAB = 0
  * Read from the same strings the two `android:entries` arrays used, so nothing
  * has to be translated twice.
  */
+/** Index of each tab in [ShowHabitView.panels]. */
+private const val SCORE_TAB = 1
+private const val STREAKS_TAB = 2
+
 private val SPAN_NAMES = listOf(
     R.string.day,
     R.string.week,

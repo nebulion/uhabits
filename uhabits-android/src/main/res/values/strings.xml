@@ -25,6 +25,12 @@
     <string name="app_name" >Habits</string>
     <string name="first_weekday">First day of the week</string>
     <string name="averaged_by">Averaged by</string>
+    <string name="days_lowercase">days</string>
+    <string name="frequency_done_on">Done on</string>
+    <string name="frequency_none">none</string>
+    <string name="frequency_some">some</string>
+    <string name="frequency_most">most</string>
+    <string name="frequency_every">every</string>
     <string name="main_activity_title">Habits</string>
     <string name="action_settings">Settings</string>
     <string name="edit">Edit</string>
