@@ -19,6 +19,9 @@
 
 package org.isoron.uhabits.activities.habits.list
 
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.Job
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
@@ -531,8 +534,51 @@ private fun PagerButton(
     dotted: Int,
     enabled: Boolean,
     onClick: () -> Unit,
+    repeatWhileHeld: Boolean = false,
 ) {
-    IconButton(onClick = onClick, enabled = enabled) {
+    if (!repeatWhileHeld) {
+        IconButton(onClick = onClick, enabled = enabled) {
+            Icon(
+                painter = painterResource(if (enabled) filled else dotted),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        return
+    }
+
+    val scope = rememberCoroutineScope()
+    // Read inside a gesture that outlives the composition that started it.
+    val step = rememberUpdatedState(onClick)
+    val live = rememberUpdatedState(enabled)
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown()
+                    if (!live.value) {
+                        waitForUpOrCancellation()
+                        return@awaitEachGesture
+                    }
+                    // One page immediately, so a tap behaves exactly as it did.
+                    step.value()
+                    val held = scope.launch {
+                        delay(PAGER_HOLD_DELAY_MS)
+                        var interval = PAGER_REPEAT_START_MS
+                        while (isActive && live.value) {
+                            step.value()
+                            delay(interval)
+                            interval = (interval - PAGER_REPEAT_ACCEL_MS)
+                                .coerceAtLeast(PAGER_REPEAT_MIN_MS)
+                        }
+                    }
+                    waitForUpOrCancellation()
+                    held.cancel()
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
         Icon(
             painter = painterResource(if (enabled) filled else dotted),
             contentDescription = null,
@@ -540,6 +586,27 @@ private fun PagerButton(
         )
     }
 }
+
+/**
+ * How long the forward arrow waits before it starts repeating, and how fast it
+ * goes once it does.
+ *
+ * Only the forward arrow repeats. Going back through history is browsing --
+ * you stop when you see the week you were looking for -- but coming *back* to
+ * today is travel: you already know where you are going and every page in
+ * between is in the way. The catch on this panel is that each page is a
+ * repaint, so this accelerates into it rather than starting fast: a pause long
+ * enough that a tap is never mistaken for a hold, then pages that speed up
+ * while your thumb stays down, floored well short of a rate the screen could
+ * not keep up with.
+ *
+ * It stops on its own when `canGoNewer` goes false, so holding past today
+ * costs nothing.
+ */
+private const val PAGER_HOLD_DELAY_MS = 450L
+private const val PAGER_REPEAT_START_MS = 320L
+private const val PAGER_REPEAT_ACCEL_MS = 45L
+private const val PAGER_REPEAT_MIN_MS = 140L
 
 /**
  * Day headings, with the pager sitting in the space the habit names occupy on
@@ -578,6 +645,9 @@ private fun DayHeadingRow(
                 dotted = R.drawable.mmd_chevron_dotted_right,
                 enabled = canGoNewer,
                 onClick = onNewer,
+                // Hold to run forward through the weeks. Only this way round:
+                // see [PAGER_HOLD_DELAY_MS].
+                repeatWhileHeld = true,
             )
         }
         dayLabels.forEach { label ->
