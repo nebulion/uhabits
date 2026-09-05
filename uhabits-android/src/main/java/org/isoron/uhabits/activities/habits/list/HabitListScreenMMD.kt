@@ -932,7 +932,7 @@ private fun Modifier.reorderDragHandle(
     if (!enabled) return@composed this
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val edgeZonePx = with(density) { EDGE_SCROLL_ZONE.toPx() }
+    val edgeMarginPx = with(density) { EDGE_MARGIN.toPx() }
     // Read inside a long-lived gesture coroutine, so it is tracked rather than
     // captured: a captured copy goes stale as soon as the list changes.
     val currentIndex = rememberUpdatedState(index)
@@ -968,22 +968,31 @@ private fun Modifier.reorderDragHandle(
                     onDragChange(habit.id, next)
                 }
 
-                // Scroll while the finger is *near* an edge, not only once it
-                // has reached one, so the list starts moving before you run out
-                // of room to move it. One row per step, and no faster than
-                // [EDGE_SCROLL_INTERVAL_MS], because each step is a repaint.
+                // The list moves only when the finger is actually *at* an
+                // edge, and when it does it turns a whole page rather than
+                // creeping a row at a time. Creeping was the wrong idea twice
+                // over: it is the continuous motion this app removes
+                // everywhere else, and it makes the list drift under a finger
+                // that is trying to aim at a boundary in it. Anywhere but the
+                // very edge, a drag only moves the line.
+                //
+                // A page is [SCROLL_STEP], the same distance the list turns
+                // when you scroll it yourself, so a drag and a scroll travel
+                // by the same amount.
                 val now = System.currentTimeMillis()
-                if (now - lastScrollAt >= EDGE_SCROLL_INTERVAL_MS) {
+                if (now - lastScrollAt >= PAGE_TURN_INTERVAL_MS) {
                     val top = info.viewportStartOffset
                     val bottom = info.viewportEndOffset
                     val target = when {
-                        pointerY < top + edgeZonePx -> listState.firstVisibleItemIndex - 1
-                        pointerY > bottom - edgeZonePx -> listState.firstVisibleItemIndex + 1
+                        pointerY <= top + edgeMarginPx ->
+                            listState.firstVisibleItemIndex - SCROLL_STEP
+                        pointerY >= bottom - edgeMarginPx ->
+                            listState.firstVisibleItemIndex + SCROLL_STEP
                         else -> null
                     }
-                    if (target != null && target >= 0) {
+                    if (target != null) {
                         lastScrollAt = now
-                        scope.launch { listState.scrollToItem(target) }
+                        scope.launch { listState.scrollToItem(target.coerceAtLeast(0)) }
                     }
                 }
             }
@@ -1028,20 +1037,22 @@ private fun LazyListLayoutInfo.nearestBoundary(pointerY: Float, start: Int): Int
 }
 
 /**
- * How close to an edge the finger has to be for the list to start scrolling.
+ * How near an edge counts as being at it, while dragging.
  *
- * A whole row, so the list begins moving while the finger still has somewhere
- * to go, rather than only once it has run into the edge and stopped.
+ * Small on purpose. This is not a zone the drag reacts to across, it is the
+ * last sliver of the screen: everywhere else a drag moves the drop line and
+ * nothing else, and the list stays exactly where it was put.
  */
-private val EDGE_SCROLL_ZONE = CELL_HEIGHT
+private val EDGE_MARGIN = 12.dp
 
 /**
- * The fastest the list will scroll itself during a drag: one row per step.
+ * How often holding at an edge turns another page.
  *
- * Each step is a repaint of the whole list, so this is paced for a panel that
- * takes a moment to redraw rather than for a screen that does not.
+ * A page is a full repaint, so this is paced for a panel that takes a moment
+ * to redraw. Slow enough to see each page land and stop, rather than watching
+ * the list run away while deciding.
  */
-private const val EDGE_SCROLL_INTERVAL_MS = 250L
+private const val PAGE_TURN_INTERVAL_MS = 700L
 
 /**
  * Draws the drop line for a drag, over the row rather than in it.
@@ -1066,18 +1077,3 @@ private fun Modifier.dropIndicator(
     }
 }
 
-/**
- * Scrolls just far enough to keep boundary [index] on screen, and no further.
- *
- * `animateScrollToItem` is deliberately not used: an animated scroll is the
- * continuous motion this app removes everywhere else, and it would also race
- * the next step of the drag.
- */
-private suspend fun LazyListState.keepVisible(index: Int) {
-    val visible = layoutInfo.visibleItemsInfo
-    if (visible.isEmpty()) return
-    when {
-        index <= visible.first().index -> scrollToItem((index - 1).coerceAtLeast(0))
-        index >= visible.last().index -> scrollToItem(firstVisibleItemIndex + 1)
-    }
-}
