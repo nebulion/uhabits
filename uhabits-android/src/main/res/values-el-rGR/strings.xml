@@ -94,7 +94,6 @@
         <item quantity="one">Η συνήθεια θα διαγραφεί οριστικά. Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</item>
         <item quantity="other">Οι συνήθειες θα διαγραφούν οριστικά. Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</item>
     </plurals>
-    <string name="habit_not_found">Η συνήθεια διαγράφηκε / δε βρέθηκε</string>
     <string name="weekends">Σαββατοκύριακα</string>
     <string name="any_weekday">Δευτέρα μέχρι Παρασκευή</string>
     <string name="any_day">Οποιαδήποτε μέρα της εβδομάδας</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">Δεν μπορεί να είναι κενό</string>
     <string name="today">Σήμερα</string>
     <string name="enter">Εισαγωγή</string>
-    <string name="no_habits">Δεν βρέθηκαν συνήθειες</string>
-    <string name="no_numerical_habits">Δεν βρέθηκαν μετρήσιμες συνήθειες</string>
-    <string name="no_boolean_habits">Δεν βρέθηκαν συνήθειες ναι-ή-όχι</string>
     <string name="increment">Αύξηση</string>
     <string name="decrement">Μείωση</string>
     <string name="pref_skip_title">Ενεργοποίηση παράλειψης ημερών</string>

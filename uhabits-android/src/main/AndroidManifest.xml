@@ -95,21 +95,6 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
-
-
-
-
-
-
-
-
-        <!--
-          ~ Every home-screen widget was unregistered here. A Kompakt-class
-          ~ launcher has no widget host, so the six providers, their
-          ~ configuration dialogs and the stack-widget service could only ever
-          ~ advertise capability the device does not have. The widget classes
-          ~ under .widgets are left in the tree but are now unreachable.
-          -->
         <receiver
             android:name=".receivers.ReminderReceiver"
             android:exported="true">

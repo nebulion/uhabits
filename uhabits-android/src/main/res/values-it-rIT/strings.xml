@@ -94,7 +94,6 @@
         <item quantity="one">L\'abitudine verrà eliminata definitivamente. Questa azione non può essere annullata.</item>
         <item quantity="other">Le abitudini verranno eliminate definitivamente. Questa azione non può essere annullata.</item>
     </plurals>
-    <string name="habit_not_found">Abitudine cancellata / non trovata</string>
     <string name="weekends">Weekend</string>
     <string name="any_weekday">Giorni feriali</string>
     <string name="any_day">Ogni giorno della settimana</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">Non può essere lasciato vuoto</string>
     <string name="today">Oggi</string>
     <string name="enter">Inserisci</string>
-    <string name="no_habits">Nessuna abitudine trovata</string>
-    <string name="no_numerical_habits">Nessuna abitudine misurabile trovata</string>
-    <string name="no_boolean_habits">Nessuna abitudine sì/no trovata</string>
     <string name="increment">Incremento</string>
     <string name="decrement">Decremento</string>
     <string name="pref_skip_title">Abilita salta giorni</string>

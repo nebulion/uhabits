@@ -1105,11 +1105,12 @@ private val EDGE_MARGIN = CELL_HEIGHT
 /**
  * How often holding at an edge turns another page.
  *
- * A page is a full repaint, so this is paced for a panel that takes a moment
- * to redraw. Slow enough to see each page land and stop, rather than watching
- * the list run away while deciding.
+ * A page is a full repaint *and* it moves the ground you are aiming at, so the
+ * pace is set by how long it takes to read where you have landed and decide,
+ * not by how fast the list could go. 700ms was tried first and ran away
+ * underneath the finger.
  */
-private const val PAGE_TURN_INTERVAL_MS = 700L
+private const val PAGE_TURN_INTERVAL_MS = 1400L
 
 /**
  * The rule between two habits, and the thing a drag points at.

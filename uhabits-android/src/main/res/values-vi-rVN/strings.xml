@@ -88,7 +88,6 @@
     <plurals name="delete_habits_message">
         <item quantity="other">Thói quen sẽ bị xoá vĩnh viễn. Hành động này không thể được hoàn tác.</item>
     </plurals>
-    <string name="habit_not_found">Thói quen đã bị xoá hoặc không tìm thấy</string>
     <string name="weekends">Cuối tuần</string>
     <string name="any_weekday">Thứ hai đến thứ sáu</string>
     <string name="any_day">Tất cả các ngày trong tuần</string>
@@ -199,9 +198,6 @@
     <string name="validation_cannot_be_blank">Không thể để trống</string>
     <string name="today">Hôm nay</string>
     <string name="enter">Nhập</string>
-    <string name="no_habits">Không tìm thấy thói quen nào</string>
-    <string name="no_numerical_habits">Không tìm thấy thói quen có thể đo lường nào</string>
-    <string name="no_boolean_habits">Không tìm thấy thói quen có hoặc không nào</string>
     <string name="increment">Tăng lên</string>
     <string name="decrement">Giảm xuống</string>
     <string name="pref_skip_title">Bật bỏ qua ngày</string>

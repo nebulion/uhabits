@@ -106,7 +106,6 @@
         <item quantity="many">Привычки будут удалены. Это действие невозможно отменить.</item>
         <item quantity="other">Привычки будут удалены. Это действие невозможно отменить.</item>
     </plurals>
-    <string name="habit_not_found">Привычка удалена / не найдена</string>
     <string name="weekends">По выходным</string>
     <string name="any_weekday">По будням</string>
     <string name="any_day">Каждый день</string>
@@ -219,9 +218,6 @@
     <string name="validation_cannot_be_blank">Не может быть пустым</string>
     <string name="today">Сегодня</string>
     <string name="enter">Ввести</string>
-    <string name="no_habits">Привычек не найдено</string>
-    <string name="no_numerical_habits">Измеримых привычек не найдено</string>
-    <string name="no_boolean_habits">Привычек \"да или нет\" не найдено</string>
     <string name="increment">Увеличить</string>
     <string name="decrement">Уменьшить</string>
     <string name="pref_skip_title">Включить пропуск дней</string>

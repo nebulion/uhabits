@@ -88,7 +88,6 @@
     <plurals name="delete_habits_message">
         <item quantity="other">習慣は完全に削除されます。この操作を元に戻すことはできません。</item>
     </plurals>
-    <string name="habit_not_found">習慣が削除されているか、見つかりませんでした</string>
     <string name="weekends">週末</string>
     <string name="any_weekday">月曜日から金曜日</string>
     <string name="any_day">すべての曜日</string>
@@ -199,9 +198,6 @@
     <string name="validation_cannot_be_blank">空白にはできません</string>
     <string name="today">今日</string>
     <string name="enter">入力</string>
-    <string name="no_habits">習慣が見つかりませんでした</string>
-    <string name="no_numerical_habits">量を記録するタイプの習慣は見つかりませんでした</string>
-    <string name="no_boolean_habits">はい/いいえタイプの習慣は見つかりませんでした</string>
     <string name="increment">増加</string>
     <string name="decrement">減少</string>
     <string name="pref_skip_title">スキップ日を有効にする</string>

@@ -94,7 +94,6 @@
         <item quantity="one">این عادت برای همیشه حذف خواهد شد و قابل بازیابی نخواهد بود.</item>
         <item quantity="other">این عادت‌ها برای همیشه حذف خواهند شد و قابل بازیابی نخواهند بود.</item>
     </plurals>
-    <string name="habit_not_found">عادت حذف شده / پیدا نشد </string>
     <string name="weekends">آخر هفته‌ها </string>
     <string name="any_weekday">دوشنبه تا جمعه </string>
     <string name="any_day">هر روز هفته </string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">نمی‌تواند خالی باشد</string>
     <string name="today">امروز</string>
     <string name="enter">وارد کردن</string>
-    <string name="no_habits">عادتی یافت نشد</string>
-    <string name="no_numerical_habits">عادت قابل‌اندازه‌گیری یافت نشد</string>
-    <string name="no_boolean_habits">عادت بله/خیر یافت نشد</string>
     <string name="increment">افزایش</string>
     <string name="decrement">کاهش</string>
     <string name="pref_skip_title">فعال کردن پریدن از روزها</string>

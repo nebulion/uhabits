@@ -94,7 +94,6 @@
         <item quantity="one">ჩვევა სამუდამოდ წაიშლება. ამ მოქმედების შედეგის გაუქმება შეუძლებელია.</item>
         <item quantity="other">ჩვევები სამუდამოდ წაიშლება. ამ მოქმედების შედეგის გაუქმება შეუძლებელია.</item>
     </plurals>
-    <string name="habit_not_found">ჩვევა წაშლილია / ვერ მოიძებნა</string>
     <string name="weekends">შაბათ-კვირაობით</string>
     <string name="any_weekday">ორშაბათიდან პარასკევის ჩათვლით</string>
     <string name="any_day">კვირის ყოველ დღეს</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">ცარიელი ვერ იქნება</string>
     <string name="today">დღეს</string>
     <string name="enter">შეყვანა</string>
-    <string name="no_habits">ჩვევები ვერ მოიძებნა</string>
-    <string name="no_numerical_habits">გამზომვადი ჩვევები ვერ მოიძებნა</string>
-    <string name="no_boolean_habits">„კი თუ არა“ ტიპის ჩვევები ვერ მოიძებნა</string>
     <string name="increment">გაზრდა</string>
     <string name="decrement">შემცირება</string>
     <string name="pref_skip_title">დღეების გამოტოვების ჩართვა</string>

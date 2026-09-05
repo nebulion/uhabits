@@ -94,7 +94,6 @@
         <item quantity="one">De gewoonte zal permanent verwijderd worden. Deze actie kan niet ongedaan gemaakt worden.</item>
         <item quantity="other">De gewoontes zullen permanent verwijderd worden. Deze actie kan niet ongedaan gemaakt worden.</item>
     </plurals>
-    <string name="habit_not_found">Gewoonte verwijderd / niet gevonden</string>
     <string name="weekends">Weekends</string>
     <string name="any_weekday">Maandag tot vrijdag</string>
     <string name="any_day">Elke dag van de week</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">Mag niet leeg zijn</string>
     <string name="today">Vandaag</string>
     <string name="enter">Voer in</string>
-    <string name="no_habits">Geen gewoontes gevonden</string>
-    <string name="no_numerical_habits">Geen meetbare gewoontes gevonden</string>
-    <string name="no_boolean_habits">Geen ja-of-nee-gewoontes gevonden</string>
     <string name="increment">Verhogen</string>
     <string name="decrement">Verlagen</string>
     <string name="pref_skip_title">Overgeslagen dagen inschakelen</string>

@@ -66,7 +66,6 @@
     <string name="hint_title">Visste du at?</string>
     <string name="hint_drag">For å sortere innleggene, trykk og hold på navnet til vanen, deretter dra den til det korrekte stedet.</string>
     <string name="hint_landscape">Du kan se flere dager ved å sette telefonen din i landskapsmodus.</string>
-    <string name="habit_not_found">Vane slettet / ikke funnet</string>
     <string name="weekends">Helger</string>
     <string name="any_weekday">Hverdager</string>
     <string name="any_day">Hvilken som helst dag i uken</string>

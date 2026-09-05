@@ -94,7 +94,6 @@
         <item quantity="one">Vanan kommer att raderas permanent. Denna åtgärd går inte att ångra.</item>
         <item quantity="other">Vanorna kommer att raderas permanent. Denna åtgärd går inte att ångra.</item>
     </plurals>
-    <string name="habit_not_found">Vana borttagen / hittades inte</string>
     <string name="weekends">Helger</string>
     <string name="any_weekday">Måndag till fredag</string>
     <string name="any_day">Vilken dag som helst</string>
@@ -114,11 +113,6 @@
     <string name="version_n">Version %s</string>
     <string name="frequency">Frekvens</string>
     <string name="checkmark">Kryssruta</string>
-    <string name="checkmark_stack_widget" formatted="false">Stapelwidget med kryssruta</string>
-    <string name="frequency_stack_widget" formatted="false">Stapelwidget med frekvens</string>
-    <string name="score_stack_widget" formatted="false">Stapelwidget med poäng</string>
-    <string name="history_stack_widget" formatted="false">Stapelwidget med historik</string>
-    <string name="streaks_stack_widget" formatted="false">Stapelwidget med serier</string>
     <string name="best_streaks">Bästa serie</string>
     <string name="every_day">Varje dag</string>
     <string name="every_week">Varje vecka</string>
@@ -214,9 +208,6 @@
     <string name="validation_cannot_be_blank">Får inte vara tomt</string>
     <string name="today">Idag</string>
     <string name="enter">Ange</string>
-    <string name="no_habits">Inga vanor hittades</string>
-    <string name="no_numerical_habits">Inga mätbara vanor hittades</string>
-    <string name="no_boolean_habits">Inga ja-eller-nej-vanor hittades</string>
     <string name="increment">Öka</string>
     <string name="decrement">Minska</string>
     <string name="pref_skip_title">Aktivera överhoppning av dagar</string>

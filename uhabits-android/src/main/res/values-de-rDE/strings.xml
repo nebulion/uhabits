@@ -94,7 +94,6 @@
         <item quantity="one">Die Gewohnheit wird für immer gelöscht. Dies kann nicht rückgängig gemacht werden.</item>
         <item quantity="other">Die Gewohnheiten werden für immer gelöscht. Dies kann nicht rückgängig gemacht werden.</item>
     </plurals>
-    <string name="habit_not_found">Gewohnheit gelöscht / nicht gefunden</string>
     <string name="weekends">An Wochenenden</string>
     <string name="any_weekday">Montag bis Freitag</string>
     <string name="any_day">Jeden Tag</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">Darf nicht leer sein</string>
     <string name="today">Heute</string>
     <string name="enter">Eingeben</string>
-    <string name="no_habits">Keine Gewohnheiten gefunden</string>
-    <string name="no_numerical_habits">Keine messbaren Gewohnheiten gefunden</string>
-    <string name="no_boolean_habits">Keine Ja-oder-Nein-Gewohnheiten gefunden</string>
     <string name="increment">Erhöhen</string>
     <string name="decrement">Verringern</string>
     <string name="pref_skip_title">Tage überspringen aktivieren</string>

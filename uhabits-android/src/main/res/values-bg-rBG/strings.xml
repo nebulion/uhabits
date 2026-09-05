@@ -94,7 +94,6 @@
         <item quantity="one">Навикът ще бъде перманентно изтрит. Това действие не може да бъде отменено.</item>
         <item quantity="other">Навиците ще бъдат перманентно изтрити. Това действие не може да бъде отменено.</item>
     </plurals>
-    <string name="habit_not_found">Навикът е изтрит / не е намерен</string>
     <string name="weekends">Събота и неделя</string>
     <string name="any_weekday">От понеделник до петък</string>
     <string name="any_day">Всеки ден от седмицата</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">Не може да бъде празно</string>
     <string name="today">Днес</string>
     <string name="enter">Въвеждане</string>
-    <string name="no_habits">Не са намерени навици</string>
-    <string name="no_numerical_habits">Не са намерени измерими навици</string>
-    <string name="no_boolean_habits">Не са намерени навици от тип \"да или не\"</string>
     <string name="increment">Увеличаване</string>
     <string name="decrement">Намаляване</string>
     <string name="pref_skip_title">Включване на пропуснати дни</string>

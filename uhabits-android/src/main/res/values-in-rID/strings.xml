@@ -88,7 +88,6 @@
     <plurals name="delete_habits_message">
         <item quantity="other">Kebiasaan ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.</item>
     </plurals>
-    <string name="habit_not_found">Kebiasaan telah dihapus / tidak ditemukan</string>
     <string name="weekends">Akhir pekan</string>
     <string name="any_weekday">Senin - Jumat</string>
     <string name="any_day">Hari apapun dalam satu minggu</string>
@@ -108,11 +107,6 @@
     <string name="version_n">Versi %s</string>
     <string name="frequency">Frekuensi</string>
     <string name="checkmark">Tanda centang</string>
-    <string name="checkmark_stack_widget" formatted="false">Widget susunan tanda centang</string>
-    <string name="frequency_stack_widget" formatted="false">Widget susunan frekuensi</string>
-    <string name="score_stack_widget" formatted="false">Widget susunan skor</string>
-    <string name="history_stack_widget" formatted="false">Widget sususan riwayat</string>
-    <string name="streaks_stack_widget" formatted="false">Widget susunan rentetan</string>
     <string name="best_streaks">Rentetan terbaik</string>
     <string name="every_day">Setiap hari</string>
     <string name="every_week">Setiap minggu</string>
@@ -208,9 +202,6 @@
     <string name="validation_cannot_be_blank">Tidak boleh kosong</string>
     <string name="today">Hari ini</string>
     <string name="enter">Enter</string>
-    <string name="no_habits">Tidak ada Kebiasaan ditemukan</string>
-    <string name="no_numerical_habits">Tidak ada Kebiasaan terukur yang ditemukan</string>
-    <string name="no_boolean_habits">Tidak ada Kebiasaan ya-atau-tidak yang ditemukan</string>
     <string name="increment">Kenaikan</string>
     <string name="decrement">Pengurangan</string>
     <string name="pref_skip_title">Aktifkan lewati hari</string>

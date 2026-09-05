@@ -18,8 +18,6 @@
  */
 package org.isoron.uhabits
 
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.os.Looper
 import androidx.annotation.StyleRes
@@ -27,8 +25,6 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import junit.framework.TestCase
-import org.hamcrest.CoreMatchers.hasItems
-import org.hamcrest.MatcherAssert.assertThat
 import org.isoron.uhabits.core.models.HabitList
 import org.isoron.uhabits.core.models.ModelFactory
 import org.isoron.uhabits.core.models.Timestamp
@@ -42,11 +38,9 @@ import org.isoron.uhabits.inject.HabitsModule
 import org.isoron.uhabits.utils.DatabaseUtils.getDatabaseFile
 import org.isoron.uhabits.utils.InterfaceUtils.setFixedResolution
 import org.isoron.uhabits.utils.StyledResources.Companion.setFixedTheme
-import org.isoron.uhabits.widgets.BaseWidgetProvider
 import org.junit.Before
 import java.util.Calendar
 import java.util.GregorianCalendar
-import java.util.LinkedList
 import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.CountDownLatch
@@ -95,17 +89,6 @@ abstract class BaseAndroidTest : TestCase() {
         fixtures = HabitFixtures(modelFactory, habitList)
         fixtures.purgeHabits(appComponent.habitList)
         fixtures.createEmptyHabit()
-    }
-
-    protected fun assertWidgetProviderIsInstalled(componentClass: Class<out BaseWidgetProvider?>?) {
-        val provider = ComponentName(targetContext, componentClass!!)
-        val manager = AppWidgetManager.getInstance(targetContext)
-        val installedProviders: MutableList<ComponentName> = LinkedList()
-        for (info in manager.installedProviders) installedProviders.add(info.provider)
-        assertThat<List<ComponentName>>(
-            installedProviders,
-            hasItems(provider)
-        )
     }
 
     protected fun setLocale(language: String, country: String) {

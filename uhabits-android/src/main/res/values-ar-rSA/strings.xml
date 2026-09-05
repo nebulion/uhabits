@@ -118,7 +118,6 @@
         <item quantity="many">سيتم حذف العادات بشكل دائم. لا يمكن التراجع عن هذه الخطوة.</item>
         <item quantity="other">سيتم حذف العادات بشكل دائم. لا يمكن التراجع عن هذه الخطوة.</item>
     </plurals>
-    <string name="habit_not_found">العادة حذفت/لم يتم العثور عليها   </string>
     <string name="weekends">عطلة نهاية الأسبوع  </string>
     <string name="any_weekday">أيام الأسبوع. </string>
     <string name="any_day">أي يوم. </string>
@@ -229,9 +228,6 @@
     <string name="validation_cannot_be_blank">لا يمكن أن يكون الإسم فارغًا</string>
     <string name="today">اليوم</string>
     <string name="enter">ادخل</string>
-    <string name="no_habits">لا توجد عادات</string>
-    <string name="no_numerical_habits">لا توجد عادات قابلة للقياس</string>
-    <string name="no_boolean_habits">لا توجد عادات تجاوب بنعم أو لا</string>
     <string name="increment">زيادة</string>
     <string name="decrement">إنقاص</string>
     <string name="pref_skip_title">تمكين أيام التخطي</string>

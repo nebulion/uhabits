@@ -94,7 +94,6 @@
         <item quantity="one">O hábito será excluído permanentemente. Esta ação não pode ser desfeita.</item>
         <item quantity="other">Os hábitos serão excluídos permanentemente. Esta ação não pode ser desfeita.</item>
     </plurals>
-    <string name="habit_not_found">Hábito deletado / não encontrado</string>
     <string name="weekends">Fim de semana</string>
     <string name="any_weekday">Segunda a sexta</string>
     <string name="any_day">Qualquer dia da semana</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">Não pode estar em branco</string>
     <string name="today">Hoje</string>
     <string name="enter">Entrar</string>
-    <string name="no_habits">Nenhum hábito encontrado</string>
-    <string name="no_numerical_habits">Nenhum hábito mensurável encontrado</string>
-    <string name="no_boolean_habits">Nenhum hábito sim-ou-não encontrado</string>
     <string name="increment">Incrementar</string>
     <string name="decrement">Decrementar</string>
     <string name="pref_skip_title">Habilitar dias de folga</string>

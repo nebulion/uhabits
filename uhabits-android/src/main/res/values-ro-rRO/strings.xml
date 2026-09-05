@@ -75,7 +75,6 @@
         <item quantity="few">Obiceiurile vor fi șterse permanent. Această acțiune este ireversibilă.</item>
         <item quantity="other">Obiceiurile vor fi șterse permanent. Această acțiune este ireversibilă. </item>
     </plurals>
-    <string name="habit_not_found">Obicei șters / negăsit</string>
     <string name="weekends">Weekenduri</string>
     <string name="any_weekday">Zile de lucru</string>
     <string name="any_day">Orice zi</string>
@@ -184,9 +183,6 @@
     <string name="validation_cannot_be_blank">nu poate fi gol</string>
     <string name="today">Astăzi</string>
     <string name="enter">Introducere</string>
-    <string name="no_habits">Nici un obicei găsit</string>
-    <string name="no_numerical_habits">Nu au fost găsite obiceiuri măsurabile</string>
-    <string name="no_boolean_habits">Nu au fost găsite obiceiuri cu \"Da\" sau \"Nu\"</string>
     <string name="pref_skip_title">Activați omiterea de zile</string>
     <string name="pref_unknown_title">Arată semnele de întrebare pentru datele lipsă</string>
     <string name="you_are_now_a_developer">Acum ești un dezvoltator</string>

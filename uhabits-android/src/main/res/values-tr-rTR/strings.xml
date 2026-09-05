@@ -94,7 +94,6 @@
         <item quantity="one">Alışkanlık kalıcı olarak silinecek. Bu işlem geri alınamaz.</item>
         <item quantity="other">Alışkanlıklar kalıcı olarak silinecek. Bu işlem geri alınamaz.</item>
     </plurals>
-    <string name="habit_not_found">Alışkanlık silinmiş ya da bulunamadı</string>
     <string name="weekends">Hafta sonları</string>
     <string name="any_weekday">Pazartesinden Cumaya</string>
     <string name="any_day">Haftanın herhangi bir günü</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">Boş bırakılamaz</string>
     <string name="today">Bugün</string>
     <string name="enter">Değer gir</string>
-    <string name="no_habits">Alışkanlık bulunamadı</string>
-    <string name="no_numerical_habits">Ölçülebilir alışkanlık bulunamadı</string>
-    <string name="no_boolean_habits">İşaretlemeli alışkanlık bulunamadı</string>
     <string name="increment">Artış</string>
     <string name="decrement">Azalma</string>
     <string name="pref_skip_title">Gün atlama özelliğini etkinleştir</string>

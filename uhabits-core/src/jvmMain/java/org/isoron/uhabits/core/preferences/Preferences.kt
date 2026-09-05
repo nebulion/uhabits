@@ -188,11 +188,6 @@ open class Preferences(private val storage: Storage) {
         set(version) {
             storage.putInt("last_version", version)
         }
-    var widgetOpacity: Int
-        get() = storage.getString("pref_widget_opacity", "255").toInt()
-        set(value) {
-            storage.putString("pref_widget_opacity", value.toString())
-        }
     var isSkipEnabled: Boolean
         get() = storage.getBoolean("pref_skip_enabled", false)
         set(value) {

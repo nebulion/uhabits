@@ -94,7 +94,6 @@
         <item quantity="one">பழக்கம் நிரந்தரமாக நீக்கப்படும். இந்தச் செயலை மீட்டமைக்க இயலாது.</item>
         <item quantity="other">பழக்கங்கள் நிரந்தரமாக நீக்கப்படும். இந்தச் செயலை மீட்டமைக்க இயலாது.</item>
     </plurals>
-    <string name="habit_not_found">பழக்கம் நீக்கப்பட்டுவிட்டது / காணவில்லை</string>
     <string name="weekends">வார இறுதிநாட்கள்</string>
     <string name="any_weekday">திங்கள் முதல் வெள்ளி வரை</string>
     <string name="any_day">வாரத்தின் எந்த நாளிலும்</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">வெற்றிடமாக இருக்கக் கூடாது</string>
     <string name="today">இன்று</string>
     <string name="enter">உள்ளிடு</string>
-    <string name="no_habits">பழக்கம் இல்லை</string>
-    <string name="no_numerical_habits">எண்ணக்கூடிய பழக்கம் ஒன்றுமில்லை</string>
-    <string name="no_boolean_habits">ஆம்-இல்லை பழக்கம் ஒன்றுமில்லை</string>
     <string name="increment">அதிகரிப்பு</string>
     <string name="decrement">குறைப்பு</string>
     <string name="pref_skip_title">தவிர்க்கக்கூடிய நாட்களைச் செயலாக்கவும்</string>

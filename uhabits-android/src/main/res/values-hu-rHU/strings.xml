@@ -94,7 +94,6 @@
         <item quantity="one">A szokás véglegesen törölve lesz. A műveletet nem lehet visszavonni.</item>
         <item quantity="other">A szokások véglegesen törölve lesznek. A műveletet nem lehet visszavonni.</item>
     </plurals>
-    <string name="habit_not_found">Szokás törölve / nem található</string>
     <string name="weekends">Hétvégente</string>
     <string name="any_weekday">Hétfőtől péntekig</string>
     <string name="any_day">A hét bármely napján</string>
@@ -110,11 +109,6 @@
     <string name="version_n">Verzió %s</string>
     <string name="frequency">Gyakoriság</string>
     <string name="checkmark">Pipa</string>
-    <string name="checkmark_stack_widget" formatted="false">Pipa Stack Widget</string>
-    <string name="frequency_stack_widget" formatted="false">Gyakoriság Stack-widget</string>
-    <string name="score_stack_widget" formatted="false">Pontszám stack-widget</string>
-    <string name="history_stack_widget" formatted="false">Előzmények stack-widget</string>
-    <string name="streaks_stack_widget" formatted="false">Sorozat Stack Widget</string>
     <string name="best_streaks">Legjobb széria</string>
     <string name="every_day">Minden nap</string>
     <string name="every_week">Minden héten</string>
@@ -210,9 +204,6 @@
     <string name="validation_cannot_be_blank">Nem lehet üres</string>
     <string name="today">Ma</string>
     <string name="enter">Bevitel</string>
-    <string name="no_habits">Nem találhatók szokások</string>
-    <string name="no_numerical_habits">Nem található mérhető szokás</string>
-    <string name="no_boolean_habits">Nem található igen-vagy-nem szokás</string>
     <string name="increment">Növelés</string>
     <string name="decrement">Csökkentés</string>
     <string name="pref_skip_title">Napok kihagyásának engedélyezése</string>

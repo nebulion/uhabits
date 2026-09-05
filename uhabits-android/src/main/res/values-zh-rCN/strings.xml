@@ -88,7 +88,6 @@
     <plurals name="delete_habits_message">
         <item quantity="other">习惯将被永久地删除。此操作无法撤消。</item>
     </plurals>
-    <string name="habit_not_found">习惯已删/找不到</string>
     <string name="weekends">周末</string>
     <string name="any_weekday">工作日</string>
     <string name="any_day">每天</string>
@@ -200,9 +199,6 @@
     <string name="validation_cannot_be_blank">不能为空</string>
     <string name="today">今日</string>
     <string name="enter">输入</string>
-    <string name="no_habits">找不到习惯</string>
-    <string name="no_numerical_habits">找不到可量化的习惯</string>
-    <string name="no_boolean_habits">找不到“是或不是”类的习惯</string>
     <string name="increment">增加（+1）</string>
     <string name="decrement">减少（-1）</string>
     <string name="pref_skip_title">启用跳过天数功能</string>

@@ -94,7 +94,6 @@
         <item quantity="one">Ohitura betirako ezabatuko da. Ekintza hau ezin da desegin.</item>
         <item quantity="other">Ohiturak betirako ezabatuko dira. Ekintza hau ezin da desegin.</item>
     </plurals>
-    <string name="habit_not_found">Ohitura ezabatua / ez aurkitua</string>
     <string name="weekends">Asteburuak</string>
     <string name="any_weekday">Astelehenetik ostiralera</string>
     <string name="any_day">Astearen edozen egun</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">Ezin da hutsik egon</string>
     <string name="today">Gaur</string>
     <string name="enter">Sartu</string>
-    <string name="no_habits">Ez da ohiturarik aurkitu</string>
-    <string name="no_numerical_habits">Ez da aurkitu ohitura neurgarririk</string>
-    <string name="no_boolean_habits">Ez da bai-ala-ez ohiturarik aurkitu</string>
     <string name="pref_skip_title">Gaitu atseden egunak</string>
     <string name="pref_skip_description">Sakatu bi aldiz kontrol-markaren ordez atseden bat gehitzeko. Atsedenek zure puntuazioa aldatu gabe mantentzen dute eta ez dute segida hausten.</string>
     <string name="pref_unknown_title">Adierazi galdera ikurra falta diren datuetan</string>

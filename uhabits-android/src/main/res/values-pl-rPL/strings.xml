@@ -106,7 +106,6 @@
         <item quantity="many">Nawyki zostaną trwale usunięte. Tej czynności nie można cofnąć.</item>
         <item quantity="other">Nawyki zostaną trwale usunięte. Tej czynności nie można cofnąć.</item>
     </plurals>
-    <string name="habit_not_found">Nawyk usunięty/nie znaleziony</string>
     <string name="weekends">Weekendy</string>
     <string name="any_weekday">Dni robocze</string>
     <string name="any_day">Każdy dzień</string>
@@ -217,9 +216,6 @@
     <string name="validation_cannot_be_blank">Pole nie może być puste</string>
     <string name="today">Dzisiaj</string>
     <string name="enter">Wprowadź</string>
-    <string name="no_habits">Nie znaleziono nawyków</string>
-    <string name="no_numerical_habits">Nie znaleziono mierzalnych nawyków</string>
-    <string name="no_boolean_habits">Nie znaleziono nawyków typu tak/nie</string>
     <string name="increment">Zwiększ</string>
     <string name="decrement">Zmniejsz</string>
     <string name="pref_skip_title">Włącz pomijanie dni</string>

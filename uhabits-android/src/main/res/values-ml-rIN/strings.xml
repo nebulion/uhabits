@@ -94,7 +94,6 @@
         <item quantity="one">ശീലം ശാശ്വതമായി ഇല്ലാതാക്കപ്പെടും.  ഈ പ്രവർത്തനം പഴയപടിയാക്കാനാകില്ല.</item>
         <item quantity="other">ശീലങ്ങൾ ശാശ്വതമായി ഇല്ലാതാക്കപ്പെടും.  ഈ പ്രവർത്തനം പഴയപടിയാക്കാനാകില്ല.</item>
     </plurals>
-    <string name="habit_not_found">ശീലം ഇല്ലാതാക്കി / കണ്ടെത്തിയില്ല</string>
     <string name="weekends">വാരാന്ത്യങ്ങൾ</string>
     <string name="any_weekday">തിങ്കൾ മുതൽ വെള്ളി വരെ</string>
     <string name="any_day">ആഴ്ചയിലെ ഏത് ദിവസവും</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">ശൂന്യമാക്കാൻ കഴിയില്ല</string>
     <string name="today">ഇന്ന്</string>
     <string name="enter">നൽകുക</string>
-    <string name="no_habits">ശീലങ്ങളൊന്നും കണ്ടെത്തിയില്ല</string>
-    <string name="no_numerical_habits">അളക്കാവുന്ന ശീലങ്ങളൊന്നും കണ്ടെത്തിയില്ല</string>
-    <string name="no_boolean_habits">അതെ അല്ലെങ്കിൽ ഇല്ല എന്ന ശീലങ്ങളൊന്നും കണ്ടെത്തിയില്ല</string>
     <string name="increment">വർദ്ധനവ്</string>
     <string name="decrement">കുറയ്ക്കൽ</string>
     <string name="pref_skip_title">ദിവസങ്ങൾ ഒഴിവാക്കുന്നത് പ്രവർത്തനക്ഷമമാക്കുക</string>

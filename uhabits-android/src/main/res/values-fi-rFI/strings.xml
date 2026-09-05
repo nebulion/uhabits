@@ -94,7 +94,6 @@
         <item quantity="one">Rutiini poistetaan pysyvästi. Toimintoa ei voi peruuttaa.</item>
         <item quantity="other">Rutiinit poistetaan pysyvästi. Toimintoa ei voi peruuttaa.</item>
     </plurals>
-    <string name="habit_not_found">Tapa on poistettu tai sitä ei löydy</string>
     <string name="weekends">Viikonloppuisin</string>
     <string name="any_weekday">Maanantaista perjantaihin</string>
     <string name="any_day">Mikä tahansa viikonpäivä</string>
@@ -205,9 +204,6 @@
     <string name="validation_cannot_be_blank">Tätä ei voi jättää tyhjäksi</string>
     <string name="today">Tänään</string>
     <string name="enter">Syötä</string>
-    <string name="no_habits">Rutiineja ei löydetty</string>
-    <string name="no_numerical_habits">Mitattavia rutiineja ei löytynyt</string>
-    <string name="no_boolean_habits">Kyllä-tai-ei-rutiineja ei löytynyt</string>
     <string name="increment">Nosta</string>
     <string name="decrement">Laske</string>
     <string name="pref_skip_title">Ota ohituspäivät käyttöön</string>

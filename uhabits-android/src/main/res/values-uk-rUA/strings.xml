@@ -106,7 +106,6 @@
         <item quantity="many">Звички вилучаться назавжди. Цю дію неможливо скасувати.</item>
         <item quantity="other">Звички вилучаться назавжди. Цю дію неможливо скасувати.</item>
     </plurals>
-    <string name="habit_not_found">Звичку вилучено / не знайдено</string>
     <string name="weekends">У вихідні</string>
     <string name="any_weekday">У будні</string>
     <string name="any_day">Щодня</string>
@@ -126,11 +125,6 @@
     <string name="version_n">Версія %s</string>
     <string name="frequency">Частота</string>
     <string name="checkmark">Пташка</string>
-    <string name="checkmark_stack_widget" formatted="false">Checkmark Stack Widget</string>
-    <string name="frequency_stack_widget" formatted="false">Frequency Stack Widget</string>
-    <string name="score_stack_widget" formatted="false">Score Stack Widget</string>
-    <string name="history_stack_widget" formatted="false">History Stack Widget</string>
-    <string name="streaks_stack_widget" formatted="false">Streaks Stack Widget</string>
     <string name="best_streaks">Найкращі серії</string>
     <string name="every_day">Щодня</string>
     <string name="every_week">Щотижня</string>
@@ -226,9 +220,6 @@
     <string name="validation_cannot_be_blank">Обов\'язкове поле</string>
     <string name="today">Сьогодні</string>
     <string name="enter">Увести</string>
-    <string name="no_habits">Звичок не знайдено</string>
-    <string name="no_numerical_habits">Вимірюваних звичок не знайдено</string>
-    <string name="no_boolean_habits">Звичок так/ні не знайдено</string>
     <string name="increment">Збільшити</string>
     <string name="decrement">Зменшити</string>
     <string name="pref_skip_title">Увімкнути пропускання днів</string>

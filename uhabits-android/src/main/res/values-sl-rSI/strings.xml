@@ -106,7 +106,6 @@
         <item quantity="few">Navade bodo trajno izbrisane. Tega dejanja ni mogoče razveljaviti.</item>
         <item quantity="other">Navade bodo trajno izbrisane. Tega dejanja ni mogoče razveljaviti.</item>
     </plurals>
-    <string name="habit_not_found">Izbrisana navada / ni najdena</string>
     <string name="weekends">Vikendi</string>
     <string name="any_weekday">Ponedeljek do Petka</string>
     <string name="any_day">Vsak dan v tednu</string>
@@ -217,9 +216,6 @@
     <string name="validation_cannot_be_blank">Ne sme biti prazno</string>
     <string name="today">Danes</string>
     <string name="enter">Vnesi</string>
-    <string name="no_habits">Ni najdenih navad</string>
-    <string name="no_numerical_habits">Ni najdenih merljivih navad</string>
-    <string name="no_boolean_habits">Ni najdenih da ali ne navad</string>
     <string name="increment">Povečaj</string>
     <string name="decrement">Zmanjšaj</string>
     <string name="pref_skip_title">Omogoči preskok dni</string>

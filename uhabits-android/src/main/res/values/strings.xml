@@ -110,7 +110,6 @@
         <item quantity="one">The habit will be permanently deleted. This action cannot be undone.</item>
         <item quantity="other">The habits will be permanently deleted. This action cannot be undone.</item>
     </plurals>
-    <string name="habit_not_found">Habit deleted / not found</string>
     <string name="weekends">Weekends</string>
     <string name="any_weekday">Monday to Friday</string>
     <string name="any_day">Any day of the week</string>
@@ -130,11 +129,6 @@
     <string name="version_n">Version %s</string>
     <string name="frequency">Frequency</string>
     <string name="checkmark">Checkmark</string>
-    <string name="checkmark_stack_widget" formatted="false">Checkmark Stack Widget</string>
-    <string name="frequency_stack_widget" formatted="false">Frequency Stack Widget</string>
-    <string name="score_stack_widget" formatted="false">Score Stack Widget</string>
-    <string name="history_stack_widget" formatted="false">History Stack Widget</string>
-    <string name="streaks_stack_widget" formatted="false">Streaks Stack Widget</string>
     <string name="best_streaks">Best streaks</string>
     <string name="every_day">Every day</string>
     <string name="every_week">Every week</string>
@@ -239,9 +233,6 @@
     <string name="validation_number_expected">Must be a number</string>
     <string name="today">Today</string>
     <string name="enter">Enter</string>
-    <string name="no_habits">No habits found</string>
-    <string name="no_numerical_habits">No measurable habits found</string>
-    <string name="no_boolean_habits">No yes-or-no habits found</string>
     <string name="increment">Increment</string>
     <string name="decrement">Decrement</string>
     <string name="pref_skip_title">Enable skip days</string>

@@ -24,12 +24,9 @@ import android.graphics.Canvas
 import android.view.View
 import android.view.View.MeasureSpec
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.test.platform.app.InstrumentationRegistry
 import org.isoron.uhabits.utils.FileUtils.getSDCardDir
 import org.isoron.uhabits.utils.InterfaceUtils.dpToPixels
-import org.isoron.uhabits.widgets.BaseWidget
-import org.isoron.uhabits.widgets.WidgetDimensions
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -78,21 +75,6 @@ open class BaseViewTest : BaseAndroidTest() {
             )
             throw e
         }
-    }
-
-    protected fun convertToView(
-        widget: BaseWidget,
-        width: Int,
-        height: Int
-    ): FrameLayout {
-        widget.setDimensions(
-            WidgetDimensions(width, height, width, height)
-        )
-        val view = FrameLayout(targetContext)
-        val remoteViews = widget.portraitRemoteViews
-        view.addView(remoteViews.apply(targetContext, view))
-        measureView(view, width.toFloat(), height.toFloat())
-        return view
     }
 
     protected fun dpToPixels(dp: Int): Float {

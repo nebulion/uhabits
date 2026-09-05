@@ -88,7 +88,6 @@
     <plurals name="delete_habits_message">
         <item quantity="other">습관을 영구적으로 삭제합니다. 삭제 후 취소할 수 없습니다.</item>
     </plurals>
-    <string name="habit_not_found">습관 삭제 / 찾을 수 없음</string>
     <string name="weekends">주말</string>
     <string name="any_weekday">주중</string>
     <string name="any_day">매일</string>
@@ -199,9 +198,6 @@
     <string name="validation_cannot_be_blank">비워 둘 수 없습니다</string>
     <string name="today">오늘</string>
     <string name="enter">입력</string>
-    <string name="no_habits">설정한 습관이 없습니다</string>
-    <string name="no_numerical_habits">수치형 습관 목표가 없습니다</string>
-    <string name="no_boolean_habits">단답형 습관 목표가 없습니다</string>
     <string name="increment">증가</string>
     <string name="decrement">감소</string>
     <string name="pref_skip_title">날짜 스킵 허용</string>

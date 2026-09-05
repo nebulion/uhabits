@@ -99,7 +99,6 @@
         <item quantity="one">आदत हमेशा के लिये हटा दी जाएगी। इसे वापस नहीं लाया जा सकता।</item>
         <item quantity="other">आदतें हमेशा के लिये हटा दी जाएगी। उन्हे वापस नहीं लाया जा सकता।</item>
     </plurals>
-    <string name="habit_not_found">आदत हटाई गई / नहीं मिली</string>
     <string name="weekends">\"
 सप्ताहांत\"</string>
     <string name="any_weekday">सोमवार से शुक्रवार</string>
@@ -234,9 +233,6 @@
     <string name="validation_cannot_be_blank">इसे खाली नहीं रखा जा सकता</string>
     <string name="today">आज</string>
     <string name="enter">दर्ज करें</string>
-    <string name="no_habits">कोई आदत नहीं मिली</string>
-    <string name="no_numerical_habits">कोई मापने योग्य आदत नहीं मिली</string>
-    <string name="no_boolean_habits">हां - या - ना में आदत नहीं मिली</string>
     <string name="increment">वृद्धि (Increment)</string>
     <string name="decrement">घटौंती</string>
     <string name="pref_skip_title">दिन छोड़ना सक्षम करें</string>

@@ -93,7 +93,6 @@
         <item quantity="one">Vanen vil blive slettet permanent. Denne handling kan ikke fortrydes.</item>
         <item quantity="other">Vanerne vil blive slettet permanent. Denne handling kan ikke fortrydes.</item>
     </plurals>
-    <string name="habit_not_found">Vane slettet / ikke fundet</string>
     <string name="weekends">Weekender</string>
     <string name="any_weekday">Mandag til Fredag</string>
     <string name="any_day">En hvilken som helst dag i ugen</string>
@@ -113,11 +112,6 @@
     <string name="version_n">Version %s</string>
     <string name="frequency">Hyppighed</string>
     <string name="checkmark">Afkrydsning</string>
-    <string name="checkmark_stack_widget" formatted="false">Afkryds stakkontrol</string>
-    <string name="frequency_stack_widget" formatted="false">Frekvens stakkontrol</string>
-    <string name="score_stack_widget" formatted="false">Score stakkontrol</string>
-    <string name="history_stack_widget" formatted="false">Historik stakkontrol</string>
-    <string name="streaks_stack_widget" formatted="false">Uafbrudt række stakkontrol</string>
     <string name="best_streaks">Bedste streak</string>
     <string name="every_day">Hver dag</string>
     <string name="every_week">Hver uge</string>
@@ -208,9 +202,6 @@
     <string name="validation_cannot_be_blank">skal udfyldes</string>
     <string name="today">I dag</string>
     <string name="enter">Angiv</string>
-    <string name="no_habits">Ingen vaner fundet</string>
-    <string name="no_numerical_habits">Ingen målbare vaner fundet</string>
-    <string name="no_boolean_habits">Ingen ja-eller-nej vaner fundet</string>
     <string name="increment">Forøgelse</string>
     <string name="decrement">Formindskelse</string>
     <string name="pref_skip_title">Slå overspring af dage til</string>

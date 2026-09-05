@@ -68,7 +68,6 @@
     <string name="hint_title">Sabia que?</string>
     <string name="hint_drag">Para reorganizar a lista, mantenha pressionado o nome do hábito e arraste-o para o lugar certo.</string>
     <string name="hint_landscape">Pode ver mais dias se utilizar o telemóvel em modo paisagem.</string>
-    <string name="habit_not_found">Hábito eliminado / não encontrado</string>
     <string name="weekends">Fins de Semana</string>
     <string name="any_weekday">Segunda a Sexta</string>
     <string name="any_day">Qualquer dia da semana</string>

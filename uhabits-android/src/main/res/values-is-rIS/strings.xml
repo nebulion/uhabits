@@ -163,9 +163,6 @@
     <string name="validation_cannot_be_blank">Má ekki vera autt</string>
     <string name="today">Í dag</string>
     <string name="enter">Setja inn</string>
-    <string name="no_habits">Engar venjur fundust</string>
-    <string name="no_numerical_habits">Engar mælanlegar venjur fundust</string>
-    <string name="no_boolean_habits">Engar já/nei venjur fundust</string>
     <string name="increment">Hækka</string>
     <string name="decrement">Lækka</string>
     <string name="pref_midnight_delay_title">Lengja daginn nokkrar klukkustundir yfir miðnætti</string>

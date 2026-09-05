@@ -106,7 +106,6 @@
         <item quantity="many">Návyky budou trvale odstraněny. Tento krok je nevratný.</item>
         <item quantity="other">Návyky budou trvale odstraněny. Tento krok je nevratný.</item>
     </plurals>
-    <string name="habit_not_found">Zvyk smazán / nenalezen</string>
     <string name="weekends">Víkendy</string>
     <string name="any_weekday">Pondělí až pátek</string>
     <string name="any_day">Jakýkoliv den v týdnu</string>
@@ -217,9 +216,6 @@
     <string name="validation_cannot_be_blank">Musíte vyplnit</string>
     <string name="today">Dnes</string>
     <string name="enter">Vyplnit</string>
-    <string name="no_habits">Žádné návyky nenalezeny</string>
-    <string name="no_numerical_habits">Žádné měřitelné návyky nenalezeny</string>
-    <string name="no_boolean_habits">Nenalezeny žádné \"ano/ne\" návyky</string>
     <string name="increment">Zvýšit</string>
     <string name="decrement">Snížit</string>
     <string name="pref_skip_title">Umožnit přeskakování dnů</string>

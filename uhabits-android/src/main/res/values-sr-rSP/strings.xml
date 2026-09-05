@@ -100,7 +100,6 @@
         <item quantity="few">Навике ће бити трајно обрисане. Ова радња је неповратна.</item>
         <item quantity="other">Навике ће бити трајно обрисане. Ова радња је неповратна.</item>
     </plurals>
-    <string name="habit_not_found">Навика обрисана / не постоји</string>
     <string name="weekends">викендом</string>
     <string name="any_weekday">радним данима</string>
     <string name="any_day">сваког дана</string>
@@ -211,9 +210,6 @@
     <string name="validation_cannot_be_blank">не може бити празно</string>
     <string name="today">Данас</string>
     <string name="enter">Унос</string>
-    <string name="no_habits">Нема навика</string>
-    <string name="no_numerical_habits">Нема мерљивих навика</string>
-    <string name="no_boolean_habits">Нема да/не навика</string>
     <string name="increment">повећање</string>
     <string name="decrement">умањење</string>
     <string name="pref_skip_title">Омогући прескакање дана</string>

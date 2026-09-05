@@ -30,7 +30,6 @@ import org.isoron.uhabits.inject.DaggerHabitsApplicationComponent
 import org.isoron.uhabits.inject.HabitsApplicationComponent
 import org.isoron.uhabits.inject.HabitsModule
 import org.isoron.uhabits.utils.DatabaseUtils
-import org.isoron.uhabits.widgets.WidgetUpdater
 import java.io.File
 
 /**
@@ -39,7 +38,6 @@ import java.io.File
 class HabitsApplication : Application() {
 
     private lateinit var context: Context
-    private lateinit var widgetUpdater: WidgetUpdater
     private lateinit var reminderScheduler: ReminderScheduler
     private lateinit var notificationTray: NotificationTray
 

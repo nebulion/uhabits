@@ -86,7 +86,6 @@
         <item quantity="one">L\' hàbit serà esborrat permanentment. Aquesta acció no es pot desfer.</item>
         <item quantity="other">Els hàbits seran esborrats permanentment. Aquesta acció no es pot desfer.</item>
     </plurals>
-    <string name="habit_not_found">Hàbit suprimit / no trobat</string>
     <string name="weekends">Caps de setmana</string>
     <string name="any_weekday">Dilluns a divendres</string>
     <string name="any_day">Qualsevol dia de la setmana</string>
@@ -196,9 +195,6 @@
     <string name="validation_cannot_be_blank">No es pot deixar en blanc</string>
     <string name="today">Avui</string>
     <string name="enter">Introduïr</string>
-    <string name="no_habits">No s\'han trobat hàbits.</string>
-    <string name="no_numerical_habits">No s\'han trobat hàbits mesurables</string>
-    <string name="no_boolean_habits">No s\'han trobat hàbits de sí o no</string>
     <string name="increment">Increment</string>
     <string name="decrement">Disminueix</string>
     <string name="pref_skip_title">Activa omitir dies</string>

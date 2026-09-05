@@ -84,7 +84,6 @@
     <string name="hint_title">Jeste li znali?</string>
     <string name="hint_drag">Za razmještanje unosa, pritisnite i držite naziv navike, pa ih premjestite na točno mjesto.</string>
     <string name="hint_landscape">Možete vidjeti više dana prebacivanjem uređaja u vodoravnu orijentaciju.</string>
-    <string name="habit_not_found">Navika je izbrisana / nije pronađena</string>
     <string name="weekends">Vikendi</string>
     <string name="any_weekday">Ponedjeljak do Petak</string>
     <string name="any_day">Bilo koji dan u tjednu</string>
@@ -195,9 +194,6 @@
     <string name="validation_cannot_be_blank">Ne može ostati prazno</string>
     <string name="today">Danas</string>
     <string name="enter">Unesi</string>
-    <string name="no_habits">Navike nisu pronađene</string>
-    <string name="no_numerical_habits">Mjerljive navike nisu pronađene</string>
-    <string name="no_boolean_habits">Da/Ne navike nisu pronađene</string>
     <string name="select_public_backup_folder">Odaberite javnu mapu sigurnosne kopije</string>
     <string name="no_public_backup_folder_selected">Nije odabrana nijedna mapa</string>
 </resources>
