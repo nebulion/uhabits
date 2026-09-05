@@ -149,10 +149,6 @@ class HistoryCardPresenter(
         }
     }
 
-    fun onClickEditButton() {
-        screen.showHistoryEditorDialog(this)
-    }
-
     companion object {
         fun buildState(
             habit: Habit,
@@ -202,7 +198,6 @@ class HistoryCardPresenter(
     }
 
     interface Screen {
-        fun showHistoryEditorDialog(listener: OnDateClickedListener)
         fun showFeedback()
         fun showNumberPopup(
             value: Double,

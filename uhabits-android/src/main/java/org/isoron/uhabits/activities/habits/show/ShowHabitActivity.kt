@@ -35,7 +35,6 @@ import org.isoron.uhabits.activities.AndroidThemeSwitcher
 import org.isoron.uhabits.activities.HabitsDirFinder
 import org.isoron.uhabits.activities.common.dialogs.CheckmarkDialog
 import org.isoron.uhabits.activities.common.dialogs.ConfirmDeleteDialog
-import org.isoron.uhabits.activities.common.dialogs.HistoryEditorDialog
 import org.isoron.uhabits.activities.common.dialogs.NumberDialog
 import org.isoron.uhabits.core.commands.Command
 import org.isoron.uhabits.core.commands.CommandRunner
@@ -47,7 +46,6 @@ import org.isoron.uhabits.core.ui.callbacks.OnConfirmedCallback
 import org.isoron.uhabits.core.ui.screens.habits.list.ListHabitsBehavior
 import org.isoron.uhabits.core.ui.screens.habits.show.ShowHabitMenuPresenter
 import org.isoron.uhabits.core.ui.screens.habits.show.ShowHabitPresenter
-import org.isoron.uhabits.core.ui.views.OnDateClickedListener
 import org.isoron.uhabits.intents.IntentFactory
 import org.isoron.uhabits.utils.applyRootViewInsets
 import org.isoron.uhabits.utils.currentTheme
@@ -166,9 +164,6 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
     override fun onResume() {
         super.onResume()
         commandRunner.addListener(this)
-        supportFragmentManager.findFragmentByTag("historyEditor")?.let {
-            (it as HistoryEditorDialog).setOnDateClickedListener(presenter.historyCardPresenter)
-        }
         screen.refresh()
     }
 
@@ -221,15 +216,6 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
             }
         }
 
-        override fun showHistoryEditorDialog(listener: OnDateClickedListener) {
-            val dialog = HistoryEditorDialog()
-            dialog.arguments = Bundle().apply {
-                putLong("habit", habit.id!!)
-            }
-            dialog.setOnDateClickedListener(listener)
-            dialog.show(supportFragmentManager, "historyEditor")
-        }
-
         override fun showFeedback() {
             window.decorView.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         }
@@ -263,12 +249,6 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
             }
             dialog.onToggle = { v, n -> callback.onNotesSaved(v, n) }
             dialog.dismissCurrentAndShow(supportFragmentManager, "checkmarkDialog")
-        }
-
-        private fun getPopupAnchor(): View? {
-            val dialog =
-                supportFragmentManager.findFragmentByTag("historyEditor") as HistoryEditorDialog?
-            return dialog?.dataView
         }
 
         override fun showEditHabitScreen(habit: Habit) {

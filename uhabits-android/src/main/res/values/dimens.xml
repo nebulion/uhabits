@@ -28,7 +28,6 @@
     <dimen name="checkmarkWidth">56dp</dimen>
     <dimen name="checkmarkHeight">56dp</dimen>
 
-    <dimen name="history_editor_max_height">350dp</dimen>
 
     <!--
       ~ The MMD type scale, from mudita/MMD TypographyMMD.kt. Their smallest

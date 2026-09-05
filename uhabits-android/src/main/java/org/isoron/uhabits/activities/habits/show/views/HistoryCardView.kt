@@ -51,6 +51,5 @@ class HistoryCardView(context: Context, attrs: AttributeSet) : LinearLayout(cont
     }
 
     fun setListener(presenter: HistoryCardPresenter) {
-        binding.edit.setOnClickListener { presenter.onClickEditButton() }
     }
 }
