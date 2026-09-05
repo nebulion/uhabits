@@ -23,6 +23,7 @@
     tools:ignore="MissingTranslation">
 
     <string name="app_name" >Habits</string>
+    <string name="first_weekday">First day of the week</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
     <string name="main_activity_title">Habits</string>

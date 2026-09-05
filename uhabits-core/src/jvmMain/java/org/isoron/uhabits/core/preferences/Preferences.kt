@@ -246,6 +246,18 @@ open class Preferences(private val storage: Storage) {
             val weekday = storage.getString("pref_first_weekday", "")
             return if (weekday.isEmpty()) getFirstWeekdayNumberAccordingToLocale() else weekday.toInt()
         }
+    /**
+     * Sets the first day of the week, 1 for Sunday through 7 for Saturday, or
+     * a negative number to go back to following the system locale.
+     *
+     * There was no setter at all until the settings screen needed one again:
+     * the preference was written only by the old `PreferenceFragment` XML, and
+     * when that was gutted the value became readable and unchangeable.
+     */
+    fun setFirstWeekday(weekday: Int) {
+        storage.putString("pref_first_weekday", weekday.toString())
+    }
+
     val firstWeekday: DayOfWeek
         get() {
             var weekday = storage.getString("pref_first_weekday", "-1").toInt()

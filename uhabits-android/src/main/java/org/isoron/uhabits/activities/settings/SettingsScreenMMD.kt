@@ -19,6 +19,11 @@
 
 package org.isoron.uhabits.activities.settings
 
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
+import com.mudita.mmd.components.bottom_sheet.rememberModalBottomSheetMMDState
+import com.mudita.mmd.components.radio_button.RadioButtonMMD
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -91,6 +96,21 @@ sealed interface SettingsRow {
         override val title: String,
         val onClick: () -> Unit,
     ) : SettingsRow
+
+    /**
+     * One of several values, shown with the current one under the title and
+     * picked from a sheet.
+     *
+     * A sheet rather than a dialog because that is what MuditaOS raises for a
+     * choice -- Sound and Bluetooth both do -- and because MMD ships a bottom
+     * sheet and no dialog at all.
+     */
+    data class Choice(
+        override val title: String,
+        val options: List<String>,
+        val selectedIndex: Int,
+        val onSelect: (Int) -> Unit,
+    ) : SettingsRow
 }
 
 @Composable
@@ -145,6 +165,7 @@ fun SettingsScreenMMD(
                         is SettingsRow.Header -> SectionHeader(row)
                         is SettingsRow.Toggle -> ToggleRow(row)
                         is SettingsRow.Action -> ActionRow(row)
+                        is SettingsRow.Choice -> ChoiceRow(row)
                     }
                 }
             }
@@ -236,3 +257,79 @@ private fun RowDivider() {
 @Composable
 private fun stringOrEmpty(resId: Int): String =
     androidx.compose.ui.res.stringResource(resId)
+
+/**
+ * A one-of-N setting: the title, the value it currently holds beneath it, and
+ * a sheet of radio rows to change it.
+ *
+ * The value is shown in regular-weight black rather than as a smaller grey
+ * subtitle. `eInkColorScheme` has no grey in it, and MuditaOS writes its own
+ * subtitles this way -- Bluetooth's "USB Preferences / File transfer" is the
+ * same shape.
+ */
+@Composable
+private fun ChoiceRow(row: SettingsRow.Choice) {
+    var open by remember { mutableStateOf(false) }
+    Column {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .clickable { open = true }
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            TextMMD(text = row.title, style = MaterialTheme.typography.bodyMedium)
+            row.options.getOrNull(row.selectedIndex)?.let { current ->
+                TextMMD(
+                    text = current,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+        HorizontalDividerMMD(thickness = 1.dp)
+    }
+    if (open) {
+        ModalBottomSheetMMD(
+            onDismissRequest = { open = false },
+            // Without this a sheet taller than half the screen opens at half
+            // height with its last options below the fold.
+            sheetState = rememberModalBottomSheetMMDState(skipPartiallyExpanded = true),
+            dragHandle = null,
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                row.options.forEachIndexed { index, option ->
+                    // MMD's own row shape, from the usage sample in
+                    // RadioButtonMMD.kt: the row carries the selection, so the
+                    // button itself takes no handler and the whole row stays a
+                    // single target. An inert RadioButtonMMD measures 24dp, not
+                    // Material's interactive 48dp, which is why the label is
+                    // held off it by a further 16dp.
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp)
+                            .selectable(
+                                selected = index == row.selectedIndex,
+                                onClick = {
+                                    row.onSelect(index)
+                                    open = false
+                                },
+                                role = Role.RadioButton,
+                            )
+                            .padding(horizontal = 20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButtonMMD(selected = index == row.selectedIndex, onClick = null)
+                        TextMMD(
+                            text = option,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 16.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

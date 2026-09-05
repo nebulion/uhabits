@@ -19,6 +19,12 @@
 
 package org.isoron.uhabits.activities.habits.list
 
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import com.mudita.mmd.components.divider.DividerDefaultsMMD
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
@@ -223,6 +229,11 @@ fun HabitListScreenMMD(
 ) {
     val hasSelection = selectedIds.isNotEmpty()
     val listState = rememberLazyListState()
+
+    // Which habit is currently held by a drag, if any. Hoisted here rather
+    // than kept inside the row so the picked-up row can be drawn differently
+    // from every other row, and so a drag cannot outlive the screen.
+    var draggingId by remember { mutableStateOf<Long?>(null) }
     val snackbarHost = remember { SnackbarHostStateMMD() }
 
     // Messages used to go through a Material Snackbar, whose surface is a
@@ -326,9 +337,13 @@ fun HabitListScreenMMD(
                         state = listState,
                         scrollStep = SCROLL_STEP,
                     ) {
-                        items(habits, key = { it.id }) { habit ->
+                        itemsIndexed(habits, key = { _, it -> it.id }) { index, habit ->
                             HabitRow(
                                 habit = habit,
+                                index = index,
+                                listState = listState,
+                                isDragging = habit.id == draggingId,
+                                onDraggingChange = { draggingId = it },
                                 isSelected = habit.id in selectedIds,
                                 dayLabels = dayLabels,
                                 dataOffset = dataOffset,
@@ -596,6 +611,10 @@ private fun DayHeadingRow(
 @Composable
 private fun HabitRow(
     habit: HabitCardUiState,
+    index: Int,
+    listState: LazyListState,
+    isDragging: Boolean,
+    onDraggingChange: (Long?) -> Unit,
     isSelected: Boolean,
     dayLabels: List<DayLabel>,
     dataOffset: Int,
@@ -608,10 +627,16 @@ private fun HabitRow(
             .fillMaxWidth()
             .heightIn(min = CELL_HEIGHT)
             .then(
-                if (isSelected) {
-                    Modifier.border(2.dp, MaterialTheme.colorScheme.onBackground)
-                } else {
-                    Modifier
+                when {
+                    // A picked-up habit is drawn with the weight of an MMD
+                    // rule, heavier than the selection box it grew out of, so
+                    // it is obvious which row the finger is holding.
+                    isDragging -> Modifier.border(
+                        DividerDefaultsMMD.Thickness,
+                        MaterialTheme.colorScheme.onBackground,
+                    )
+                    isSelected -> Modifier.border(2.dp, MaterialTheme.colorScheme.onBackground)
+                    else -> Modifier
                 }
             ),
         verticalAlignment = Alignment.CenterVertically,
@@ -625,9 +650,22 @@ private fun HabitRow(
                 .width(HABIT_NAME_WIDTH)
                 .combinedClickable(
                     onClick = { actions.onClickHabit(habit) },
-                    onLongClick = { actions.onLongClickHabit(habit) },
+                    // A long press on an *unselected* habit selects it. On a
+                    // selected one it has to do nothing, or the second long
+                    // press -- the one that picks the habit up -- would
+                    // deselect it instead of starting a drag.
+                    onLongClick = if (isSelected) null else {
+                        { actions.onLongClickHabit(habit) }
+                    },
                 )
-                .reorderDragHandle(habit, actions)
+                .reorderDragHandle(
+                    habit = habit,
+                    index = index,
+                    listState = listState,
+                    enabled = isSelected,
+                    onDraggingChange = onDraggingChange,
+                    actions = actions,
+                )
                 .padding(start = 16.dp, end = 8.dp),
         )
 
@@ -837,66 +875,104 @@ private fun MessageBar(data: SnackbarDataMMD) {
 }
 
 /**
- * Long-press-and-drag on a habit's name to move it in the list.
+ * Picks a habit up and moves it, on a second long press.
+ *
+ * **The gesture is long press, then long press again.** The first selects the
+ * habit, which is what a long press has always done here; the second, on a
+ * habit that is already selected, picks it up, and it stays up until the
+ * finger lifts. Two presses rather than one because a single long press has to
+ * mean something on every row, and asking it to mean "select" on a short hold
+ * and "drag" on a longer one is a distinction nobody can aim for. With
+ * selection as the gate the drag detector is not even installed on rows that
+ * are not selected, so nothing competes for the gesture -- which is what was
+ * wrong with the first attempt: `combinedClickable` owned the long press and
+ * the drag never started.
  *
  * **It moves a row at a time, not a pixel at a time**, and that is the whole
- * design. A conventional reorder animates the dragged row under the finger and
- * slides its neighbours aside continuously, which on this panel is a run of
- * partial repaints for every centimetre of travel -- the exact motion the rest
- * of this app removed. Here the finger moves freely and nothing redraws until
- * it has travelled a whole row, at which point the order changes by one and
- * the screen repaints once. A drag across ten rows costs ten repaints instead
- * of hundreds, and it still keeps up with the finger.
+ * design. A conventional reorder slides the dragged row under the finger and
+ * animates its neighbours aside, which on this panel is a run of partial
+ * repaints for every centimetre of travel -- the exact motion the rest of this
+ * app removed. Here the finger moves freely and nothing redraws until it has
+ * crossed a whole row, at which point the order changes by one and the screen
+ * repaints once. The row moving *is* the drop indicator: there is no separate
+ * marker showing where it would land, because it has already landed there.
  *
- * **The gesture is vertical only.** It is built from `awaitLongPressOrCancellation`
- * followed by `verticalDrag` rather than from `detectDragGesturesAfterLongPress`,
- * which claims a drag in any direction: a sideways movement now belongs to
- * whatever else wants it, and cannot start or continue a reorder.
+ * **It follows the finger past the edge, one row at a time.** Reaching the
+ * last visible row scrolls the list on by one, so a habit can travel further
+ * than a screenful without being dropped. One row rather than a page:
+ * `LazyColumnMMD` pages by four when you scroll it yourself, which is right
+ * for reading and much too coarse for aiming, and it is one repaint per
+ * crossing either way.
  *
- * **It does not scroll the list.** There is no auto-scroll when the finger
- * reaches the top or bottom edge, deliberately -- `LazyColumnMMD` pages rather
- * than scrolls, so an edge-scroll here would either fight it or introduce the
- * one smooth-scrolling surface in the app. A drag therefore moves a habit
- * within the rows you can see; to move one further, drop it, page, and pick it
- * up again, or use the move buttons in the selection bar.
+ * **The gesture is vertical only** -- `verticalDrag`, not
+ * `detectDragGesturesAfterLongPress`, which would claim a drag in any
+ * direction and leave sideways movement unusable by anything else.
  *
- * It sits on the name column only. The day cells to the right own their own
- * taps for toggling a checkmark, and a reorder gesture over them would make
- * the two compete.
- *
- * `combinedClickable` stays where it is and keeps handling tap and long-press,
- * so a long press with no travel still just selects the habit.
+ * It sits on the name column only. The day cells to the right own their taps
+ * for toggling a checkmark, and a reorder gesture over them would compete.
  */
 private fun Modifier.reorderDragHandle(
     habit: HabitCardUiState,
+    index: Int,
+    listState: LazyListState,
+    enabled: Boolean,
+    onDraggingChange: (Long?) -> Unit,
     actions: HabitListActions,
 ): Modifier = composed {
+    if (!enabled) return@composed this
     val stepPx = with(LocalDensity.current) { CELL_HEIGHT.toPx() }
+    val scope = rememberCoroutineScope()
+    // Read inside a long-lived gesture coroutine, so it is tracked rather than
+    // captured: the habit's position changes with every step of its own drag,
+    // and a captured copy would be stale after the first one.
+    val currentIndex = rememberUpdatedState(index)
     pointerInput(habit.id) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
             awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
-            // Travel since the last row-crossing, reset for each new gesture.
+            onDraggingChange(habit.id)
             var travel = 0f
             var moved = false
             verticalDrag(down.id) { change ->
                 change.consume()
                 travel += change.positionChange().y
-                // `while`, not `if`: a fast drag can cover more than one row
+                var stepped = false
+                // `while`, not `if`: a fast drag can cross more than one row
                 // between pointer events, and dropping those would leave the
-                // row behind the finger.
+                // row trailing the finger.
                 while (travel <= -stepPx) {
                     actions.onMoveHabit(habit, true)
                     travel += stepPx
-                    moved = true
+                    stepped = true
                 }
                 while (travel >= stepPx) {
                     actions.onMoveHabit(habit, false)
                     travel -= stepPx
+                    stepped = true
+                }
+                if (stepped) {
                     moved = true
+                    scope.launch { listState.keepVisible(currentIndex.value) }
                 }
             }
+            onDraggingChange(null)
             if (moved) actions.onReorderFinished()
         }
+    }
+}
+
+/**
+ * Scrolls just far enough to keep [index] on screen, and not one row further.
+ *
+ * `animateScrollToItem` is deliberately not used: an animated scroll is the
+ * continuous motion this app removes everywhere else, and it would also race
+ * the next step of the drag.
+ */
+private suspend fun LazyListState.keepVisible(index: Int) {
+    val visible = layoutInfo.visibleItemsInfo
+    if (visible.isEmpty()) return
+    when {
+        index <= visible.first().index -> scrollToItem((index - 1).coerceAtLeast(0))
+        index >= visible.last().index -> scrollToItem(firstVisibleItemIndex + 1)
     }
 }

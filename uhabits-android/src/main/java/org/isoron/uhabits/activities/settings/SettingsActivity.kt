@@ -63,6 +63,19 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Weekday names in the preference's own order: Sunday first, because
+     * `pref_first_weekday` stores 1 for Sunday through 7 for Saturday. Taken
+     * from the calendar rather than hard-coded so they arrive translated.
+     */
+    private val weekdayNames: List<String>
+        get() {
+            val symbols = java.text.DateFormatSymbols.getInstance().weekdays
+            // `weekdays` is 1-based with an empty slot at index 0, which lines
+            // up with the preference exactly.
+            return (1..7).map { symbols[it] }
+        }
+
     private fun buildRows(): List<SettingsRow> = buildList {
         add(SettingsRow.Header(getString(R.string.interface_preferences)))
         add(
@@ -93,7 +106,48 @@ class SettingsActivity : AppCompatActivity() {
                 onToggle = { prefs.isEinkRefreshEnabled = it },
             )
         )
+        // Restored below: these were lost when the preference XML was gutted,
+        // not removed on purpose. Their preferences all survived and were
+        // still being read -- `isCheckmarkSequenceReversed` still ordered the
+        // day columns, `isMidnightDelayEnabled` is still consulted at every
+        // launch, and `shouldMakeNotificationsSticky` still shapes every
+        // reminder -- so each was in force with no way left to change it.
+        add(
+            SettingsRow.Toggle(
+                title = getString(R.string.reverse_days),
+                checked = prefs.isCheckmarkSequenceReversed,
+                onToggle = { prefs.isCheckmarkSequenceReversed = it },
+            )
+        )
+        add(
+            SettingsRow.Choice(
+                title = getString(R.string.first_weekday),
+                options = weekdayNames,
+                // The preference is 1 for Sunday through 7 for Saturday, and
+                // reads the locale's own answer when it was never set. The
+                // list is in that order, so the index is one less.
+                selectedIndex = (prefs.firstWeekdayInt - 1).coerceIn(0, 6),
+                onSelect = { index ->
+                    prefs.setFirstWeekday(index + 1)
+                    recreate()
+                },
+            )
+        )
+        add(
+            SettingsRow.Toggle(
+                title = getString(R.string.pref_midnight_delay_title),
+                checked = prefs.isMidnightDelayEnabled,
+                onToggle = { prefs.isMidnightDelayEnabled = it },
+            )
+        )
         add(SettingsRow.Header(getString(R.string.reminder)))
+        add(
+            SettingsRow.Toggle(
+                title = getString(R.string.sticky_notifications),
+                checked = prefs.shouldMakeNotificationsSticky(),
+                onToggle = { prefs.setNotificationsSticky(it) },
+            )
+        )
         add(
             SettingsRow.Action(
                 title = getString(R.string.customize_notification),
