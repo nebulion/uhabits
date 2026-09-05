@@ -19,6 +19,8 @@
 
 package org.isoron.uhabits.activities.habits.list
 
+import androidx.compose.ui.input.pointer.PointerEventPass
+import kotlin.math.absoluteValue
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -329,6 +331,20 @@ fun HabitListScreenMMD(
                 if (habits.isEmpty()) {
                     EmptyState()
                 } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .reorderGesture(
+                                listState = listState,
+                                habits = habits,
+                                selectedIds = selectedIds,
+                                onDragChange = { id, boundary ->
+                                    draggingId = id
+                                    dropBoundary = boundary
+                                },
+                                actions = actions,
+                            ),
+                    ) {
                     LazyColumnMMD(
                         modifier = Modifier.fillMaxSize(),
                         state = listState,
@@ -343,8 +359,6 @@ fun HabitListScreenMMD(
                             if (index == 0) RowSeparator(bold = dropBoundary == 0, drawn = false)
                             HabitRow(
                                 habit = habit,
-                                index = index,
-                                listState = listState,
                                 // The held row bolds its own border only while
                                 // the drop would leave it where it is. Once
                                 // the finger reaches a boundary that would
@@ -352,18 +366,7 @@ fun HabitListScreenMMD(
                                 // instead, so the two never claim at once.
                                 isDragging = habit.id == draggingId &&
                                     dropBoundary == null,
-                                onDragChange = { id, boundary ->
-                                    draggingId = id
-                                    dropBoundary = boundary
-                                },
                                 isSelected = habit.id in selectedIds,
-                                // Only ever one habit at a time. Dragging is
-                                // about one habit's place in the order, and a
-                                // selection of several has no single place to
-                                // put down -- so with two or more selected the
-                                // detector is not installed at all.
-                                canDrag = selectedIds.size == 1 &&
-                                    habit.id in selectedIds,
                                 dayLabels = dayLabels,
                                 dataOffset = dataOffset,
                                 isShortToggleEnabled = isShortToggleEnabled,
@@ -372,6 +375,7 @@ fun HabitListScreenMMD(
                             )
                             RowSeparator(bold = dropBoundary == index + 1)
                         }
+                    }
                     }
                 }
             }
@@ -673,12 +677,8 @@ private fun DayHeadingRow(
 @Composable
 private fun HabitRow(
     habit: HabitCardUiState,
-    index: Int,
-    listState: LazyListState,
     isDragging: Boolean,
-    onDragChange: (Long?, Int?) -> Unit,
     isSelected: Boolean,
-    canDrag: Boolean,
     dayLabels: List<DayLabel>,
     dataOffset: Int,
     isShortToggleEnabled: Boolean,
@@ -718,20 +718,12 @@ private fun HabitRow(
                 .combinedClickable(
                     onClick = { actions.onClickHabit(habit) },
                     // A long press on an *unselected* habit selects it. On a
-                    // selected one it must do nothing, or the second long
-                    // press -- the one that picks the habit up -- would
-                    // deselect it instead of starting a drag.
+                    // selected one it must do nothing: the second long press
+                    // is the one that picks the habit up, and it is caught by
+                    // the list's own container, not here.
                     onLongClick = if (isSelected) null else {
                         { actions.onLongClickHabit(habit) }
                     },
-                )
-                .reorderDragHandle(
-                    habit = habit,
-                    index = index,
-                    listState = listState,
-                    enabled = canDrag,
-                    onDragChange = onDragChange,
-                    actions = actions,
                 )
                 .padding(start = 16.dp, end = 8.dp),
         )
@@ -942,132 +934,107 @@ private fun MessageBar(data: SnackbarDataMMD) {
 }
 
 /**
- * Picks a selected habit up on a second long press, and drops it where the
- * line shows.
+ * Owns picking a habit up and moving it. Lives on the list, not on a row.
  *
- * **The gesture is long press, then long press again.** The first selects the
- * habit, which is what a long press has always done here; the second, on a
- * habit that is already selected, picks it up, and it stays up until the
- * finger lifts. Two presses rather than one because a single long press has to
- * mean something on every row, and "select on a short hold, drag on a longer
- * one" is a distinction nobody can aim for.
+ * **This is the fix for the bug that made the feature unusable**, and it is
+ * structural rather than a patch. The gesture used to be a `pointerInput` on
+ * the dragged row's own name column, which failed in two ways once the list
+ * scrolled: the finger's position was read as `thatRow.offset + local y`, so
+ * turning a page put the row out of `visibleItemsInfo` and no drop boundary
+ * could be computed again -- you could scroll but not place -- and a
+ * `LazyColumn` may dispose a row it has scrolled past, destroying the very
+ * node hosting the gesture. A container around the list is never disposed and
+ * its coordinates are the list's own, so neither can happen.
  *
- * Selection is also what keeps the two detectors on this row out of each
- * other's way. `combinedClickable` still owns tap and long-press-to-select,
- * but it is given no long-press handler once a habit is selected, and this
- * detector is not installed at all until then -- so at any moment exactly one
- * of them wants the long press.
+ * **It works in the `Initial` pass.** A parent sees events before its
+ * children there, which is the only way to get in front of `LazyColumnMMD` --
+ * the list claims drags for its own paging, and anything reading them
+ * afterwards sees either a cancelled drag or a movement reported as zero.
+ * Nothing is consumed until a drag is actually running, so taps, long presses
+ * on unselected rows and the list's own scrolling all behave exactly as
+ * before.
  *
- * **Reading the drag has to ignore consumption, and that is the whole reason
- * this did not work for three attempts.** `LazyColumnMMD` handles drags itself
- * to do its paging, and it claims them before this row sees them. Two separate
- * things follow, and each looks like a different bug:
- *
- *  - `verticalDrag` (and `detectDragGesturesAfterLongPress`) treat a claimed
- *    movement as a *cancelled* drag and simply give up.
- *  - `positionChange()` reports a claimed movement as **zero**, so even a loop
- *    that survives sees a finger that never moved.
- *
- * Together they produced a habit that visibly picked up and then refused to go
- * anywhere. A raw pointer loop with `positionChangeIgnoreConsumed` reads the
- * movement whoever claimed it; claiming it here as well stops the list paging
- * underneath the drag.
- *
- * **Nothing moves while you drag.** The list holds still and the only thing
- * that changes is a heavy black line at the boundary the habit would drop
- * into; the reorder happens once, on release. Shuffling rows under the finger
- * would repaint most of the screen for every row crossed, where moving a line
- * repaints two thin strips -- so a drag across thirty rows costs what a drag
- * across one costs, and the list does not rearrange itself while you are
- * aiming at it.
- *
- * When the finger is over the habit's own place, where releasing would change
- * nothing, there is no line and the held row bolds its own border instead.
- *
- * Carrying the line to the top or bottom visible row scrolls the list by one,
- * so a habit can travel further than a screenful without being dropped.
- *
- * Only the vertical component is read, and only on the name column: the day
- * cells own their own taps for toggling a checkmark.
+ * The gesture: press a habit that is already the only selected one, hold, and
+ * drag. The list stays still; the separator the habit would drop into
+ * thickens; release puts it there. Holding at the top or bottom edge turns a
+ * page.
  */
-private fun Modifier.reorderDragHandle(
-    habit: HabitCardUiState,
-    index: Int,
+private fun Modifier.reorderGesture(
     listState: LazyListState,
-    enabled: Boolean,
+    habits: List<HabitCardUiState>,
+    selectedIds: Set<Long>,
     onDragChange: (Long?, Int?) -> Unit,
     actions: HabitListActions,
 ): Modifier = composed {
-    if (!enabled) return@composed this
     val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    val edgeMarginPx = with(density) { EDGE_MARGIN.toPx() }
-    // Read inside a long-lived gesture coroutine, so it is tracked rather than
-    // captured: a captured copy goes stale as soon as the list changes.
-    val currentIndex = rememberUpdatedState(index)
-    pointerInput(habit.id) {
+    val edgeMarginPx = with(LocalDensity.current) { EDGE_MARGIN.toPx() }
+    val current = rememberUpdatedState(habits)
+    val selection = rememberUpdatedState(selectedIds)
+
+    pointerInput(Unit) {
         awaitEachGesture {
-            val down = awaitFirstDown(requireUnconsumed = false)
-            awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
-            val start = currentIndex.value
+            val down = awaitFirstDown(
+                requireUnconsumed = false,
+                pass = PointerEventPass.Initial,
+            )
+            // Only the single selected habit is draggable, and only from the
+            // row the finger actually went down on.
+            val ids = selection.value
+            if (ids.size != 1) return@awaitEachGesture
+            val start = listState.layoutInfo.indexAt(down.position.y)
+                ?: return@awaitEachGesture
+            val habit = current.value.getOrNull(start) ?: return@awaitEachGesture
+            if (habit.id !in ids) return@awaitEachGesture
+
+            // A long press is "still down, and still roughly here, when the
+            // timeout expires". Watching for it without consuming leaves the
+            // row's own tap handling untouched.
+            val slop = viewConfiguration.touchSlop
+            val heldStill = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val change = event.changes.firstOrNull { it.id == down.id }
+                        ?: return@withTimeoutOrNull false
+                    if (!change.pressed) return@withTimeoutOrNull false
+                    if ((change.position.y - down.position.y).absoluteValue > slop) {
+                        return@withTimeoutOrNull false
+                    }
+                }
+                @Suppress("UNREACHABLE_CODE") false
+            }
+            // Null means the timeout won, which is exactly the long press.
+            if (heldStill != null) return@awaitEachGesture
+
             var boundary: Int? = null
-            var lastScrollAt = 0L
+            var lastPageTurn = 0L
             var pageTurn: Job? = null
             onDragChange(habit.id, null)
             while (true) {
-                val event = awaitPointerEvent()
+                val event = awaitPointerEvent(PointerEventPass.Initial)
                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
                 val stillDown = change.pressed
+                // Claimed here so the list cannot page underneath the drag.
                 change.consume()
                 if (!stillDown) break
 
                 val info = listState.layoutInfo
-                val here = info.visibleItemsInfo.firstOrNull { it.index == currentIndex.value }
-                    ?: continue
-                // Where the finger is in the list's own coordinates, not in
-                // this row's. Measuring the finger's position rather than
-                // accumulating how far it has travelled is what makes the drag
-                // survive scrolling: when the list moves under the finger, a
-                // running total is silently wrong by however far it moved,
-                // while a position is still just a position.
-                val pointerY = here.offset + change.position.y
-
-                val next = info.nearestBoundary(pointerY, start)
+                val next = info.nearestBoundary(change.position.y, start)
                 if (next != boundary) {
                     boundary = next
                     onDragChange(habit.id, next)
                 }
 
-                // The list moves only when the finger is actually *at* an
-                // edge, and when it does it turns a whole page rather than
-                // creeping a row at a time. Creeping was the wrong idea twice
-                // over: it is the continuous motion this app removes
-                // everywhere else, and it makes the list drift under a finger
-                // that is trying to aim at a boundary in it. Anywhere but the
-                // very edge, a drag only moves the line.
-                //
-                // A page is [SCROLL_STEP], the same distance the list turns
-                // when you scroll it yourself, so a drag and a scroll travel
-                // by the same amount.
                 val now = System.currentTimeMillis()
-                if (now - lastScrollAt >= PAGE_TURN_INTERVAL_MS) {
-                    val top = info.viewportStartOffset
-                    val bottom = info.viewportEndOffset
+                if (now - lastPageTurn >= PAGE_TURN_INTERVAL_MS) {
                     val target = when {
-                        pointerY <= top + edgeMarginPx ->
+                        change.position.y <= info.viewportStartOffset + edgeMarginPx ->
                             listState.firstVisibleItemIndex - SCROLL_STEP
-                        pointerY >= bottom - edgeMarginPx ->
+                        change.position.y >= info.viewportEndOffset - edgeMarginPx ->
                             listState.firstVisibleItemIndex + SCROLL_STEP
                         else -> null
                     }
                     if (target != null) {
-                        lastScrollAt = now
-                        // Held, so it can be called off. A page turn is
-                        // launched separately from the gesture, and one
-                        // started an instant before the finger lifted used to
-                        // land *after* the drop -- so releasing at the edge
-                        // scrolled the list out from under the habit that had
-                        // just been placed.
+                        lastPageTurn = now
                         pageTurn?.cancel()
                         pageTurn = scope.launch {
                             listState.scrollToItem(target.coerceAtLeast(0))
@@ -1087,6 +1054,10 @@ private fun Modifier.reorderDragHandle(
         }
     }
 }
+
+/** Which item is under [y], in the list's own coordinates. */
+private fun LazyListLayoutInfo.indexAt(y: Float): Int? =
+    visibleItemsInfo.firstOrNull { y >= it.offset && y < it.offset + it.size }?.index
 
 /**
  * The boundary between rows nearest to [pointerY], or null when that boundary
