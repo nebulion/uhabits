@@ -19,8 +19,11 @@
 
 package org.isoron.uhabits.activities.habits.list
 
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
+import androidx.compose.foundation.gestures.verticalDrag
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -117,6 +120,8 @@ data class HabitListActions(
     val onMoveSelectedDown: () -> Unit,
     /** One step of a drag: move this habit one place up (true) or down. */
     val onMoveHabit: (HabitCardUiState, Boolean) -> Unit,
+    /** A drag finished and the habit was dropped. */
+    val onReorderFinished: () -> Unit,
     val onDeleteSelected: () -> Unit,
 )
 
@@ -841,47 +846,57 @@ private fun MessageBar(data: SnackbarDataMMD) {
  * of this app removed. Here the finger moves freely and nothing redraws until
  * it has travelled a whole row, at which point the order changes by one and
  * the screen repaints once. A drag across ten rows costs ten repaints instead
- * of hundreds, and it still feels like dragging, because the list keeps up
- * with the finger.
+ * of hundreds, and it still keeps up with the finger.
+ *
+ * **The gesture is vertical only.** It is built from `awaitLongPressOrCancellation`
+ * followed by `verticalDrag` rather than from `detectDragGesturesAfterLongPress`,
+ * which claims a drag in any direction: a sideways movement now belongs to
+ * whatever else wants it, and cannot start or continue a reorder.
+ *
+ * **It does not scroll the list.** There is no auto-scroll when the finger
+ * reaches the top or bottom edge, deliberately -- `LazyColumnMMD` pages rather
+ * than scrolls, so an edge-scroll here would either fight it or introduce the
+ * one smooth-scrolling surface in the app. A drag therefore moves a habit
+ * within the rows you can see; to move one further, drop it, page, and pick it
+ * up again, or use the move buttons in the selection bar.
  *
  * It sits on the name column only. The day cells to the right own their own
  * taps for toggling a checkmark, and a reorder gesture over them would make
  * the two compete.
  *
  * `combinedClickable` stays where it is and keeps handling tap and long-press,
- * so a long press with no travel still just selects the habit -- this modifier
- * comes after it, which puts it closer to the pointer and lets a drag win once
- * one actually starts. The move-up and move-down buttons in the selection bar
- * are the same operation for when one place is all you want.
+ * so a long press with no travel still just selects the habit.
  */
 private fun Modifier.reorderDragHandle(
     habit: HabitCardUiState,
     actions: HabitListActions,
 ): Modifier = composed {
     val stepPx = with(LocalDensity.current) { CELL_HEIGHT.toPx() }
-    // Travel since the last row-crossing. Kept across recompositions, and keyed
-    // to the habit so it follows the row rather than the position.
-    val travel = remember(habit.id) { mutableFloatStateOf(0f) }
     pointerInput(habit.id) {
-        detectDragGesturesAfterLongPress(
-            onDragStart = { travel.floatValue = 0f },
-            onDragEnd = { travel.floatValue = 0f },
-            onDragCancel = { travel.floatValue = 0f },
-            onDrag = { change, dragAmount ->
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
+            // Travel since the last row-crossing, reset for each new gesture.
+            var travel = 0f
+            var moved = false
+            verticalDrag(down.id) { change ->
                 change.consume()
-                travel.floatValue += dragAmount.y
+                travel += change.positionChange().y
                 // `while`, not `if`: a fast drag can cover more than one row
-                // between pointer events, and dropping those would make the
-                // row lag behind the finger.
-                while (travel.floatValue <= -stepPx) {
+                // between pointer events, and dropping those would leave the
+                // row behind the finger.
+                while (travel <= -stepPx) {
                     actions.onMoveHabit(habit, true)
-                    travel.floatValue += stepPx
+                    travel += stepPx
+                    moved = true
                 }
-                while (travel.floatValue >= stepPx) {
+                while (travel >= stepPx) {
                     actions.onMoveHabit(habit, false)
-                    travel.floatValue -= stepPx
+                    travel -= stepPx
+                    moved = true
                 }
-            },
-        )
+            }
+            if (moved) actions.onReorderFinished()
+        }
     }
 }

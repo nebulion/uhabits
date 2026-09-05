@@ -210,6 +210,7 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
                             behavior.onReorderHabit(from, to)
                         }
                     },
+                    onReorderFinished = { screen.onReorderFinished() },
                     onDeleteSelected = { selectionBehavior.onDeleteHabits() },
                 ),
             )

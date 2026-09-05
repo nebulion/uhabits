@@ -146,6 +146,18 @@ class ListHabitsScreen
      */
     fun onScrolled() = einkRefresh.onChange(activity)
 
+    /**
+     * A drag-to-reorder just finished.
+     *
+     * Counted as one change rather than flashed outright: a drop is one thing
+     * the owner did, exactly like a checkmark or a page of scrolling, so it
+     * goes through the same counter and inherits both the Settings toggle and
+     * the every-twelfth-change interval. Flashing on every drop would be the
+     * most intrusive thing in the app attached to one of its commonest
+     * gestures.
+     */
+    fun onReorderFinished() = einkRefresh.onChange(activity)
+
     fun onAttached() {
         commandRunner.addListener(this)
     }
