@@ -80,8 +80,20 @@ open class ListHabitsBehavior @Inject constructor(
     }
 
     fun onExportCSV() {
-        val selected: MutableList<Habit> = LinkedList()
-        for (h in habitList) selected.add(h)
+        val all: MutableList<Habit> = LinkedList()
+        for (h in habitList) all.add(h)
+        onExportCSV(all)
+    }
+
+    /**
+     * Exports just these habits.
+     *
+     * `ExportCSVTask` always took a list, so exporting a subset needed nothing
+     * new -- only a caller. This is what the habits list's selection uses, and
+     * it is where the per-habit export from ShowHabit's header ended up after
+     * that header ran out of room for a fifth full-size action.
+     */
+    fun onExportCSV(selected: List<Habit>) {
         val outputDir = dirFinder.getCSVOutputDir()
         taskRunner.execute(
             ExportCSVTask(habitList, selected, outputDir) { filename: String? ->

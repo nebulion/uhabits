@@ -118,6 +118,8 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
                     canEdit = selectionBehavior.canEdit(),
                     canArchive = selectionBehavior.canArchive(),
                     canUnarchive = selectionBehavior.canUnarchive(),
+                    canMoveUp = model.canMoveSelected(up = true),
+                    canMoveDown = model.canMoveSelected(up = false),
                 )
             }
 
@@ -185,6 +187,29 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
                     onEditSelected = { selectionBehavior.onEditHabits() },
                     onArchiveSelected = { selectionBehavior.onArchiveHabits() },
                     onUnarchiveSelected = { selectionBehavior.onUnarchiveHabits() },
+                    onExportSelected = {
+                        behavior.onExportCSV(model.getSelected())
+                        model.clearSelection()
+                    },
+                    // The move itself is two writes: the model moves the row on
+                    // screen and hands back the pair to persist, and the
+                    // behavior writes the new order to the database. Without
+                    // the second the row springs back on the next refresh.
+                    onMoveSelectedUp = {
+                        model.moveSelected(up = true)?.let { (from, to) ->
+                            behavior.onReorderHabit(from, to)
+                        }
+                    },
+                    onMoveSelectedDown = {
+                        model.moveSelected(up = false)?.let { (from, to) ->
+                            behavior.onReorderHabit(from, to)
+                        }
+                    },
+                    onMoveHabit = { habit, up ->
+                        model.moveHabit(habit.id, up)?.let { (from, to) ->
+                            behavior.onReorderHabit(from, to)
+                        }
+                    },
                     onDeleteSelected = { selectionBehavior.onDeleteHabits() },
                 ),
             )

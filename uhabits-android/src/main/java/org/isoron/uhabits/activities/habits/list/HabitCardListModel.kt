@@ -219,6 +219,65 @@ class HabitCardListModel @Inject constructor(
 
     fun performReorder(from: Int, to: Int) = cache.reorder(from, to)
 
+    /**
+     * Moves the single selected habit one place up or down.
+     *
+     * This is what replaced drag-to-reorder. Dragging a row is a gesture that
+     * tracks the finger continuously, which is the one kind of motion this
+     * panel handles worst -- every pixel of travel is a partial repaint, and a
+     * long drag leaves a trail of them. Two discrete moves cost one repaint
+     * each and can be aimed exactly.
+     *
+     * Both halves of a move are needed and they are not the same thing:
+     * [HabitCardListCache.reorder] moves the row that is on screen, and
+     * `ListHabitsBehavior.onReorderHabit` writes the new position to the
+     * database. Doing only the first looks right until the next refresh puts
+     * the row back.
+     *
+     * Returns the pair of habits to persist, or null when the move is not
+     * possible -- nothing selected, more than one selected, the list is not in
+     * manual order, or the habit is already at the end it is moving towards.
+     */
+    fun moveSelected(up: Boolean): Pair<Habit, Habit>? {
+        val selected = _selectedIds.value
+        if (selected.size != 1) return null
+        return moveHabit(selected.first(), up)
+    }
+
+    /**
+     * Moves one habit, by id, a single place up or down. See [moveSelected]
+     * for why both halves of the move are needed.
+     *
+     * A drag calls this once per row it crosses rather than once per pixel of
+     * travel, which is what keeps a drag affordable here: the list only ever
+     * redraws when the order actually changes.
+     */
+    fun moveHabit(id: Long, up: Boolean): Pair<Habit, Habit>? {
+        if (!isSortable) return null
+        val from = (0 until cache.habitCount).firstOrNull {
+            cache.getHabitByPosition(it)?.id == id
+        } ?: return null
+        val to = if (up) from - 1 else from + 1
+        if (to < 0 || to >= cache.habitCount) return null
+        val fromHabit = cache.getHabitByPosition(from) ?: return null
+        val toHabit = cache.getHabitByPosition(to) ?: return null
+        cache.reorder(from, to)
+        return fromHabit to toHabit
+    }
+
+    /** Whether [moveSelected] would do anything in that direction. */
+    fun canMoveSelected(up: Boolean): Boolean {
+        if (!isSortable) return false
+        val selected = _selectedIds.value
+        if (selected.size != 1) return false
+        val id = selected.first()
+        val from = (0 until cache.habitCount).firstOrNull {
+            cache.getHabitByPosition(it)?.id == id
+        } ?: return false
+        val to = if (up) from - 1 else from + 1
+        return to >= 0 && to < cache.habitCount
+    }
+
     // --- cache and midnight callbacks ------------------------------------
 
     override fun atMidnight() = cache.refreshAllHabits()

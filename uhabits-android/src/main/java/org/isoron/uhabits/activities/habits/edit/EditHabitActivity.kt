@@ -130,6 +130,9 @@ class EditHabitActivity : AppCompatActivity() {
             habitType = HabitType.fromInt(intent.getIntExtra("habitType", HabitType.YES_NO.value))
         }
 
+        // Restoring runs after the two branches above on purpose: on a
+        // recreation the bundle is the authority, and what it carries has to
+        // win over both the habit's stored values and the defaults.
         if (state != null) {
             habitId = state.getLong("habitId")
             habitType = HabitType.fromInt(state.getInt("habitType"))
@@ -139,6 +142,12 @@ class EditHabitActivity : AppCompatActivity() {
             reminderHour = state.getInt("reminderHour")
             reminderMin = state.getInt("reminderMin")
             reminderDays = WeekdayList(state.getInt("reminderDays"))
+            targetType = NumericalHabitType.fromInt(state.getInt("targetType"))
+            nameText = state.getString("nameText", "")
+            questionText = state.getString("questionText", "")
+            notesText = state.getString("notesText", "")
+            unitText = state.getString("unitText", "")
+            targetText = state.getString("targetText", "")
         }
 
         updateColors()
@@ -401,6 +410,18 @@ class EditHabitActivity : AppCompatActivity() {
             putInt("reminderHour", reminderHour)
             putInt("reminderMin", reminderMin)
             putInt("reminderDays", reminderDays.toInteger())
+            // The five text fields and the target type were missing here, so
+            // everything typed into the form was lost whenever the process was
+            // killed in the background and the activity rebuilt -- the habit's
+            // stored values came back and the edit did not. They are plain
+            // `mutableStateOf`, which survives a configuration change but not
+            // process death; only the bundle does.
+            putInt("targetType", targetType.value)
+            putString("nameText", nameText)
+            putString("questionText", questionText)
+            putString("notesText", notesText)
+            putString("unitText", unitText)
+            putString("targetText", targetText)
         }
     }
 }

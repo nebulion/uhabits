@@ -109,7 +109,6 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
                 onArchive = { menuPresenter.onArchiveHabits() },
                 onUnarchive = { menuPresenter.onUnarchiveHabits() },
                 onDelete = { menuPresenter.onDeleteHabit() },
-                onExport = { menuPresenter.onExportCSV() },
             ),
             onScrolled = { einkRefresh.onChange(this) },
         )

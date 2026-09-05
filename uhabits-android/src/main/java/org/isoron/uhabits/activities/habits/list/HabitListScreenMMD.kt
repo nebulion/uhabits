@@ -19,6 +19,11 @@
 
 package org.isoron.uhabits.activities.habits.list
 
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.composed
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -107,6 +112,11 @@ data class HabitListActions(
     val onEditSelected: () -> Unit,
     val onArchiveSelected: () -> Unit,
     val onUnarchiveSelected: () -> Unit,
+    val onExportSelected: () -> Unit,
+    val onMoveSelectedUp: () -> Unit,
+    val onMoveSelectedDown: () -> Unit,
+    /** One step of a drag: move this habit one place up (true) or down. */
+    val onMoveHabit: (HabitCardUiState, Boolean) -> Unit,
     val onDeleteSelected: () -> Unit,
 )
 
@@ -120,6 +130,15 @@ data class SelectionCapabilities(
     val canEdit: Boolean,
     val canArchive: Boolean,
     val canUnarchive: Boolean,
+    /**
+     * Whether the one selected habit can move up or down. Both are false
+     * unless exactly one habit is selected *and* the list is in manual order:
+     * moving a row while it is sorted by name or score would be undone by the
+     * next sort, so the buttons do not appear at all rather than appearing and
+     * not sticking.
+     */
+    val canMoveUp: Boolean = false,
+    val canMoveDown: Boolean = false,
 )
 
 /** The orderings the sort menu offers. Colour is gone: every habit is one ink. */
@@ -365,6 +384,27 @@ private fun SelectionTopBar(
             }
         },
         actions = {
+            // Move up / move down, in place of dragging a row. They only
+            // exist for a single habit in a manually ordered list, so this bar
+            // never shows both these and the multi-habit actions at once.
+            if (selection.canMoveUp) {
+                IconButton(onClick = actions.onMoveSelectedUp) {
+                    Icon(
+                        painter = painterResource(R.drawable.mmd_chevron_filled_up),
+                        contentDescription = stringResource(R.string.move_up),
+                        tint = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            }
+            if (selection.canMoveDown) {
+                IconButton(onClick = actions.onMoveSelectedDown) {
+                    Icon(
+                        painter = painterResource(R.drawable.mmd_chevron_filled_down),
+                        contentDescription = stringResource(R.string.move_down),
+                        tint = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            }
             if (selection.canEdit) {
                 IconButton(onClick = actions.onEditSelected) {
                     Icon(
@@ -391,6 +431,19 @@ private fun SelectionTopBar(
                         tint = Color.Unspecified,
                     )
                 }
+            }
+            // Export lives here rather than on ShowHabit, where it used to be
+            // and where it no longer fits: that header carries a habit's name
+            // beside its actions, and a fifth full-size target left too little
+            // for the name. This bar's title is a selection count -- one or two
+            // characters -- so it has the room, and exporting a selection is
+            // strictly more than the single habit ShowHabit could manage.
+            IconButton(onClick = actions.onExportSelected) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_action_download_dark),
+                    contentDescription = stringResource(R.string.export_to_csv),
+                    tint = Color.Unspecified,
+                )
             }
             IconButton(onClick = actions.onDeleteSelected) {
                 GlyphText(glyph = stringResource(R.string.fa_trash), size = 20.sp)
@@ -569,6 +622,7 @@ private fun HabitRow(
                     onClick = { actions.onClickHabit(habit) },
                     onLongClick = { actions.onLongClickHabit(habit) },
                 )
+                .reorderDragHandle(habit, actions)
                 .padding(start = 16.dp, end = 8.dp),
         )
 
@@ -773,6 +827,61 @@ private fun MessageBar(data: SnackbarDataMMD) {
             dividerColor = ink,
             // Drawn above, at the right weight.
             showDivider = false,
+        )
+    }
+}
+
+/**
+ * Long-press-and-drag on a habit's name to move it in the list.
+ *
+ * **It moves a row at a time, not a pixel at a time**, and that is the whole
+ * design. A conventional reorder animates the dragged row under the finger and
+ * slides its neighbours aside continuously, which on this panel is a run of
+ * partial repaints for every centimetre of travel -- the exact motion the rest
+ * of this app removed. Here the finger moves freely and nothing redraws until
+ * it has travelled a whole row, at which point the order changes by one and
+ * the screen repaints once. A drag across ten rows costs ten repaints instead
+ * of hundreds, and it still feels like dragging, because the list keeps up
+ * with the finger.
+ *
+ * It sits on the name column only. The day cells to the right own their own
+ * taps for toggling a checkmark, and a reorder gesture over them would make
+ * the two compete.
+ *
+ * `combinedClickable` stays where it is and keeps handling tap and long-press,
+ * so a long press with no travel still just selects the habit -- this modifier
+ * comes after it, which puts it closer to the pointer and lets a drag win once
+ * one actually starts. The move-up and move-down buttons in the selection bar
+ * are the same operation for when one place is all you want.
+ */
+private fun Modifier.reorderDragHandle(
+    habit: HabitCardUiState,
+    actions: HabitListActions,
+): Modifier = composed {
+    val stepPx = with(LocalDensity.current) { CELL_HEIGHT.toPx() }
+    // Travel since the last row-crossing. Kept across recompositions, and keyed
+    // to the habit so it follows the row rather than the position.
+    val travel = remember(habit.id) { mutableFloatStateOf(0f) }
+    pointerInput(habit.id) {
+        detectDragGesturesAfterLongPress(
+            onDragStart = { travel.floatValue = 0f },
+            onDragEnd = { travel.floatValue = 0f },
+            onDragCancel = { travel.floatValue = 0f },
+            onDrag = { change, dragAmount ->
+                change.consume()
+                travel.floatValue += dragAmount.y
+                // `while`, not `if`: a fast drag can cover more than one row
+                // between pointer events, and dropping those would make the
+                // row lag behind the finger.
+                while (travel.floatValue <= -stepPx) {
+                    actions.onMoveHabit(habit, true)
+                    travel.floatValue += stepPx
+                }
+                while (travel.floatValue >= stepPx) {
+                    actions.onMoveHabit(habit, false)
+                    travel.floatValue -= stepPx
+                }
+            },
         )
     }
 }

@@ -47,7 +47,6 @@ data class ShowHabitActions(
     val onArchive: () -> Unit,
     val onUnarchive: () -> Unit,
     val onDelete: () -> Unit,
-    val onExport: () -> Unit,
 )
 
 /**
@@ -124,10 +123,11 @@ fun ShowHabitTopBarMMD(
                             actions.onUnarchive,
                         )
                     }
-                    // Export is deliberately not here. The header holds four
-                    // full-size targets and the habit name; export was the
-                    // fifth, and it is the one action here that is not about
-                    // the habit itself.
+                    // Export is not here, and now it is not merely missing:
+                    // this header holds four full-size targets beside a habit's
+                    // name, and export was the fifth that did not fit. It lives
+                    // on the habits list's selection bar, whose title is a
+                    // count rather than a name and so has the room.
                     ActionIcon(R.drawable.ic_action_delete_dark, R.string.delete, actions.onDelete)
                 },
             )
