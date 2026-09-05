@@ -130,8 +130,6 @@
     <string name="use_pure_black">Gece modunda saf siyah kullan</string>
     <string name="pure_black_description">Gece modunda gri arkaplanı saf siyah ile değiştirir. AMOLED ekranlı cihazlarda pil kullanımını azaltır.</string>
     <string name="interface_preferences">Arayüz</string>
-    <string name="reverse_days">Günleri ters sırala</string>
-    <string name="reverse_days_description">Ana ekranda günleri tersten göster</string>
     <string name="day">Gün</string>
     <string name="week">Hafta</string>
     <string name="month">Ay</string>

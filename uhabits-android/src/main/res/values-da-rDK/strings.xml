@@ -133,8 +133,6 @@
     <string name="use_pure_black">Brug ren sort i nat-tilstand</string>
     <string name="pure_black_description">Erstatter grå baggrunde med ren sort i nat-tilstand. Reducerer batteriforbruget i telefoner med AMOLED skærm.</string>
     <string name="interface_preferences">Grænseflade</string>
-    <string name="reverse_days">Omvendt rækkefølge af dage</string>
-    <string name="reverse_days_description">Vis dag i omvendt rækkefølge på hovedskærmen</string>
     <string name="day">Dag</string>
     <string name="week">Uge</string>
     <string name="month">Måned</string>

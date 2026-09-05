@@ -130,8 +130,6 @@
     <string name="use_pure_black">Käytä puhdasta mustaa yötilassa</string>
     <string name="pure_black_description">Korvaa harmaat taustat puhtaalla mustalla tummalla teemalla. Vähentää akun käyttöä puhelimissa AMOLED-näytöllä.</string>
     <string name="interface_preferences">Käyttöliittymä</string>
-    <string name="reverse_days">Päivät käänteisessä järjestyksessä</string>
-    <string name="reverse_days_description">Näytä päivät käänteisessä järjestyksessä päänäytöllä.</string>
     <string name="day">Päivä</string>
     <string name="week">Viikko</string>
     <string name="month">Kuukausi</string>

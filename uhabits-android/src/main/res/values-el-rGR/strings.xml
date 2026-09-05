@@ -130,8 +130,6 @@
     <string name="use_pure_black">Χρήση απόλυτου μαύρου στη νυχτ.λειτουργία</string>
     <string name="pure_black_description">Αντικαθιστά τα γκρί υπόβαθρα με απόλυτα μαύρα σε νυχτ.λειτουργία. Μειώνει την κατανάλωση μπαταρίας σε συσκευές με οθόνη AMOLED.</string>
     <string name="interface_preferences">Διεπαφή</string>
-    <string name="reverse_days">Αντίστροφη σειρά ημερών</string>
-    <string name="reverse_days_description">Προβολή των ημερών σε αντίστροφη σειρά στην κυρία οθόνη.</string>
     <string name="day">Ημέρα</string>
     <string name="week">Εβδομάδα</string>
     <string name="month">Μήνας</string>

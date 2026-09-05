@@ -142,8 +142,6 @@
     <string name="use_pure_black">Używaj pełnej czerni w trybie nocnym</string>
     <string name="pure_black_description">Zamienia szare tła na pełną czerń w trybie nocnym. Zmniejsza zużycie baterii w telefonach z ekranem AMOLED.</string>
     <string name="interface_preferences">Interfejs</string>
-    <string name="reverse_days">Odwróć kolejność dni</string>
-    <string name="reverse_days_description">Pokaż dni w odwrotnej kolejności na głównym ekranie</string>
     <string name="day">Dzień</string>
     <string name="week">Tydzień</string>
     <string name="month">Miesiąc</string>

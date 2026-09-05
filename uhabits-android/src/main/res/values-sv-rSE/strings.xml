@@ -134,8 +134,6 @@
     <string name="use_pure_black">Använd svart färg i nattläge</string>
     <string name="pure_black_description">Ersätter gråa bakgrunder med svart färg i nattläge. Reducerar batterianvändningen för telefoner med AMOLED-skärm.</string>
     <string name="interface_preferences">Gränssnitt</string>
-    <string name="reverse_days">Omvänd ordning på dagar</string>
-    <string name="reverse_days_description">Visar dagar i omvänd ordning i appen</string>
     <string name="day">Dag</string>
     <string name="week">Vecka</string>
     <string name="month">Månad</string>

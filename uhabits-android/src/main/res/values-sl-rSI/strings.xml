@@ -142,8 +142,6 @@
     <string name="use_pure_black">Uporabite popolno črnino v nočnem načinu</string>
     <string name="pure_black_description">Zamenja siva ozadja s popolno črnino v nočnem načinu. Zmanjša porabo baterije na telefonih z AMOLED zasloni.</string>
     <string name="interface_preferences">Vmesnik</string>
-    <string name="reverse_days">Zamenjaj vrstni red dni</string>
-    <string name="reverse_days_description">Prikaži dni v obratnem vrstnem redu na glavnem zaslonu</string>
     <string name="day">Dan</string>
     <string name="week">Teden</string>
     <string name="month">Mesec</string>

@@ -130,8 +130,6 @@
     <string name="use_pure_black">Utiliser un noir pur dans le mode nuit</string>
     <string name="pure_black_description">Remplace le fond gris par un noir pur dans le mode nuit ; cela réduit l’usage de la batterie des appareils ayant un écran AMOLED.</string>
     <string name="interface_preferences">Interface</string>
-    <string name="reverse_days">Inverser l\'ordre des jours</string>
-    <string name="reverse_days_description">Montrer les jours dans l\'ordre inversé sur l\'écran principal</string>
     <string name="day">Jour</string>
     <string name="week">Semaine</string>
     <string name="month">Mois</string>

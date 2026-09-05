@@ -142,8 +142,6 @@
     <string name="use_pure_black">Použite čisto čiernu farbu v tmavej téme</string>
     <string name="pure_black_description">Nahrádza sivé pozadie čisto čiernym v tmavej téme. Znižuje spotrebu batérie v telefónoch s displejom AMOLED.</string>
     <string name="interface_preferences">Rozhranie</string>
-    <string name="reverse_days">Opačné poradie dní</string>
-    <string name="reverse_days_description">Zobraziť dni v opačnom poradí na hlavnej obrazovke.</string>
     <string name="day">Deň</string>
     <string name="week">Týždeň</string>
     <string name="month">Mesiac</string>

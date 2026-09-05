@@ -130,8 +130,6 @@
     <string name="use_pure_black">Fekete használata éjszakai módban</string>
     <string name="pure_black_description">A szürke hátteret tiszta feketére cseréli éjszakai módban. Csökkenti az energiafelhasználást AMOLED kijelzős telefonokon.</string>
     <string name="interface_preferences">Kezelőfelület</string>
-    <string name="reverse_days">Napok sorrendjének megfordítása</string>
-    <string name="reverse_days_description">A főképernyőn fordított sorrendben mutatja a napokat</string>
     <string name="day">Nap</string>
     <string name="week">Hét</string>
     <string name="month">Hónap</string>

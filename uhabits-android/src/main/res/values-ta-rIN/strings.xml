@@ -130,8 +130,6 @@
     <string name="use_pure_black">இருள் பாங்கில் முழு கருப்பு நிறத்தை பயண்படுத்து</string>
     <string name="pure_black_description">இதன் மூலம் செயலியில் உள்ள பழுப்பு பின்புலங்கள் நீக்கப்பட்டு முழுவதும் கருப்பு நிற பின்புலங்களாக மாற்றப்படும். இது AMOLED திரை கொண்ட கைப்பேசிகளில் மின்கல பயன்பாட்டை குறைக்கும்.</string>
     <string name="interface_preferences">இடைமுகம்</string>
-    <string name="reverse_days">தலைகீழ் வரிசையில் நாட்கள்</string>
-    <string name="reverse_days_description">பிரதான திரையில் நாட்களை தலை கீழ் வரிசையில் காட்டு</string>
     <string name="day">நாள்</string>
     <string name="week">வாரம்</string>
     <string name="month">மாதம்</string>

@@ -102,8 +102,6 @@
     <string name="use_pure_black">Bruk batterisparing i nattmodus</string>
     <string name="pure_black_description">Bytter ut grå bakgunner med helt svarte i nattmodus. Reduserer betteribruk hos telefoner med AMOLED-skjerm.</string>
     <string name="interface_preferences">Grensesnitt</string>
-    <string name="reverse_days">Omvendt dagsrekkefølge</string>
-    <string name="reverse_days_description">Vis dager i omvendt rekkefølge på hovedmenyen</string>
     <string name="day">Dag</string>
     <string name="week">Uke</string>
     <string name="month">Måned</string>

@@ -130,8 +130,6 @@
     <string name="use_pure_black">استفاده از رنگ سیاه خالص در حالت تیره</string>
     <string name="pure_black_description">جایگزینی پس‌زمینه خاکستری با سیاه خالص در حالت تیره. استفاده از باتری را در گوشی‌های با صفحه نمایش AMOLED کاهش می‌دهد.</string>
     <string name="interface_preferences">رابط کاربری</string>
-    <string name="reverse_days">معکوس کردن ترتیب روزها</string>
-    <string name="reverse_days_description">روزها را در صفحه اصلی با ترتیب معکوس نمایش می‌دهد.</string>
     <string name="day">روز</string>
     <string name="week">هفته</string>
     <string name="month">ماه</string>

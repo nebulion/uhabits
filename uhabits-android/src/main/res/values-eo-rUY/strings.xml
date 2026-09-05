@@ -104,8 +104,6 @@
     <string name="use_pure_black">Uzu puran nigron en malhela temo</string>
     <string name="pure_black_description">Anstataŭigas grizajn fonojn per pura nigra en malhela temo. Reduktas baterian uzon en telefonoj kun AMOLED-ekrano.</string>
     <string name="interface_preferences">Intervizago</string>
-    <string name="reverse_days">Reversa ordo de tagoj</string>
-    <string name="reverse_days_description">Montri tagojn en inversa ordo sur la ĉefa ekrano.</string>
     <string name="day">Tago</string>
     <string name="week">Semajno</string>
     <string name="month">Monato</string>

@@ -142,8 +142,6 @@
     <string name="use_pure_black">רקע שחור מוחלט בערכת הנושא הכהה</string>
     <string name="pure_black_description">החלפת הרקע האפור בערכת הנושא הכהה לשחור מוחלט. מפחית את צריכת הסוללה במכשירים עם תצוגת AMOLED.</string>
     <string name="interface_preferences">ממשק</string>
-    <string name="reverse_days">סדר ימים הפוך</string>
-    <string name="reverse_days_description">הצגת הימים בסדר הפוך במסך הראשי.</string>
     <string name="day">יום</string>
     <string name="week">שבוע</string>
     <string name="month">חודש</string>

@@ -130,8 +130,6 @@
     <string name="use_pure_black">Използване на чисто черно при тъмна тема</string>
     <string name="pure_black_description">Заменя сивите фонове с чисто черни при тъмна тема. Намаля разхода на батерията при телефони с AMOLED дисплеи.</string>
     <string name="interface_preferences">Интерфейс</string>
-    <string name="reverse_days">Обратен ред на дните</string>
-    <string name="reverse_days_description">Показва дните на основния екран в обратен ред</string>
     <string name="day">Ден</string>
     <string name="week">Седмица</string>
     <string name="month">Месец</string>

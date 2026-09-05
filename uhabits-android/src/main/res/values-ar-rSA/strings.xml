@@ -154,8 +154,6 @@
     <string name="use_pure_black">استخدام أسود نقي في الوضع الليلي. </string>
     <string name="pure_black_description">يستبدل خلفيات رمادية مع أسود نقي في الوضع الليلي. يقلل من استهلاك البطارية في الهواتف مع شاشة AMOLED. .</string>
     <string name="interface_preferences">السطح البيني. </string>
-    <string name="reverse_days">ترتيب عكسي أيام. </string>
-    <string name="reverse_days_description">عرض أيام في ترتيب عكسي على الشاشة الرئيسية. </string>
     <string name="day">يوم</string>
     <string name="week">أسبوع. </string>
     <string name="month">شهر. </string>

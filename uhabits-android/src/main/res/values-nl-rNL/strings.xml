@@ -130,8 +130,6 @@
     <string name="use_pure_black">Gebruik puur zwart bij het donkere thema</string>
     <string name="pure_black_description">Vervangt grijze achtergronden door puur zwart in het donkere thema. Vermindert batterijgebruik bij telefoons met AMOLED scherm.</string>
     <string name="interface_preferences">Interface</string>
-    <string name="reverse_days">Omgekeerde volgorde van dagen</string>
-    <string name="reverse_days_description">Toon dagen in omgekeerde volgorde op het hoofdscherm</string>
     <string name="day">Dag</string>
     <string name="week">Week</string>
     <string name="month">Maand</string>

@@ -108,18 +108,10 @@ class SettingsActivity : AppCompatActivity() {
             )
         )
         // Restored below: these were lost when the preference XML was gutted,
-        // not removed on purpose. Their preferences all survived and were
-        // still being read -- `isCheckmarkSequenceReversed` still ordered the
-        // day columns, `isMidnightDelayEnabled` is still consulted at every
-        // launch, and `shouldMakeNotificationsSticky` still shapes every
-        // reminder -- so each was in force with no way left to change it.
-        add(
-            SettingsRow.Toggle(
-                title = getString(R.string.reverse_days),
-                checked = prefs.isCheckmarkSequenceReversed,
-                onToggle = { prefs.isCheckmarkSequenceReversed = it },
-            )
-        )
+        // not removed on purpose. Both preferences survived and are still
+        // read -- `isMidnightDelayEnabled` at every launch, and
+        // `shouldMakeNotificationsSticky` on every reminder -- so each was in
+        // force with no way left to change it.
         add(
             SettingsRow.Choice(
                 title = getString(R.string.first_weekday),

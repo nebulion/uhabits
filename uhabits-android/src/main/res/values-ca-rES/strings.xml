@@ -122,8 +122,6 @@
     <string name="use_pure_black">Utilitzar negre pur en el mode nocturn</string>
     <string name="pure_black_description">Reemplaça fons grisos per negre pur en el mode nocturn. Redueix consum de bateria en telèfons amb pantalla AMOLED.</string>
     <string name="interface_preferences">Interfície</string>
-    <string name="reverse_days">Ordre invers de dies</string>
-    <string name="reverse_days_description">Mostra els dies en ordre invers en la pantalla principal</string>
     <string name="day">Dia</string>
     <string name="week">Setmana</string>
     <string name="month">Mes</string>

@@ -128,8 +128,6 @@
     <string name="use_pure_black">在夜間模式中使用深色設定</string>
     <string name="pure_black_description">在夜間模式中，使用黑色背景取代灰色背景。這樣可以減少 AMOLED 螢幕手機的電量消耗。</string>
     <string name="interface_preferences">介面</string>
-    <string name="reverse_days">反向排序日期</string>
-    <string name="reverse_days_description">在主畫面上顯示反向排序的結果</string>
     <string name="day">日</string>
     <string name="week">週</string>
     <string name="month">月</string>

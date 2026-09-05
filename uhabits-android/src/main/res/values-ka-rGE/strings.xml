@@ -130,8 +130,6 @@
     <string name="use_pure_black">მუქ რეჟიმში სუფთა შავის გამოყენება</string>
     <string name="pure_black_description">მუქ რეჟიმში რუხი ფონები სუფთა შავით ჩანაცვლდება. AMOLED-ეკრანიან ტელეფონებში ეს ელემენტის ენერგიას ზოგავს.</string>
     <string name="interface_preferences">ინტერფეისი</string>
-    <string name="reverse_days">დღეების თანმიმდევრობის შებრუნება</string>
-    <string name="reverse_days_description">დღეების თანმიმდევრობის შემობრუნება მთავარ ეკრანზე.</string>
     <string name="day">დღე</string>
     <string name="week">კვირა</string>
     <string name="month">თვე</string>

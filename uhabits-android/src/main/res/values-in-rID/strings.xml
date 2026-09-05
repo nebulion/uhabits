@@ -128,8 +128,6 @@
     <string name="use_pure_black">Gunakan warna hitam pekat pada mode malam</string>
     <string name="pure_black_description">Ganti warna latar abu-abu dengan warna hitam pada mode malam. Mengurangi penggunaan baterai pada layar AMOLED.</string>
     <string name="interface_preferences">Antarmuka</string>
-    <string name="reverse_days">Balik urutan hari</string>
-    <string name="reverse_days_description">Tampilkan hari dalam urutan terbalik pada layar utama.</string>
     <string name="day">Hari</string>
     <string name="week">Minggu</string>
     <string name="month">Bulan</string>

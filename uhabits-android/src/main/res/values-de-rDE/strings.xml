@@ -130,8 +130,6 @@
     <string name="use_pure_black">Verwende reines Schwarz im Nachtmodus</string>
     <string name="pure_black_description">Ersetzt im Nachtmodus das Grau des Hintergrunds durch Schwarz. Reduziert den Stromverbrauch von Smartphones mit AMOLED Displays.</string>
     <string name="interface_preferences">Oberfläche</string>
-    <string name="reverse_days">Kehre die Tagesreihenfolge um</string>
-    <string name="reverse_days_description">Zeigt die Tage im Hauptfenster in umgekehrter Reihenfolge an.</string>
     <string name="day">Tag</string>
     <string name="week">Woche</string>
     <string name="month">Monat</string>

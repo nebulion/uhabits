@@ -86,8 +86,6 @@ class SharedPreferencesStorage
         val preferences = this.preferences ?: return
         sharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
         when (key) {
-            "pref_checkmark_reverse_order" ->
-                preferences.isCheckmarkSequenceReversed = getBoolean(key, false)
             "pref_midnight_delay" ->
                 preferences.isMidnightDelayEnabled = getBoolean(key, false)
             "pref_sticky_notifications" ->

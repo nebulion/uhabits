@@ -124,8 +124,6 @@
     <string name="use_pure_black">ダークテーマで完全な黒を使用する</string>
     <string name="pure_black_description">夜間モードで灰色の背景を完全な黒で置き換えます。AMOLED ディスプレイの電話でバッテリー使用量を抑えます。</string>
     <string name="interface_preferences">インターフェース</string>
-    <string name="reverse_days">日付の表示順を逆にする</string>
-    <string name="reverse_days_description">メイン画面で日付を逆順に表示します</string>
     <string name="day">日</string>
     <string name="week">週</string>
     <string name="month">月</string>

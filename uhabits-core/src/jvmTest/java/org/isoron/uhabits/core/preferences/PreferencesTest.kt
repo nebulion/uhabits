@@ -133,9 +133,6 @@ class PreferencesTest : BaseUnitTest() {
     @Test
     @Throws(Exception::class)
     fun testCheckmarks() {
-        assertFalse(prefs.isCheckmarkSequenceReversed)
-        prefs.isCheckmarkSequenceReversed = true
-        assertTrue(prefs.isCheckmarkSequenceReversed)
         assertFalse(prefs.isShortToggleEnabled)
         prefs.isShortToggleEnabled = true
         assertTrue(prefs.isShortToggleEnabled)

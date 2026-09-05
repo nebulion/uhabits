@@ -130,8 +130,6 @@
     <string name="use_pure_black">erabili beltz hutsa azal ilunean</string>
     <string name="pure_black_description">Atzeko plano grisak beltz hutsez aldatzen ditu azal ilunean. Bateriaren erabilera gutxitzen du AMOLED duten gailuetan.</string>
     <string name="interface_preferences">Interfazea</string>
-    <string name="reverse_days">Egunak atzekoz aurrera ordenatu</string>
-    <string name="reverse_days_description">Pantaila nagusian egunak atzekoz aurrera ikusi</string>
     <string name="day">Eguna</string>
     <string name="week">Astea</string>
     <string name="month">Hilabetea</string>

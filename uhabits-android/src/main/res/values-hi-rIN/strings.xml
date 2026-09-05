@@ -153,9 +153,6 @@
     <string name="pure_black_description">\"
 रात मोड में शुद्ध काले रंग के साथ ग्रे पृष्ठभूमि में बदलें.  अमोलेड प्रदर्शन के साथ फोन में बैटरी उपयोग कम कर देता है ।\"</string>
     <string name="interface_preferences">इंटरफेस</string>
-    <string name="reverse_days">\"
-दिनों की रिवर्स आदेश\"</string>
-    <string name="reverse_days_description">दिनों को रिवर्स क्रम में मुख्य स्क्रीन पर दिखाएँ</string>
     <string name="day">दिन </string>
     <string name="week">हफ्ते</string>
     <string name="month">माह</string>

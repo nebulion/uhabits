@@ -31,7 +31,6 @@ import kotlin.math.min
 
 open class Preferences(private val storage: Storage) {
     private val listeners: MutableList<Listener>
-    private var shouldReverseCheckmarks: Boolean? = null
     fun addListener(listener: Listener) {
         listeners.add(listener)
     }
@@ -156,20 +155,6 @@ open class Preferences(private val storage: Storage) {
     fun shouldMakeNotificationsSticky(): Boolean {
         return storage.getBoolean("pref_sticky_notifications", false)
     }
-
-    open var isCheckmarkSequenceReversed: Boolean
-        get() {
-            if (shouldReverseCheckmarks == null) {
-                shouldReverseCheckmarks =
-                    storage.getBoolean("pref_checkmark_reverse_order", false)
-            }
-            return shouldReverseCheckmarks!!
-        }
-        set(reverse) {
-            shouldReverseCheckmarks = reverse
-            storage.putBoolean("pref_checkmark_reverse_order", reverse)
-            for (l in listeners) l.onCheckmarkSequenceChanged()
-        }
 
     open var isMidnightDelayEnabled: Boolean
         get() = storage.getBoolean("pref_midnight_delay", false)

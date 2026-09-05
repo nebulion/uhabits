@@ -1107,10 +1107,10 @@ private val EDGE_MARGIN = CELL_HEIGHT
  *
  * A page is a full repaint *and* it moves the ground you are aiming at, so the
  * pace is set by how long it takes to read where you have landed and decide,
- * not by how fast the list could go. 700ms was tried first and ran away
- * underneath the finger.
+ * not by how fast the list could go. 700ms ran away underneath the finger and
+ * 1400ms was longer than the decision takes.
  */
-private const val PAGE_TURN_INTERVAL_MS = 1400L
+private const val PAGE_TURN_INTERVAL_MS = 1000L
 
 /**
  * The rule between two habits, and the thing a drag points at.

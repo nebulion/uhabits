@@ -120,8 +120,6 @@
     <string name="use_pure_black">Koristi crnu boju za noćni način</string>
     <string name="pure_black_description">Zamjenjuje sivu pozadinu sa crnom u noćnom načinu. To smanjuje potrošnju bateriju na uređajima s AMOLED zaslonima.</string>
     <string name="interface_preferences">Sučelje</string>
-    <string name="reverse_days">Obrnuti poredak dana</string>
-    <string name="reverse_days_description">Prikažite dane obrnutim redom na glavnom zaslonu</string>
     <string name="day">Dan</string>
     <string name="week">Tjedan</string>
     <string name="month">Mjesec</string>

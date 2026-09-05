@@ -124,8 +124,6 @@
     <string name="use_pure_black">Sử dụng màu đen thuần trong chế độ ban đêm</string>
     <string name="pure_black_description">Thay thế nền màu xám bởi màu đen thuần trong chế độ ban đêm. Giảm thiểu việc sử dụng pin của điện thoại có màn hình AMOLED.</string>
     <string name="interface_preferences">Giao diện</string>
-    <string name="reverse_days">Đảo ngược thứ tự của ngày</string>
-    <string name="reverse_days_description">Hiển thị ngày ngược trên màn hình chính</string>
     <string name="day">Ngày</string>
     <string name="week">Tuần</string>
     <string name="month">Tháng</string>

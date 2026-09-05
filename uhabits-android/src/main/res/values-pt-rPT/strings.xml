@@ -104,8 +104,6 @@
     <string name="use_pure_black">Usar preto puro no modo noturno</string>
     <string name="pure_black_description">Substitui os fundos cinzentos por pretos puros no modo noturno. Reduz a utilização da bateria em telemóveis com ecrã AMOLED.</string>
     <string name="interface_preferences">Interface</string>
-    <string name="reverse_days">Inverter a ordem dos dias</string>
-    <string name="reverse_days_description">Mostra os dias em ordem inversa na página principal</string>
     <string name="day">Dia</string>
     <string name="week">Semana</string>
     <string name="month">Mês</string>

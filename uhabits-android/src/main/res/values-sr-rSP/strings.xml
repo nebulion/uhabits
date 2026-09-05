@@ -136,8 +136,6 @@
     <string name="use_pure_black">Чиста црна у тамној теми</string>
     <string name="pure_black_description">Мења сиву позадину са чистом црном у тамној теми. Смањује потрошњу батерије код телефона са АМОЛЕД екраном.</string>
     <string name="interface_preferences">Сучеље</string>
-    <string name="reverse_days">Обрни редослед дана</string>
-    <string name="reverse_days_description">Приказ дана у обрнутом реду на главном екрану.</string>
     <string name="day">дан</string>
     <string name="week">недеља</string>
     <string name="month">месец</string>

@@ -111,8 +111,6 @@
     <string name="use_pure_black">Utilizează modul întunecat</string>
     <string name="pure_black_description">Înlocuiește fundalurile gri cu negru pur în modul întunecat. Reduce utilizarea bateriei la telefoanele cu ecran AMOLED.</string>
     <string name="interface_preferences">Interfață</string>
-    <string name="reverse_days">Inversează ordinea zilelor</string>
-    <string name="reverse_days_description">Arată zilele în ordine inversă pe ecranul principal</string>
     <string name="day">Zi</string>
     <string name="week">Săptămână</string>
     <string name="month">Lună</string>

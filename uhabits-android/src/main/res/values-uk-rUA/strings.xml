@@ -146,8 +146,6 @@
     <string name="use_pure_black">Користати цілком чорне тло у нічному режимі</string>
     <string name="pure_black_description">Замінює сіре тло на цілком чорне у нічному режимі. Зменшує використання батареї в телефонах із дисплеєм AMOLED.</string>
     <string name="interface_preferences">Оболонка</string>
-    <string name="reverse_days">Зворотній лад днів</string>
-    <string name="reverse_days_description">Показувати дні у зворотньому порядку на головному екрані</string>
     <string name="day">День</string>
     <string name="week">Тиждень</string>
     <string name="month">Місяць</string>

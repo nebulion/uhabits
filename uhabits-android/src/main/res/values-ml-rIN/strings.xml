@@ -130,8 +130,6 @@
     <string name="use_pure_black">ഇരുണ്ട തീമിൽ ശുദ്ധമായ കറുപ്പ് ഉപയോഗിക്കുക</string>
     <string name="pure_black_description">ഇരുണ്ട തീമിൽ ചാരനിറത്തിലുള്ള പശ്ചാത്തലം ശുദ്ധമായ കറുപ്പ് ഉപയോഗിച്ച് മാറ്റിസ്ഥാപിക്കുക.  അമോൾഡ് ഡിസ്പ്ലേ ഉള്ള ഫോണുകളിൽ ബാറ്ററി ഉപയോഗം കുറയ്ക്കുക.</string>
     <string name="interface_preferences">ഇന്റർഫേസ്</string>
-    <string name="reverse_days">ദിവസങ്ങളുടെ വിപരീത ക്രമം</string>
-    <string name="reverse_days_description">പ്രധാന സ്ക്രീനിൽ വിപരീത ക്രമത്തിൽ ദിവസങ്ങൾ കാണിക്കുക.</string>
     <string name="day">ദിവസം</string>
     <string name="week">ആഴ്ച</string>
     <string name="month">മാസം</string>

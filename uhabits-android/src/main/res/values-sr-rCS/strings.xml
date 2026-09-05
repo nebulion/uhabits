@@ -135,8 +135,6 @@
     <string name="use_pure_black">Čista crna u tamnoj temi</string>
     <string name="pure_black_description">Menja sivu pozadinu sa čistom crnom u tamnoj temi. Smanjuje potrošnju baterije kod telefona sa AMOLED ekranom.</string>
     <string name="interface_preferences">Sučelje</string>
-    <string name="reverse_days">Obrni redosled dana</string>
-    <string name="reverse_days_description">Prikaz dana u obrnutom redu na glavnom ekranu.</string>
     <string name="day">dan</string>
     <string name="week">nedelja</string>
     <string name="month">mesec</string>
