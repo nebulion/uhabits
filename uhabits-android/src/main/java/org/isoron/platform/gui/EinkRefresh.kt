@@ -70,7 +70,24 @@ class EinkRefresh(private val prefs: Preferences) {
         flash(activity)
     }
 
-    /** Flashes now, regardless of the counter. */
+    /**
+     * Flashes now if the setting is on, and restarts the count.
+     *
+     * For the changes that disturb enough of the panel to be worth a flash on
+     * their own rather than a place in the queue -- dropping a dragged habit
+     * shuffles every row between where it left and where it landed, which is
+     * most of the screen. Resetting the counter is the point of doing it here
+     * rather than calling [flash]: the panel has just been cleared, so the
+     * twelve changes start again from this moment instead of carrying over a
+     * count that no longer describes anything on screen.
+     */
+    fun flashNow(activity: Activity?) {
+        if (!prefs.isEinkRefreshEnabled) return
+        pending.set(0)
+        flash(activity)
+    }
+
+    /** Flashes now, regardless of the counter *and of the setting*. */
     fun flash(activity: Activity?) {
         val root = activity?.window?.decorView as? ViewGroup ?: return
         handler.post {
