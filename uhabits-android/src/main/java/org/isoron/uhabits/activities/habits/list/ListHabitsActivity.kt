@@ -118,8 +118,6 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
                     canEdit = selectionBehavior.canEdit(),
                     canArchive = selectionBehavior.canArchive(),
                     canUnarchive = selectionBehavior.canUnarchive(),
-                    canMoveUp = model.canMoveSelected(up = true),
-                    canMoveDown = model.canMoveSelected(up = false),
                 )
             }
 
@@ -191,26 +189,17 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
                         behavior.onExportCSV(model.getSelected())
                         model.clearSelection()
                     },
-                    // The move itself is two writes: the model moves the row on
-                    // screen and hands back the pair to persist, and the
-                    // behavior writes the new order to the database. Without
-                    // the second the row springs back on the next refresh.
-                    onMoveSelectedUp = {
-                        model.moveSelected(up = true)?.let { (from, to) ->
+                    // A drop is two writes: the model moves the row on screen
+                    // and hands back the pair to persist, and the behavior
+                    // writes the new order to the database. Without the second
+                    // the row springs back on the next refresh. The flash is
+                    // asked for only when something actually moved.
+                    onDropHabit = { habit, index ->
+                        model.moveHabitTo(habit.id, index)?.let { (from, to) ->
                             behavior.onReorderHabit(from, to)
+                            screen.onReorderFinished()
                         }
                     },
-                    onMoveSelectedDown = {
-                        model.moveSelected(up = false)?.let { (from, to) ->
-                            behavior.onReorderHabit(from, to)
-                        }
-                    },
-                    onMoveHabit = { habit, up ->
-                        model.moveHabit(habit.id, up)?.let { (from, to) ->
-                            behavior.onReorderHabit(from, to)
-                        }
-                    },
-                    onReorderFinished = { screen.onReorderFinished() },
                     onDeleteSelected = { selectionBehavior.onDeleteHabits() },
                 ),
             )
@@ -336,11 +325,22 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
      * already made an empty white page -- so the app appears in one piece,
      * fully composed, on a background it already matched.
      *
-     * The deadline is the important part. The condition cannot simply be
-     * "wait for habits", because a new install legitimately has none and would
-     * wait forever; and a draw held too long looks like a hang rather than a
-     * load. So it releases on whichever comes first: the list having been
-     * measured with something in it, or [SPLASH_HOLD_MS].
+     * It waits for the list to have *loaded*, which is not the same as
+     * waiting for it to have habits in it. The model emits an empty list
+     * before it emits a real one -- it rebuilds as soon as it is attached,
+     * while the cache's refresh is still only queued -- so a condition of
+     * "habits is not empty" cannot tell a database still loading apart from a
+     * new install with nothing in it. It waited for non-emptiness once, and
+     * that is the two-stage paint this screen had: on a large database the
+     * refresh outran the deadline, the hold expired, the empty list painted,
+     * and the habits arrived in a second paint a moment later.
+     * [HabitCardListModel.hasLoaded] answers the real question, and a new
+     * install releases the frame the moment its empty refresh finishes.
+     *
+     * [SPLASH_HOLD_MS] is now only a safety net for a refresh that never
+     * finishes at all, so it can afford to be long: it is not what the common
+     * case waits on. A draw held too long looks like a hang, but so does a
+     * screen that assembles itself in pieces.
      */
     private fun holdSplashUntilDrawn() {
         val content = findViewById<android.view.View>(android.R.id.content)
@@ -349,7 +349,7 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
             object : android.view.ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
                     val laidOut = content.width > 0 && content.height > 0
-                    val ready = laidOut && model.habits.value.isNotEmpty()
+                    val ready = laidOut && model.hasLoaded.value
                     val expired = android.os.SystemClock.uptimeMillis() >= deadline
                     if (!ready && !expired) return false
                     content.viewTreeObserver.removeOnPreDrawListener(this)
@@ -360,5 +360,12 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
     }
 }
 
-/** How long the blank startup page may be held before it looks like a hang. */
-private const val SPLASH_HOLD_MS = 1200L
+/**
+ * How long the blank startup page may be held before it looks like a hang.
+ *
+ * A safety net, not a budget. The hold releases as soon as the list has
+ * loaded, so this only bites when a refresh never completes -- and it is
+ * generous because the alternative it guards against, a screen painting
+ * itself in two stages, is the more conspicuous failure on this panel.
+ */
+private const val SPLASH_HOLD_MS = 5000L

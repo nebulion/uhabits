@@ -19,6 +19,11 @@
 
 package org.isoron.uhabits.activities.habits.list
 
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.rememberCoroutineScope
@@ -27,9 +32,6 @@ import com.mudita.mmd.components.divider.DividerDefaultsMMD
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
-import androidx.compose.foundation.gestures.verticalDrag
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -122,12 +124,8 @@ data class HabitListActions(
     val onArchiveSelected: () -> Unit,
     val onUnarchiveSelected: () -> Unit,
     val onExportSelected: () -> Unit,
-    val onMoveSelectedUp: () -> Unit,
-    val onMoveSelectedDown: () -> Unit,
-    /** One step of a drag: move this habit one place up (true) or down. */
-    val onMoveHabit: (HabitCardUiState, Boolean) -> Unit,
-    /** A drag finished and the habit was dropped. */
-    val onReorderFinished: () -> Unit,
+    /** A drag was released: put this habit at this position in the list. */
+    val onDropHabit: (HabitCardUiState, Int) -> Unit,
     val onDeleteSelected: () -> Unit,
 )
 
@@ -141,15 +139,6 @@ data class SelectionCapabilities(
     val canEdit: Boolean,
     val canArchive: Boolean,
     val canUnarchive: Boolean,
-    /**
-     * Whether the one selected habit can move up or down. Both are false
-     * unless exactly one habit is selected *and* the list is in manual order:
-     * moving a row while it is sorted by name or score would be undone by the
-     * next sort, so the buttons do not appear at all rather than appearing and
-     * not sticking.
-     */
-    val canMoveUp: Boolean = false,
-    val canMoveDown: Boolean = false,
 )
 
 /** The orderings the sort menu offers. Colour is gone: every habit is one ink. */
@@ -230,10 +219,17 @@ fun HabitListScreenMMD(
     val hasSelection = selectedIds.isNotEmpty()
     val listState = rememberLazyListState()
 
-    // Which habit is currently held by a drag, if any. Hoisted here rather
-    // than kept inside the row so the picked-up row can be drawn differently
-    // from every other row, and so a drag cannot outlive the screen.
+    // The drag in progress, if any. Both are hoisted here rather than kept
+    // inside a row because the indicator belongs to a *boundary between* rows,
+    // which no single row owns, and because a drag must not outlive the screen.
     var draggingId by remember { mutableStateOf<Long?>(null) }
+
+    // Where the held habit would land, as a boundary index: 0 is above the
+    // first row, `habits.size` is below the last. Null when nothing is held,
+    // or when the finger is still over the habit's own place and dropping
+    // would do nothing -- so the absence of a line means "this changes
+    // nothing", which is worth being able to see.
+    var dropBoundary by remember { mutableStateOf<Int?>(null) }
     val snackbarHost = remember { SnackbarHostStateMMD() }
 
     // Messages used to go through a Material Snackbar, whose surface is a
@@ -342,8 +338,20 @@ fun HabitListScreenMMD(
                                 habit = habit,
                                 index = index,
                                 listState = listState,
-                                isDragging = habit.id == draggingId,
-                                onDraggingChange = { draggingId = it },
+                                // The held row bolds its own border only while
+                                // the drop would leave it where it is. Once
+                                // the finger reaches a boundary that would
+                                // move it, the line takes over and says so
+                                // instead, so the two never claim at once.
+                                isDragging = habit.id == draggingId &&
+                                    dropBoundary == null,
+                                dropAbove = dropBoundary == index,
+                                dropBelow = index == habits.lastIndex &&
+                                    dropBoundary == habits.size,
+                                onDragChange = { id, boundary ->
+                                    draggingId = id
+                                    dropBoundary = boundary
+                                },
                                 isSelected = habit.id in selectedIds,
                                 dayLabels = dayLabels,
                                 dataOffset = dataOffset,
@@ -404,27 +412,6 @@ private fun SelectionTopBar(
             }
         },
         actions = {
-            // Move up / move down, in place of dragging a row. They only
-            // exist for a single habit in a manually ordered list, so this bar
-            // never shows both these and the multi-habit actions at once.
-            if (selection.canMoveUp) {
-                IconButton(onClick = actions.onMoveSelectedUp) {
-                    Icon(
-                        painter = painterResource(R.drawable.mmd_chevron_filled_up),
-                        contentDescription = stringResource(R.string.move_up),
-                        tint = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
-            }
-            if (selection.canMoveDown) {
-                IconButton(onClick = actions.onMoveSelectedDown) {
-                    Icon(
-                        painter = painterResource(R.drawable.mmd_chevron_filled_down),
-                        contentDescription = stringResource(R.string.move_down),
-                        tint = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
-            }
             if (selection.canEdit) {
                 IconButton(onClick = actions.onEditSelected) {
                     Icon(
@@ -614,7 +601,9 @@ private fun HabitRow(
     index: Int,
     listState: LazyListState,
     isDragging: Boolean,
-    onDraggingChange: (Long?) -> Unit,
+    dropAbove: Boolean,
+    dropBelow: Boolean,
+    onDragChange: (Long?, Int?) -> Unit,
     isSelected: Boolean,
     dayLabels: List<DayLabel>,
     dataOffset: Int,
@@ -628,9 +617,13 @@ private fun HabitRow(
             .heightIn(min = CELL_HEIGHT)
             .then(
                 when {
-                    // A picked-up habit is drawn with the weight of an MMD
-                    // rule, heavier than the selection box it grew out of, so
-                    // it is obvious which row the finger is holding.
+                    // A held habit whose drop would not move it draws its own
+                    // border at the weight of an MMD rule -- heavier than the
+                    // selection box it grew out of. That is the "release me
+                    // here and nothing happens" state, and it is the only
+                    // thing shown then: as soon as the finger reaches a
+                    // boundary that would move the habit, the drop line takes
+                    // over and this goes back to the plain selection box.
                     isDragging -> Modifier.border(
                         DividerDefaultsMMD.Thickness,
                         MaterialTheme.colorScheme.onBackground,
@@ -638,6 +631,11 @@ private fun HabitRow(
                     isSelected -> Modifier.border(2.dp, MaterialTheme.colorScheme.onBackground)
                     else -> Modifier
                 }
+            )
+            .dropIndicator(
+                above = dropAbove,
+                below = dropBelow,
+                ink = MaterialTheme.colorScheme.onBackground,
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -651,7 +649,7 @@ private fun HabitRow(
                 .combinedClickable(
                     onClick = { actions.onClickHabit(habit) },
                     // A long press on an *unselected* habit selects it. On a
-                    // selected one it has to do nothing, or the second long
+                    // selected one it must do nothing, or the second long
                     // press -- the one that picks the habit up -- would
                     // deselect it instead of starting a drag.
                     onLongClick = if (isSelected) null else {
@@ -663,7 +661,7 @@ private fun HabitRow(
                     index = index,
                     listState = listState,
                     enabled = isSelected,
-                    onDraggingChange = onDraggingChange,
+                    onDragChange = onDragChange,
                     actions = actions,
                 )
                 .padding(start = 16.dp, end = 8.dp),
@@ -875,94 +873,201 @@ private fun MessageBar(data: SnackbarDataMMD) {
 }
 
 /**
- * Picks a habit up and moves it, on a second long press.
+ * Picks a selected habit up on a second long press, and drops it where the
+ * line shows.
  *
  * **The gesture is long press, then long press again.** The first selects the
  * habit, which is what a long press has always done here; the second, on a
  * habit that is already selected, picks it up, and it stays up until the
  * finger lifts. Two presses rather than one because a single long press has to
- * mean something on every row, and asking it to mean "select" on a short hold
- * and "drag" on a longer one is a distinction nobody can aim for. With
- * selection as the gate the drag detector is not even installed on rows that
- * are not selected, so nothing competes for the gesture -- which is what was
- * wrong with the first attempt: `combinedClickable` owned the long press and
- * the drag never started.
+ * mean something on every row, and "select on a short hold, drag on a longer
+ * one" is a distinction nobody can aim for.
  *
- * **It moves a row at a time, not a pixel at a time**, and that is the whole
- * design. A conventional reorder slides the dragged row under the finger and
- * animates its neighbours aside, which on this panel is a run of partial
- * repaints for every centimetre of travel -- the exact motion the rest of this
- * app removed. Here the finger moves freely and nothing redraws until it has
- * crossed a whole row, at which point the order changes by one and the screen
- * repaints once. The row moving *is* the drop indicator: there is no separate
- * marker showing where it would land, because it has already landed there.
+ * Selection is also what keeps the two detectors on this row out of each
+ * other's way. `combinedClickable` still owns tap and long-press-to-select,
+ * but it is given no long-press handler once a habit is selected, and this
+ * detector is not installed at all until then -- so at any moment exactly one
+ * of them wants the long press.
  *
- * **It follows the finger past the edge, one row at a time.** Reaching the
- * last visible row scrolls the list on by one, so a habit can travel further
- * than a screenful without being dropped. One row rather than a page:
- * `LazyColumnMMD` pages by four when you scroll it yourself, which is right
- * for reading and much too coarse for aiming, and it is one repaint per
- * crossing either way.
+ * **Reading the drag has to ignore consumption, and that is the whole reason
+ * this did not work for three attempts.** `LazyColumnMMD` handles drags itself
+ * to do its paging, and it claims them before this row sees them. Two separate
+ * things follow, and each looks like a different bug:
  *
- * **The gesture is vertical only** -- `verticalDrag`, not
- * `detectDragGesturesAfterLongPress`, which would claim a drag in any
- * direction and leave sideways movement unusable by anything else.
+ *  - `verticalDrag` (and `detectDragGesturesAfterLongPress`) treat a claimed
+ *    movement as a *cancelled* drag and simply give up.
+ *  - `positionChange()` reports a claimed movement as **zero**, so even a loop
+ *    that survives sees a finger that never moved.
  *
- * It sits on the name column only. The day cells to the right own their taps
- * for toggling a checkmark, and a reorder gesture over them would compete.
+ * Together they produced a habit that visibly picked up and then refused to go
+ * anywhere. A raw pointer loop with `positionChangeIgnoreConsumed` reads the
+ * movement whoever claimed it; claiming it here as well stops the list paging
+ * underneath the drag.
+ *
+ * **Nothing moves while you drag.** The list holds still and the only thing
+ * that changes is a heavy black line at the boundary the habit would drop
+ * into; the reorder happens once, on release. Shuffling rows under the finger
+ * would repaint most of the screen for every row crossed, where moving a line
+ * repaints two thin strips -- so a drag across thirty rows costs what a drag
+ * across one costs, and the list does not rearrange itself while you are
+ * aiming at it.
+ *
+ * When the finger is over the habit's own place, where releasing would change
+ * nothing, there is no line and the held row bolds its own border instead.
+ *
+ * Carrying the line to the top or bottom visible row scrolls the list by one,
+ * so a habit can travel further than a screenful without being dropped.
+ *
+ * Only the vertical component is read, and only on the name column: the day
+ * cells own their own taps for toggling a checkmark.
  */
 private fun Modifier.reorderDragHandle(
     habit: HabitCardUiState,
     index: Int,
     listState: LazyListState,
     enabled: Boolean,
-    onDraggingChange: (Long?) -> Unit,
+    onDragChange: (Long?, Int?) -> Unit,
     actions: HabitListActions,
 ): Modifier = composed {
     if (!enabled) return@composed this
-    val stepPx = with(LocalDensity.current) { CELL_HEIGHT.toPx() }
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val edgeZonePx = with(density) { EDGE_SCROLL_ZONE.toPx() }
     // Read inside a long-lived gesture coroutine, so it is tracked rather than
-    // captured: the habit's position changes with every step of its own drag,
-    // and a captured copy would be stale after the first one.
+    // captured: a captured copy goes stale as soon as the list changes.
     val currentIndex = rememberUpdatedState(index)
     pointerInput(habit.id) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
             awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
-            onDraggingChange(habit.id)
-            var travel = 0f
-            var moved = false
-            verticalDrag(down.id) { change ->
+            val start = currentIndex.value
+            var boundary: Int? = null
+            var lastScrollAt = 0L
+            onDragChange(habit.id, null)
+            while (true) {
+                val event = awaitPointerEvent()
+                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                val stillDown = change.pressed
                 change.consume()
-                travel += change.positionChange().y
-                var stepped = false
-                // `while`, not `if`: a fast drag can cross more than one row
-                // between pointer events, and dropping those would leave the
-                // row trailing the finger.
-                while (travel <= -stepPx) {
-                    actions.onMoveHabit(habit, true)
-                    travel += stepPx
-                    stepped = true
+                if (!stillDown) break
+
+                val info = listState.layoutInfo
+                val here = info.visibleItemsInfo.firstOrNull { it.index == currentIndex.value }
+                    ?: continue
+                // Where the finger is in the list's own coordinates, not in
+                // this row's. Measuring the finger's position rather than
+                // accumulating how far it has travelled is what makes the drag
+                // survive scrolling: when the list moves under the finger, a
+                // running total is silently wrong by however far it moved,
+                // while a position is still just a position.
+                val pointerY = here.offset + change.position.y
+
+                val next = info.nearestBoundary(pointerY, start)
+                if (next != boundary) {
+                    boundary = next
+                    onDragChange(habit.id, next)
                 }
-                while (travel >= stepPx) {
-                    actions.onMoveHabit(habit, false)
-                    travel -= stepPx
-                    stepped = true
-                }
-                if (stepped) {
-                    moved = true
-                    scope.launch { listState.keepVisible(currentIndex.value) }
+
+                // Scroll while the finger is *near* an edge, not only once it
+                // has reached one, so the list starts moving before you run out
+                // of room to move it. One row per step, and no faster than
+                // [EDGE_SCROLL_INTERVAL_MS], because each step is a repaint.
+                val now = System.currentTimeMillis()
+                if (now - lastScrollAt >= EDGE_SCROLL_INTERVAL_MS) {
+                    val top = info.viewportStartOffset
+                    val bottom = info.viewportEndOffset
+                    val target = when {
+                        pointerY < top + edgeZonePx -> listState.firstVisibleItemIndex - 1
+                        pointerY > bottom - edgeZonePx -> listState.firstVisibleItemIndex + 1
+                        else -> null
+                    }
+                    if (target != null && target >= 0) {
+                        lastScrollAt = now
+                        scope.launch { listState.scrollToItem(target) }
+                    }
                 }
             }
-            onDraggingChange(null)
-            if (moved) actions.onReorderFinished()
+            val landed = boundary
+            onDragChange(null, null)
+            if (landed != null) {
+                // A boundary below the habit's own place absorbs the row it
+                // vacates, so the index it lands on is one less than the
+                // boundary; above, the boundary is the index itself.
+                actions.onDropHabit(habit, if (landed > start) landed - 1 else landed)
+            }
         }
     }
 }
 
 /**
- * Scrolls just far enough to keep [index] on screen, and not one row further.
+ * The boundary between rows nearest to [pointerY], or null when that boundary
+ * is one of the dragged habit's own two and dropping would change nothing.
+ *
+ * Boundary *k* is the line above row *k*; the boundary below the last row is
+ * one past its index. Every visible row is measured rather than assuming they
+ * are all [CELL_HEIGHT] tall, because a habit with a long name wraps to two
+ * lines and is not.
+ */
+private fun LazyListLayoutInfo.nearestBoundary(pointerY: Float, start: Int): Int? {
+    var best: Int? = null
+    var bestDistance = Float.MAX_VALUE
+    visibleItemsInfo.forEach { item ->
+        listOf(item.index to item.offset, item.index + 1 to item.offset + item.size)
+            .forEach { (boundary, y) ->
+                val distance = kotlin.math.abs(pointerY - y)
+                if (distance < bestDistance) {
+                    bestDistance = distance
+                    best = boundary
+                }
+            }
+    }
+    // A habit sits between its own two boundaries, so landing on either is a
+    // move to where it already is: report none, and let the row bold its own
+    // border instead of drawing a line that promises a change.
+    return best?.takeUnless { it == start || it == start + 1 }
+}
+
+/**
+ * How close to an edge the finger has to be for the list to start scrolling.
+ *
+ * A whole row, so the list begins moving while the finger still has somewhere
+ * to go, rather than only once it has run into the edge and stopped.
+ */
+private val EDGE_SCROLL_ZONE = CELL_HEIGHT
+
+/**
+ * The fastest the list will scroll itself during a drag: one row per step.
+ *
+ * Each step is a repaint of the whole list, so this is paced for a panel that
+ * takes a moment to redraw rather than for a screen that does not.
+ */
+private const val EDGE_SCROLL_INTERVAL_MS = 250L
+
+/**
+ * Draws the drop line for a drag, over the row rather than in it.
+ *
+ * An overlay, not a real divider, so that showing and hiding it cannot change
+ * anyone's height. An indicator that took up space would push every row below
+ * it down the moment it appeared, which is a screen repaint to say where one
+ * habit would land.
+ */
+private fun Modifier.dropIndicator(
+    above: Boolean,
+    below: Boolean,
+    ink: Color,
+): Modifier = if (!above && !below) {
+    this
+} else {
+    drawWithContent {
+        drawContent()
+        val thickness = DividerDefaultsMMD.Thickness.toPx()
+        val y = if (above) 0f else size.height - thickness
+        drawRect(color = ink, topLeft = Offset(0f, y), size = Size(size.width, thickness))
+    }
+}
+
+/**
+ * Scrolls just far enough to keep boundary [index] on screen, and no further.
  *
  * `animateScrollToItem` is deliberately not used: an animated scroll is the
  * continuous motion this app removes everywhere else, and it would also race

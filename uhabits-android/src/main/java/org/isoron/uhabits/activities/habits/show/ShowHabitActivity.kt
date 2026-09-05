@@ -18,6 +18,7 @@
  */
 package org.isoron.uhabits.activities.habits.show
 
+import kotlinx.coroutines.withContext
 import android.content.ContentUris
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
@@ -66,6 +67,18 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
     private lateinit var themeSwitcher: AndroidThemeSwitcher
 
     private val scope = CoroutineScope(Dispatchers.Main)
+
+    /**
+     * Whether the habit's state has reached the view at least once.
+     *
+     * The first frame of this screen is real chrome around placeholder
+     * content -- an empty title, a summary reading 0%/0/+0/0, the tab row and
+     * its rules -- because [ShowHabitView] declares those defaults and
+     * `setContentView` happens before anything has been computed. On a panel
+     * that shows every repaint, that made entering a habit a two-part
+     * performance: the furniture, then the numbers.
+     */
+    private var hasState = false
     private lateinit var presenter: ShowHabitPresenter
     private val screen = Screen()
 
@@ -117,6 +130,37 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
         view.setListener(presenter)
         view.applyRootViewInsets()
         setContentView(view)
+        holdFirstDrawUntilReady()
+    }
+
+    /**
+     * Refuses to draw until the habit's state has arrived, so the screen
+     * appears once, complete.
+     *
+     * The same device the habits list uses for its startup screen, and for the
+     * same reason: holding a frame back costs a moment of the previous screen
+     * staying up, where letting it through costs a visible repaint of
+     * everything on this one.
+     *
+     * The deadline is the safety net. [Screen.refresh] computes off the main
+     * thread and could in principle be slow or fail, and a screen that never
+     * draws is worse than one that draws early.
+     */
+    private fun holdFirstDrawUntilReady() {
+        val content = findViewById<View>(android.R.id.content)
+        val deadline = android.os.SystemClock.uptimeMillis() + FIRST_DRAW_HOLD_MS
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : android.view.ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    val laidOut = content.width > 0 && content.height > 0
+                    val ready = laidOut && hasState
+                    val expired = android.os.SystemClock.uptimeMillis() >= deadline
+                    if (!ready && !expired) return false
+                    content.viewTreeObserver.removeOnPreDrawListener(this)
+                    return true
+                }
+            },
+        )
     }
 
     override fun onResume() {
@@ -148,13 +192,21 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
 
         override fun refresh() {
             scope.launch {
-                view.setState(
+                // Built off the main thread. `buildState` is an ordinary
+                // function with no dispatcher of its own, and it runs every
+                // card's presenter -- score, streak, history, frequency, bar --
+                // across the habit's whole history. Launched on
+                // `Dispatchers.Main` it stalled the thread that was supposed to
+                // be drawing, which is both a freeze and the gap the placeholder
+                // frame showed through.
+                val state = withContext(Dispatchers.Default) {
                     ShowHabitPresenter.buildState(
                         habit = habit,
                         preferences = preferences,
                         theme = themeSwitcher.currentTheme
                     )
-                )
+                }
+                view.setState(state)
                 // Archive and unarchive are mutually exclusive and swap as
                 // soon as the command lands, so the header is told on every
                 // refresh rather than once at construction.
@@ -162,6 +214,10 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
                     canArchive = menuPresenter.canArchive(),
                     canUnarchive = menuPresenter.canUnarchive(),
                 )
+                // Set after both, so the first draw waits for a screen that is
+                // complete rather than one that is merely no longer empty.
+                // They land in the same snapshot, so this is one recomposition.
+                hasState = true
             }
         }
 
@@ -260,3 +316,11 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
         }
     }
 }
+
+/**
+ * How long the previous screen may stay up before this one draws anyway.
+ *
+ * A safety net, not a budget: the hold releases as soon as the habit's state
+ * has arrived, which is the common case by a wide margin.
+ */
+private const val FIRST_DRAW_HOLD_MS = 3000L

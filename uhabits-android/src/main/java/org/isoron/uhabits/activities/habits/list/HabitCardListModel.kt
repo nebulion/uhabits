@@ -134,6 +134,21 @@ class HabitCardListModel @Inject constructor(
     ListHabitsMenuBehavior.Adapter,
     ListHabitsSelectionMenuBehavior.Adapter {
 
+    private val _hasLoaded = MutableStateFlow(false)
+
+    /**
+     * Whether the cache has finished its first refresh.
+     *
+     * This is not "are there habits". The list emits an empty list before it
+     * emits a real one -- [onAttached] rebuilds straight away, while the
+     * cache's own refresh is still only queued -- so emptiness cannot tell a
+     * database that is still loading apart from one that has nothing in it.
+     * The startup screen needs exactly that distinction: it holds the first
+     * frame until the list is real, and a new install with no habits has to
+     * release it immediately rather than wait out a timeout.
+     */
+    val hasLoaded: StateFlow<Boolean> = _hasLoaded.asStateFlow()
+
     private val _habits = MutableStateFlow<List<HabitCardUiState>>(emptyList())
     val habits: StateFlow<List<HabitCardUiState>> = _habits.asStateFlow()
 
@@ -238,45 +253,40 @@ class HabitCardListModel @Inject constructor(
      * possible -- nothing selected, more than one selected, the list is not in
      * manual order, or the habit is already at the end it is moving towards.
      */
-    fun moveSelected(up: Boolean): Pair<Habit, Habit>? {
-        val selected = _selectedIds.value
-        if (selected.size != 1) return null
-        return moveHabit(selected.first(), up)
-    }
-
     /**
-     * Moves one habit, by id, a single place up or down. See [moveSelected]
-     * for why both halves of the move are needed.
+     * Moves one habit, by id, to [toIndex].
      *
-     * A drag calls this once per row it crosses rather than once per pixel of
-     * travel, which is what keeps a drag affordable here: the list only ever
-     * redraws when the order actually changes.
+     * Called once, when a drag is released, rather than once per row the
+     * finger crosses. Nothing moves while the drag is in progress -- the list
+     * holds still and only the drop indicator travels -- so the whole reorder
+     * is a single change and a single repaint, however far the habit went.
+     *
+     * Both halves of the move are needed and they are not the same thing:
+     * [HabitCardListCache.reorder] moves the row on screen, and
+     * `ListHabitsBehavior.onReorderHabit` writes the new position to the
+     * database. Doing only the first looks right until the next refresh puts
+     * the row back.
+     *
+     * Returns the pair of habits to persist, or null when the move is not
+     * possible or would not move anything -- no such habit, the list is not in
+     * manual order, or the habit is already where it was dropped.
      */
-    fun moveHabit(id: Long, up: Boolean): Pair<Habit, Habit>? {
+    fun moveHabitTo(id: Long, toIndex: Int): Pair<Habit, Habit>? {
         if (!isSortable) return null
-        val from = (0 until cache.habitCount).firstOrNull {
+        val count = cache.habitCount
+        val from = (0 until count).firstOrNull {
             cache.getHabitByPosition(it)?.id == id
         } ?: return null
-        val to = if (up) from - 1 else from + 1
-        if (to < 0 || to >= cache.habitCount) return null
+        val to = toIndex.coerceIn(0, count - 1)
+        if (to == from) return null
         val fromHabit = cache.getHabitByPosition(from) ?: return null
         val toHabit = cache.getHabitByPosition(to) ?: return null
         cache.reorder(from, to)
         return fromHabit to toHabit
     }
 
-    /** Whether [moveSelected] would do anything in that direction. */
-    fun canMoveSelected(up: Boolean): Boolean {
-        if (!isSortable) return false
-        val selected = _selectedIds.value
-        if (selected.size != 1) return false
-        val id = selected.first()
-        val from = (0 until cache.habitCount).firstOrNull {
-            cache.getHabitByPosition(it)?.id == id
-        } ?: return false
-        val to = if (up) from - 1 else from + 1
-        return to >= 0 && to < cache.habitCount
-    }
+    /** Whether a habit can be dragged at all: only a manually ordered list. */
+    fun canReorder(): Boolean = isSortable
 
     // --- cache and midnight callbacks ------------------------------------
 
@@ -286,7 +296,10 @@ class HabitCardListModel @Inject constructor(
     override fun onItemInserted(position: Int) = rebuild()
     override fun onItemMoved(oldPosition: Int, newPosition: Int) = rebuild()
     override fun onItemRemoved(position: Int) = rebuild()
-    override fun onRefreshFinished() = rebuild()
+    override fun onRefreshFinished() {
+        _hasLoaded.value = true
+        rebuild()
+    }
 
     private fun rebuild() {
         val selected = _selectedIds.value
