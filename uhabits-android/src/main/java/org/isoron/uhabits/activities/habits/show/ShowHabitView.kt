@@ -19,6 +19,8 @@
 
 package org.isoron.uhabits.activities.habits.show
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.res.stringResource
@@ -529,26 +531,48 @@ private fun SpanPicker(
 ) {
     var open by remember { mutableStateOf(false) }
     val index = selected.coerceIn(0, options.lastIndex)
+    // A control row, not a floating label: what it sets on the left, the value
+    // it is set to on the right, and a hairline closing it. The value is
+    // inverted because it is the one thing on this page you can act on, which
+    // is the only way an all-black-on-white palette can say "this is a
+    // control" without inventing a grey.
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 62.dp)
             .clickable { open = true }
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         TextMMD(
-            text = stringResource(options[index]),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
+            text = stringResource(R.string.averaged_by),
+            style = MaterialTheme.typography.labelSmall,
         )
-        Icon(
-            painter = painterResource(R.drawable.mmd_chevron_filled_down),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 8.dp),
-        )
+        Row(
+            modifier = Modifier
+                .background(
+                    MaterialTheme.colorScheme.onBackground,
+                    RoundedCornerShape(8.dp),
+                )
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextMMD(
+                text = stringResource(options[index]),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.background,
+            )
+            Icon(
+                painter = painterResource(R.drawable.mmd_chevron_filled_down),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.background,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
     }
+    HorizontalDividerMMD(thickness = 1.dp)
     if (open) {
         ModalBottomSheetMMD(
             onDismissRequest = { open = false },

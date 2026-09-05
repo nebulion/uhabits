@@ -76,6 +76,19 @@ class ScoreChart : ScrollableChart {
     private var previousYearText: String? = null
     private var previousMonthText: String? = null
 
+    /**
+     * The month last labelled, as year*12+month.
+     *
+     * Compared instead of the drawn text, which stopped working the moment
+     * months became single letters: June and July are both "J", so July looked
+     * like a repeat of June and the footer printed a day number instead --
+     * the axis read "J 1 A". March and May collide the same way.
+     */
+    private var previousMonthKey = Int.MIN_VALUE
+
+    /** Width reserved on the left for the percentage labels. */
+    private var axisGutter = 0f
+
     constructor(context: Context?) : super(context) {
         init()
     }
@@ -131,12 +144,13 @@ class ScoreChart : ScrollableChart {
         }
         if (scores == null) return
         rect!![0f, 0f, nColumns * columnWidth] = columnHeight.toFloat()
-        rect!!.offset(0f, internalPaddingTop.toFloat())
+        rect!!.offset(axisGutter, internalPaddingTop.toFloat())
         drawGrid(activeCanvas, rect)
         Halftone.apply(pText!!, textColor)
         Halftone.apply(pGraph!!, primaryColor)
         prevRect!!.setEmpty()
         previousMonthText = ""
+        previousMonthKey = Int.MIN_VALUE
         previousYearText = ""
         skipYear = 0
         for (k in 0 until nColumns) {
@@ -147,7 +161,7 @@ class ScoreChart : ScrollableChart {
             val height = (columnHeight * score).toInt()
             rect!![0f, 0f, baseSize.toFloat()] = baseSize.toFloat()
             rect!!.offset(
-                k * columnWidth + (columnWidth - baseSize) / 2,
+                axisGutter + k * columnWidth + (columnWidth - baseSize) / 2,
                 (
                     internalPaddingTop + columnHeight - height - baseSize / 2
                     ).toFloat()
@@ -159,7 +173,7 @@ class ScoreChart : ScrollableChart {
             if (k == nColumns - 1) drawMarker(activeCanvas, rect)
             prevRect!!.set(rect!!)
             rect!![0f, 0f, columnWidth] = columnHeight.toFloat()
-            rect!!.offset(k * columnWidth, internalPaddingTop.toFloat())
+            rect!!.offset(axisGutter + k * columnWidth, internalPaddingTop.toFloat())
             drawFooter(activeCanvas, rect, timestamp)
         }
         if (activeCanvas !== canvas) canvas.drawBitmap(internalDrawingCache!!, 0f, 0f, null)
@@ -186,11 +200,15 @@ class ScoreChart : ScrollableChart {
         val footerHeight = (3 * em).toInt()
         internalPaddingTop = em.toInt()
         baseSize = (height - footerHeight - internalPaddingTop) / 8
+        // The percentage labels get a column of their own on the left, so the
+        // plot starts after them instead of underneath them.
+        axisGutter = pText!!.measureText("100%") + (AXIS_LABEL_GAP_EM + 0.5f) * em
+        val plotWidth = width - axisGutter
         columnWidth = baseSize.toFloat()
         columnWidth = max(columnWidth, maxDayWidth * 1.5f)
         columnWidth = max(columnWidth, maxMonthWidth * 1.2f)
-        nColumns = (width / columnWidth).toInt()
-        columnWidth = width.toFloat() / nColumns
+        nColumns = max(1, (plotWidth / columnWidth).toInt())
+        columnWidth = plotWidth / nColumns
         setScrollerBucketSize(columnWidth.toInt())
         columnHeight = 8 * baseSize
         val minStrokeWidth = dpToPixels(context, 1f)
@@ -217,6 +235,7 @@ class ScoreChart : ScrollableChart {
         if (shouldPrintYear) {
             previousYearText = yearText
             previousMonthText = ""
+            previousMonthKey = Int.MIN_VALUE
             pText!!.textAlign = Paint.Align.CENTER
             canvas!!.drawText(
                 yearText,
@@ -227,7 +246,9 @@ class ScoreChart : ScrollableChart {
             skipYear = 1
         }
         if (bucketSize < 365) {
-            if (monthText != previousMonthText) {
+            val monthKey = year * 12 + calendar[Calendar.MONTH]
+            if (monthKey != previousMonthKey) {
+                previousMonthKey = monthKey
                 previousMonthText = monthText
                 text = monthText
             } else {
@@ -246,14 +267,19 @@ class ScoreChart : ScrollableChart {
     private fun drawGrid(canvas: Canvas?, rGrid: RectF?) {
         val nRows = 5
         val rowHeight = rGrid!!.height() / nRows
-        pText!!.textAlign = Paint.Align.LEFT
+        // Right-aligned into the gutter, and centred ON its own line rather
+        // than hanging a line-height below it. They used to be drawn inside
+        // the plot at `left + 0.5em`, which put "20%" and "40%" directly under
+        // the line whenever a habit's score was low -- exactly when you most
+        // want to read them.
+        pText!!.textAlign = Paint.Align.RIGHT
         Halftone.apply(pText!!, textColor)
         Halftone.apply(pGrid!!, gridColor)
         for (i in 0 until nRows) {
             canvas!!.drawText(
                 String.format("%d%%", 100 - i * 100 / nRows),
-                rGrid.left + 0.5f * em,
-                rGrid.top + 1f * em,
+                rGrid.left - AXIS_LABEL_GAP_EM * em,
+                rGrid.top + 0.35f * em,
                 pText!!
             )
             canvas.drawLine(
@@ -342,11 +368,11 @@ class ScoreChart : ScrollableChart {
 
     private fun initDateFormats() {
         if (isInEditMode) {
-            dfMonth = SimpleDateFormat("MMM", Locale.getDefault())
+            dfMonth = SimpleDateFormat(MONTH_PATTERN, Locale.getDefault())
             dfYear = SimpleDateFormat("yyyy", Locale.getDefault())
             dfDay = SimpleDateFormat("d", Locale.getDefault())
         } else {
-            dfMonth = "MMM".toSimpleDataFormat()
+            dfMonth = MONTH_PATTERN.toSimpleDataFormat()
             dfYear = "yyyy".toSimpleDataFormat()
             dfDay = "d".toSimpleDataFormat()
         }
@@ -376,3 +402,19 @@ class ScoreChart : ScrollableChart {
         private val XFERMODE_SRC = PorterDuffXfermode(PorterDuff.Mode.SRC)
     }
 }
+
+/**
+ * How months are labelled under the plot.
+ *
+ * `MMMMM` is the *narrow* form -- one letter, localised -- where `MMM` gives
+ * "Jan", "Feb", "May", "Jul". Two things follow. Every label is now the same
+ * width, so the labels sit on the even pitch the points underneath always had;
+ * with three-letter names the text drifted against its own column because
+ * "May" and "Jul" are not the same width in Lato. And `columnWidth` is sized
+ * partly by the widest month label, so narrow labels let more of the habit's
+ * history fit on a panel this size.
+ */
+private const val MONTH_PATTERN = "MMMMM"
+
+/** Space between a percentage label and the gridline it belongs to, in ems. */
+private const val AXIS_LABEL_GAP_EM = 0.4f

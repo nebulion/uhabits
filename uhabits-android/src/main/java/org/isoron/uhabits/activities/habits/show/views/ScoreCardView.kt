@@ -33,7 +33,6 @@ class ScoreCardView(context: Context, attrs: AttributeSet) : LinearLayout(contex
 
     fun setState(state: ScoreCardState) {
         val androidColor = state.theme.color(state.color).toInt()
-        binding.title.setTextColor(androidColor)
         binding.scoreView.setScores(state.scores)
         binding.scoreView.reset()
         binding.scoreView.setBucketSize(state.bucketSize)
