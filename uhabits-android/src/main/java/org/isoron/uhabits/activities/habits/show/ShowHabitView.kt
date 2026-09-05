@@ -19,6 +19,19 @@
 
 package org.isoron.uhabits.activities.habits.show
 
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
+import com.mudita.mmd.components.bottom_sheet.rememberModalBottomSheetMMDState
+import com.mudita.mmd.components.radio_button.RadioButtonMMD
+import org.isoron.uhabits.core.ui.screens.habits.show.views.BarCardPresenter
+import org.isoron.uhabits.core.ui.screens.habits.show.views.ScoreCardPresenter
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
@@ -135,6 +148,23 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
      * View -- its state is already a plain list of squares.
      */
     private var history by mutableStateOf<HistoryCardState?>(null)
+
+    /**
+     * Which span the score and bar charts are drawn over, and whether the bar
+     * chart is showing a numerical habit.
+     *
+     * Held here because the picker for them is Compose now. It was an
+     * `AppCompatSpinner` inside each card's own layout -- the most obviously
+     * un-Mudita thing left on a screen that otherwise looks finished, and one
+     * that dragged a grey `?android:attr/listDivider` and a shadowed
+     * `ListPopupWindow` into its popup that no Compose theme could reach.
+     */
+    private var scoreSpan by mutableStateOf(0)
+    private var barSpan by mutableStateOf(0)
+    private var barIsNumerical by mutableStateOf(false)
+
+    private var scorePresenter: ScoreCardPresenter? = null
+    private var barPresenter: BarCardPresenter? = null
 
     private val composeView = ComposeView(context)
 
@@ -291,13 +321,13 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
      * can end up empty -- Notes on a habit with no notes -- and an empty panel
      * simply shows nothing rather than an empty scroller.
      */
-    private class PanelSpec(val title: String, val cards: List<View>)
+    private class PanelSpec(val title: String, val cards: List<Card>)
 
     @Composable
     private fun panels(): List<PanelSpec> {
-        fun cardsFor(vararg keys: String): List<View> =
+        fun cardsFor(vararg keys: String): List<Card> =
             keys.filter { it !in hiddenKeys }
-                .mapNotNull { key -> cards.firstOrNull { it.key == key }?.view }
+                .mapNotNull { key -> cards.firstOrNull { it.key == key } }
 
         // Three tabs. Four was one too many for the width: the row divides
         // evenly and MMD's own tab padding takes 16dp off each side, leaving
@@ -330,7 +360,7 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
      */
     @Composable
     private fun Panel(
-        cards: List<View>,
+        cards: List<Card>,
         onScrolled: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
@@ -348,9 +378,36 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
             isScrollbarVisible = false,
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-            itemsIndexed(cards, key = { _, c -> System.identityHashCode(c) }) { index, card ->
+            itemsIndexed(cards, key = { _, c -> System.identityHashCode(c.view) }) { index, card ->
+                // The span picker sits above its chart rather than inside the
+                // card, because the card is still an Android View and this is
+                // not.
+                when (card.key) {
+                    "score" -> SpanPicker(
+                        options = SPAN_NAMES,
+                        selected = scoreSpan,
+                        onSelect = { scorePresenter?.onSpinnerPosition(it) },
+                    )
+                    "bar" -> SpanPicker(
+                        // A boolean habit's bar chart cannot be drawn a day at
+                        // a time -- there is nothing to average -- so its list
+                        // starts at Week and its indices are shifted by one
+                        // against the numerical one. That offset lived in two
+                        // `android:entries` arrays before, where nothing said
+                        // they were different.
+                        options = if (barIsNumerical) SPAN_NAMES else SPAN_NAMES.drop(1),
+                        selected = barSpan,
+                        onSelect = {
+                            if (barIsNumerical) {
+                                barPresenter?.onNumericalSpinnerPosition(it)
+                            } else {
+                                barPresenter?.onBoolSpinnerPosition(it)
+                            }
+                        },
+                    )
+                }
                 AndroidView(
-                    factory = { card.detached() },
+                    factory = { card.view.detached() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -383,6 +440,13 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
         binding.historyCard.setState(data.history)
         history = data.history
         binding.barCard.setState(data.bar)
+        scoreSpan = data.scores.spinnerPosition
+        barIsNumerical = data.bar.isNumerical
+        barSpan = if (data.bar.isNumerical) {
+            data.bar.numericalSpinnerPosition
+        } else {
+            data.bar.boolSpinnerPosition
+        }
 
         // A numerical habit has a target rather than an overview, and vice
         // versa. Set both ways round, because the same view instances are
@@ -412,6 +476,8 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
     }
 
     fun setListener(presenter: ShowHabitPresenter) {
+        scorePresenter = presenter.scoreCardPresenter
+        barPresenter = presenter.barCardPresenter
         binding.scoreCard.setListener(presenter.scoreCardPresenter)
         binding.historyCard.setListener(presenter.historyCardPresenter)
         binding.barCard.setListener(presenter.barCardPresenter)
@@ -420,3 +486,101 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
 
 /** The Calendar tab, which is drawn rather than hosted. */
 private const val CALENDAR_TAB = 0
+
+/**
+ * The five spans a chart can be drawn over: day, week, month, quarter, year.
+ *
+ * Read from the same strings the two `android:entries` arrays used, so nothing
+ * has to be translated twice.
+ */
+private val SPAN_NAMES = listOf(
+    R.string.day,
+    R.string.week,
+    R.string.month,
+    R.string.quarter,
+    R.string.year,
+)
+
+/**
+ * Picks the span a chart is drawn over.
+ *
+ * **A sheet, not a tab row**, which is a departure from what this project
+ * planned and worth saying why. Two to four always-visible options is a tab
+ * row, and that is what the notes called for -- but there are five here, and
+ * the arithmetic does not work: the row divides the width evenly and MMD takes
+ * 16dp off each side of a tab, which leaves about 40dp of label at 480px. That
+ * is enough for "Week" and not for "Quarter". Stacking a second tab row under
+ * the Calendar/Score/Streaks one would also be two rows of tabs saying
+ * different kinds of thing.
+ *
+ * So it follows the other rule instead, the one MuditaOS itself follows in
+ * Sound and Bluetooth: **a choice is a sheet.** The row shows the span in
+ * force with a chevron; tapping it opens `ModalBottomSheetMMD` holding
+ * `RadioButtonMMD` rows in MMD's own shape -- an inert button (the row carries
+ * the click), a 56dp row, and the label held off the button by 16dp. It is the
+ * same pattern the frequency picker and the new first-day-of-week setting use,
+ * so the app answers every one-of-N question the same way.
+ */
+@Composable
+private fun SpanPicker(
+    options: List<Int>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    val index = selected.coerceIn(0, options.lastIndex)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable { open = true }
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextMMD(
+            text = stringResource(options[index]),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        Icon(
+            painter = painterResource(R.drawable.mmd_chevron_filled_down),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = 8.dp),
+        )
+    }
+    if (open) {
+        ModalBottomSheetMMD(
+            onDismissRequest = { open = false },
+            sheetState = rememberModalBottomSheetMMDState(skipPartiallyExpanded = true),
+            dragHandle = null,
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                options.forEachIndexed { position, res ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp)
+                            .selectable(
+                                selected = position == index,
+                                onClick = {
+                                    open = false
+                                    onSelect(position)
+                                },
+                                role = Role.RadioButton,
+                            )
+                            .padding(horizontal = 20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButtonMMD(selected = position == index, onClick = null)
+                        TextMMD(
+                            text = stringResource(res),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 16.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

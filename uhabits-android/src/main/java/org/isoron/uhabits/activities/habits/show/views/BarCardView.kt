@@ -22,7 +22,6 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.AdapterView
 import android.widget.LinearLayout
 import org.isoron.platform.gui.toInt
 import org.isoron.platform.time.JavaLocalDateFormatter
@@ -47,43 +46,11 @@ class BarCardView(context: Context, attrs: AttributeSet) : LinearLayout(context,
         binding.chart.postInvalidate()
 
         binding.title.setTextColor(androidColor)
-        if (state.isNumerical) {
-            binding.boolSpinner.visibility = GONE
-        } else {
-            binding.numericalSpinner.visibility = GONE
-        }
-
-        binding.numericalSpinner.setSelection(state.numericalSpinnerPosition)
-        binding.boolSpinner.setSelection(state.boolSpinnerPosition)
     }
 
-    fun setListener(presenter: BarCardPresenter) {
-        binding.boolSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                presenter.onBoolSpinnerPosition(position)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-            }
-        }
-        binding.numericalSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long
-                ) {
-                    presenter.onNumericalSpinnerPosition(position)
-                }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {
-                }
-            }
-    }
+    /**
+     * Nothing to listen to any more. See [ScoreCardView.setListener].
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun setListener(presenter: BarCardPresenter) = Unit
 }

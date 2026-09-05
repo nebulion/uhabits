@@ -22,7 +22,6 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.AdapterView
 import android.widget.LinearLayout
 import org.isoron.platform.gui.toInt
 import org.isoron.uhabits.core.ui.screens.habits.show.views.ScoreCardPresenter
@@ -35,26 +34,20 @@ class ScoreCardView(context: Context, attrs: AttributeSet) : LinearLayout(contex
     fun setState(state: ScoreCardState) {
         val androidColor = state.theme.color(state.color).toInt()
         binding.title.setTextColor(androidColor)
-        binding.spinner.setSelection(state.spinnerPosition)
         binding.scoreView.setScores(state.scores)
         binding.scoreView.reset()
         binding.scoreView.setBucketSize(state.bucketSize)
         binding.scoreView.setColor(androidColor)
     }
 
-    fun setListener(presenter: ScoreCardPresenter) {
-        binding.spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                presenter.onSpinnerPosition(position)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-            }
-        }
-    }
+    /**
+     * Nothing to listen to any more.
+     *
+     * The span picker was an `AppCompatSpinner` in this card's layout; it is a
+     * sheet in the Compose panel above the chart now, and it talks to
+     * [ScoreCardPresenter] directly. Kept as a no-op so the wiring in
+     * `ShowHabitView.setListener` still reads as one line per card.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun setListener(presenter: ScoreCardPresenter) = Unit
 }
