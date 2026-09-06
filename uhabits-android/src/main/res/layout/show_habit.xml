@@ -30,11 +30,6 @@
     android:id="@+id/linearLayout"
     android:clipToPadding="false">
 
-    <org.isoron.uhabits.activities.habits.show.views.TargetCardView
-        android:id="@+id/targetCard"
-        style="@style/Card"
-        android:paddingTop="12dp" />
-
     <org.isoron.uhabits.activities.habits.show.views.ScoreCardView
         android:id="@+id/scoreCard"
         style="@style/Card"

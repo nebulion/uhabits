@@ -19,6 +19,7 @@
 
 package org.isoron.uhabits.activities.habits.show
 
+import org.isoron.uhabits.core.ui.screens.habits.show.views.TargetCardState
 import org.isoron.uhabits.core.ui.screens.habits.show.views.FrequencyCardState
 import org.isoron.uhabits.core.ui.screens.habits.show.views.StreakCardState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -165,6 +166,8 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
      */
     private var streaks by mutableStateOf<StreakCardState?>(null)
     private var frequency by mutableStateOf<FrequencyCardState?>(null)
+    private var target by mutableStateOf<TargetCardState?>(null)
+    private var isNumerical by mutableStateOf(false)
 
     /**
      * Which span the score and bar charts are drawn over, and whether the bar
@@ -192,7 +195,6 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
 
     init {
         cards = listOf(
-            Card("target", binding.targetCard),
             Card("score", binding.scoreCard),
             Card("bar", binding.barCard),
         )
@@ -273,7 +275,16 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
                             modifier = Modifier.weight(1f),
                             leading = when (selected) {
                                 STREAKS_TAB -> {
-                                    { streaks?.let { HabitStreaksMMD(state = it) } }
+                                    {
+                                        // Only a numerical habit has a target.
+                                        // The overview card that used to be
+                                        // its boolean counterpart is gone: the
+                                        // pinned summary says all of it.
+                                        if (isNumerical) {
+                                            target?.let { HabitTargetMMD(state = it) }
+                                        }
+                                        streaks?.let { HabitStreaksMMD(state = it) }
+                                    }
                                 }
                                 else -> null
                             },
@@ -371,7 +382,7 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
         return listOf(
             PanelSpec(stringOrEmpty(R.string.calendar), emptyList()),
             PanelSpec(stringOrEmpty(R.string.score), cardsFor("score", "bar")),
-            PanelSpec(stringOrEmpty(R.string.streaks), cardsFor("target")),
+            PanelSpec(stringOrEmpty(R.string.streaks), emptyList()),
         )
     }
 
@@ -469,8 +480,9 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
 
     fun setState(data: ShowHabitState) {
         title = data.title
-        binding.targetCard.setState(data.target)
         binding.scoreCard.setState(data.scores)
+        target = data.target
+        isNumerical = data.isNumerical
         history = data.history
         streaks = data.streaks
         frequency = data.frequency
@@ -482,11 +494,6 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
         } else {
             data.bar.boolSpinnerPosition
         }
-
-        // Only a numerical habit has a target. The overview card that used
-        // to be its counterpart is deleted -- the pinned summary above the
-        // tabs says everything it said, for both kinds of habit.
-        binding.targetCard.visibility = if (data.isNumerical) VISIBLE else GONE
 
         // The summary figures. Score is a fraction, and the month delta is a
         // fraction of a fraction -- both are percentages by the time anyone

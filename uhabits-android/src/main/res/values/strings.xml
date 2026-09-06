@@ -25,7 +25,10 @@
     <string name="app_name" >Habits</string>
     <string name="first_weekday">First day of the week</string>
     <string name="averaged_by">Averaged by</string>
-    <string name="days_lowercase">days</string>
+    <plurals name="days_plural">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
     <string name="frequency_done_on">Done on</string>
     <string name="frequency_none">none</string>
     <string name="frequency_some">some</string>

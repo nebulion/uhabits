@@ -18,6 +18,7 @@
  */
 package org.isoron.uhabits.activities.habits.show
 
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -109,7 +110,7 @@ private fun StreakRow(streak: Streak, formatter: SimpleDateFormat) {
         )
         Column(modifier = Modifier.padding(start = 16.dp)) {
             TextMMD(
-                text = stringResource(R.string.days_lowercase),
+                text = pluralStringResource(R.plurals.days_plural, streak.length),
                 style = MaterialTheme.typography.bodyMedium,
             )
             TextMMD(
