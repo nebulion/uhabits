@@ -25,7 +25,6 @@ import android.net.Uri
 import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.habits.edit.EditHabitActivity
 import org.isoron.uhabits.activities.habits.show.ShowHabitActivity
-import org.isoron.uhabits.activities.intro.IntroActivity
 import org.isoron.uhabits.activities.settings.SettingsActivity
 import org.isoron.uhabits.core.models.Habit
 import javax.inject.Inject
@@ -49,9 +48,6 @@ class IntentFactory
 
     fun privacyPolicy(context: Context) =
         buildViewIntent(context.getString(R.string.privacyPolicyURL))
-
-    fun startIntroActivity(context: Context) =
-        Intent(context, IntroActivity::class.java)
 
     fun startSettingsActivity(context: Context) =
         Intent(context, SettingsActivity::class.java)

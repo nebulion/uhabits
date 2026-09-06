@@ -59,12 +59,6 @@
     <string name="edit_habit">ჩვევის დარედაქტირება</string>
     <string name="check">ჩანიშვნა</string>
     <string name="snooze">მოგვიანებით</string>
-    <string name="intro_title_1">მოგესალმები</string>
-    <string name="intro_description_1">Loop — ჩვევების ტრეკერი: ხელშემწყობი კარგი ჩვევების გამომუშავებასა და შენარჩუნებისათვის.</string>
-    <string name="intro_title_2">გამოიმუშავე ახალი ჩვევები</string>
-    <string name="intro_description_2">ყოველდღიურად, როგორც კი ჩვევას შეასრულებ, ეს აპლიკაციაში ჩაინიშნე.</string>
-    <string name="intro_title_4">თვალი ადევნე შენს პროგრესს</string>
-    <string name="intro_description_4">დეტალური გრაფიკებით შეგიძლია დროთა განმავლობაში იხილო თუ როგორ ყალიბდება შენი ჩვევა.</string>
     <string name="interval_15_minutes">15 წუთი</string>
     <string name="interval_30_minutes">30 წუთი</string>
     <string name="interval_1_hour">1 საათი</string>

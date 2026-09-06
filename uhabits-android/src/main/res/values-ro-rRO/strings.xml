@@ -43,12 +43,6 @@
     <string name="edit_habit">Editează obiceiul</string>
     <string name="check">Bifează</string>
     <string name="snooze">Mai târziu</string>
-    <string name="intro_title_1">Bine ai venit</string>
-    <string name="intro_description_1">Loop Habit Tracker te ajută să creezi și să menții obiceiurile bune.</string>
-    <string name="intro_title_2">Creează noi obiceiuri</string>
-    <string name="intro_description_2">În fiecare zi, după ce îndeplinești obiceiul, bifează-l în aplicație.</string>
-    <string name="intro_title_4">Urmărește progresul</string>
-    <string name="intro_description_4">Grafice detaliate ce prezintă cum obiceiurile tale s-au îmbunătățit în timp.</string>
     <string name="interval_15_minutes">15 minute</string>
     <string name="interval_30_minutes">30 de minute</string>
     <string name="interval_1_hour">1 oră</string>

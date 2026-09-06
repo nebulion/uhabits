@@ -55,12 +55,6 @@
     <string name="edit_habit">編輯習慣</string>
     <string name="check">打勾</string>
     <string name="snooze">稍後</string>
-    <string name="intro_title_1">歡迎使用</string>
-    <string name="intro_description_1">「Loop 習以為常」可以幫您記錄並培養好習慣。</string>
-    <string name="intro_title_2">開始來建立一些習慣吧</string>
-    <string name="intro_description_2">每天完成你的習慣後，進入 APP 來打個勾吧。</string>
-    <string name="intro_title_4">追蹤您的進度</string>
-    <string name="intro_description_4">詳細的圖表將顯示你的持續進步</string>
     <string name="interval_15_minutes">15 分鐘</string>
     <string name="interval_30_minutes">30 分鐘</string>
     <string name="interval_1_hour">1 小時</string>

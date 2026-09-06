@@ -67,12 +67,6 @@
     <string name="edit_habit">עריכת הרגל</string>
     <string name="check">סימון</string>
     <string name="snooze">מאוחר יותר</string>
-    <string name="intro_title_1">ברוך בואך</string>
-    <string name="intro_description_1">‏”Loop לניהול הרגלים“ מסייע לך להתחיל ולשמר הרגלים טובים.</string>
-    <string name="intro_title_2">יצירת הרגלים חדשים</string>
-    <string name="intro_description_2">בכל יום, לאחר ביצוע ההרגל, מסמנים את זה ביישום.</string>
-    <string name="intro_title_4">מעקב אחר ההתקדמות</string>
-    <string name="intro_description_4">גרפים מפורטים מציגים את השתפרות ההרגלים לאורך זמן.</string>
     <string name="interval_15_minutes">רבע שעה</string>
     <string name="interval_30_minutes">חצי שעה</string>
     <string name="interval_1_hour">שעה</string>

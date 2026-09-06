@@ -59,12 +59,6 @@
     <string name="edit_habit">Editar hábito</string>
     <string name="check">Marcar</string>
     <string name="snooze">Aplazar</string>
-    <string name="intro_title_1">Bienvenido</string>
-    <string name="intro_description_1">Loop Analizador de Hábitos te ayuda a crear y mantener buenos hábitos.</string>
-    <string name="intro_title_2">Crea algunos hábitos nuevos</string>
-    <string name="intro_description_2">Cada día, después de realizar tu hábito, pon una marca en la aplicación.</string>
-    <string name="intro_title_4">Haz un seguimiento de tu progreso</string>
-    <string name="intro_description_4">Gráficos detallados te muestran cómo mejoraron tus hábitos con el tiempo.</string>
     <string name="interval_15_minutes">15 minutos</string>
     <string name="interval_30_minutes">30 minutos</string>
     <string name="interval_1_hour">1 hora</string>

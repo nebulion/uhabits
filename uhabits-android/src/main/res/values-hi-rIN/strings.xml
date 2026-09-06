@@ -59,14 +59,6 @@
     <string name="edit_habit">आदत में बद्लाव करें </string>
     <string name="check">जाञ्च करें</string>
     <string name="snooze">बाद में</string>
-    <string name="intro_title_1">स्वागत है</string>
-    <string name="intro_description_1">लूप हैबिट ट्रैकर नई और अच्छी आदतों को बनाए रखने मे मदद करता है ।</string>
-    <string name="intro_title_2">कुछ नई अच्छी आदतें बनाएँ</string>
-    <string name="intro_description_2">हर दिन, अपनी आदत के प्रदर्शन के बाद, ऐप पर एक सही का निशान डालें</string>
-    <string name="intro_title_4">\"
-अपनी प्रगति को ट्रैक करें\"</string>
-    <string name="intro_description_4">\"
-विस्तृत रेखांकन आपको बताएंगे कि कैसे अपनी आदतों में समय के साथ सुधार करें\"</string>
     <string name="interval_15_minutes">१५ मिनट</string>
     <string name="interval_30_minutes">३० मिनट</string>
     <string name="interval_1_hour">१ घंटा</string>

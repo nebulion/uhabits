@@ -59,12 +59,6 @@
     <string name="edit_habit">Muokkaa rutiinia</string>
     <string name="check">Merkitse tehdyksi</string>
     <string name="snooze">Lykkää</string>
-    <string name="intro_title_1">Tervetuloa</string>
-    <string name="intro_description_1">Loop Habit Tracker auttaa sinua luomaan ja ylläpitämään hyviä rutiineja.</string>
-    <string name="intro_title_2">Merkitse uusia rutiineja</string>
-    <string name="intro_description_2">Joka päivä, suoritettuasi rutiinin, merkitse se sovellukseen.</string>
-    <string name="intro_title_4">Seuraa kehitystäsi</string>
-    <string name="intro_description_4">Yksityiskohtaiset kaaviot näyttävät, kuinka rutiinisi ovat kehittyneet ajan kuluessa.</string>
     <string name="interval_15_minutes">15 minuuttia</string>
     <string name="interval_30_minutes">30 minuuttia</string>
     <string name="interval_1_hour">1 tunti</string>

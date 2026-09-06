@@ -237,11 +237,6 @@ class ListHabitsScreen
         activity.startActivityForResult(intent, REQUEST_OPEN_DOCUMENT)
     }
 
-    override fun showIntroScreen() {
-        val intent = intentFactory.startIntroActivity(activity)
-        activity.startActivity(intent)
-    }
-
     override fun showMessage(m: ListHabitsBehavior.Message) {
         postMessage(
             activity.resources.getString(

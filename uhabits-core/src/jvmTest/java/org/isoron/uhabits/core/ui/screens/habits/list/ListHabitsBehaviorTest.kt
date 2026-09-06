@@ -151,7 +151,6 @@ class ListHabitsBehaviorTest : BaseUnitTest() {
         behavior.onStartup()
         verify(prefs).isFirstRun = false
         verify(prefs).updateLastHint(-1, today)
-        verify(screen).showIntroScreen()
     }
 
     @Test

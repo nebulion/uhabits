@@ -108,10 +108,18 @@ open class ListHabitsBehavior @Inject constructor(
         )
     }
 
+    /**
+     * First launch: remember that it happened, and get out of the way.
+     *
+     * There used to be a three-slide intro here. It explained what a habit
+     * tracker is to someone who has just installed a habit tracker, and it
+     * cost three screens of onboarding on a device whose whole appeal is that
+     * it does not do that. The flag and the hint timestamp are still set --
+     * both outlive the deck.
+     */
     fun onFirstRun() {
         prefs.isFirstRun = false
         prefs.updateLastHint(-1, getToday())
-        screen.showIntroScreen()
     }
 
     fun onReorderHabit(from: Habit, to: Habit) {
@@ -186,7 +194,6 @@ open class ListHabitsBehavior @Inject constructor(
 
     interface Screen {
         fun showHabitScreen(h: Habit)
-        fun showIntroScreen()
         fun showMessage(m: Message)
         fun showNumberPopup(
             value: Double,

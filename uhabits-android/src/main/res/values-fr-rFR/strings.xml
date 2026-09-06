@@ -59,12 +59,6 @@
     <string name="edit_habit">Modifier l\'habitude</string>
     <string name="check">Cocher</string>
     <string name="snooze">Plus tard</string>
-    <string name="intro_title_1">Bienvenue</string>
-    <string name="intro_description_1">Loop - Suivi d\'habitudes vous aide à créer et maintenir de bonnes habitudes.</string>
-    <string name="intro_title_2">Créez de nouvelles habitudes</string>
-    <string name="intro_description_2">Chaque jour, après avoir réalisé votre habitude, cochez-la sur l\'application.</string>
-    <string name="intro_title_4">Suivez votre progrès</string>
-    <string name="intro_description_4">Des graphiques détaillés vous montrent comment vos habitudes évoluent au fil du temps.</string>
     <string name="interval_15_minutes">15 minutes</string>
     <string name="interval_30_minutes">30 minutes</string>
     <string name="interval_1_hour">1 heure</string>

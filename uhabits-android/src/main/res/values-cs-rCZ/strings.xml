@@ -67,12 +67,6 @@
     <string name="edit_habit">Upravit zvyk</string>
     <string name="check">Hotovo</string>
     <string name="snooze">Odložit</string>
-    <string name="intro_title_1">Vítejte</string>
-    <string name="intro_description_1">Loop Habit Tracker vám pomůže vytvořit a udržet dobré návyky.</string>
-    <string name="intro_title_2">Vytvoř si nové zvyky</string>
-    <string name="intro_description_2">Každý den po splnění zvyku si ho v aplikaci zaškrtněte.</string>
-    <string name="intro_title_4">Sleduj svůj postup</string>
-    <string name="intro_description_4">Detailní grafy ukazují zlepšení vašich návyků v průběhu času.</string>
     <string name="interval_15_minutes">15 minut</string>
     <string name="interval_30_minutes">30 minut</string>
     <string name="interval_1_hour">1 hodina</string>

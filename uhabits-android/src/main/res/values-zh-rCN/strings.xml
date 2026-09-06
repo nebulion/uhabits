@@ -55,12 +55,6 @@
     <string name="edit_habit">编辑习惯</string>
     <string name="check">打卡</string>
     <string name="snooze">稍后提醒</string>
-    <string name="intro_title_1">欢迎</string>
-    <string name="intro_description_1">Loop 习惯记录能帮你养成和保持好习惯。</string>
-    <string name="intro_title_2">养成一些新习惯</string>
-    <string name="intro_description_2">每当你完成一项习惯后，就在应用上做一个标记</string>
-    <string name="intro_title_4">记录你的进步</string>
-    <string name="intro_description_4">详细图表展示长期以来习惯养成情况</string>
     <string name="interval_15_minutes">15 分钟</string>
     <string name="interval_30_minutes">30 分钟</string>
     <string name="interval_1_hour">1 小时</string>

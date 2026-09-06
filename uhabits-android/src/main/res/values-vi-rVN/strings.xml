@@ -55,12 +55,6 @@
     <string name="edit_habit">Chỉnh sửa thói quen</string>
     <string name="check">Đánh dấu</string>
     <string name="snooze">Lúc khác</string>
-    <string name="intro_title_1">Chào mừng</string>
-    <string name="intro_description_1">Theo dõi thói quen Loop giúp bạn tạo ra và duy trì những thói quen tốt.</string>
-    <string name="intro_title_2">Tạo một số thói quen mới</string>
-    <string name="intro_description_2">Mỗi ngày, sau khi thực hiện các thói quen của bạn, hãy đánh dấu vào ứng dụng.</string>
-    <string name="intro_title_4">Theo dõi quá trình của bạn</string>
-    <string name="intro_description_4">Đồ thị chi tiết cho bạn thấy các thói quen của bạn được cải thiện như thế nào theo thời gian.</string>
     <string name="interval_15_minutes">15 phút</string>
     <string name="interval_30_minutes">30 phút</string>
     <string name="interval_1_hour">1 giờ</string>

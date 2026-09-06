@@ -55,12 +55,6 @@
     <string name="edit_habit">습관 수정하기</string>
     <string name="check">완료</string>
     <string name="snooze">나중에</string>
-    <string name="intro_title_1">환영합니다</string>
-    <string name="intro_description_1">Loop은 당신이 좋은 습관을 만들고 유지하도록 도와줍니다.</string>
-    <string name="intro_title_2">새로운 습관을 만들어 보세요.</string>
-    <string name="intro_description_2">매일 습관을 수행하고 앱에 기록하세요.</string>
-    <string name="intro_title_4">습관을 관리하세요</string>
-    <string name="intro_description_4">자세한 그래프로 시간에 따라 당신의 습관이 어떻게 향상되었는지 보여줍니다.</string>
     <string name="interval_15_minutes">15분</string>
     <string name="interval_30_minutes">30분</string>
     <string name="interval_1_hour">1시간</string>

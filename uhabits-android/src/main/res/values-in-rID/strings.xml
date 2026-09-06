@@ -55,12 +55,6 @@
     <string name="edit_habit">Edit Kebiasaan</string>
     <string name="check">Centang</string>
     <string name="snooze">Tunda</string>
-    <string name="intro_title_1">Selamat datang</string>
-    <string name="intro_description_1">Loop Habit Tracker membantu menciptakan dan memelihara Kebiasaan baikmu.</string>
-    <string name="intro_title_2">Buat beberapa Kebiasaan baru</string>
-    <string name="intro_description_2">Berikan tanda centang setiap kali kamu selesai melakukannya.</string>
-    <string name="intro_title_4">Lacak perkembanganmu</string>
-    <string name="intro_description_4">Grafik terperinci menampilkan perkembangan Kebiasaanmu dari waktu ke waktu.</string>
     <string name="interval_15_minutes">15 menit</string>
     <string name="interval_30_minutes">30 menit</string>
     <string name="interval_1_hour">1 jam</string>

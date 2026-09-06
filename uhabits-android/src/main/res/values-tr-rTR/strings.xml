@@ -59,12 +59,6 @@
     <string name="edit_habit">Alışkanlığı düzenle</string>
     <string name="check">İşaretle</string>
     <string name="snooze">Sonra</string>
-    <string name="intro_title_1">Hoşgeldin</string>
-    <string name="intro_description_1">Loop Alışkanlık Takibi, iyi alışkanlıklar edinmene ve sürdürmene yardımcı olur.</string>
-    <string name="intro_title_2">Yeni alışkanlıklar oluştur</string>
-    <string name="intro_description_2">Alışkanlığın gerçekleştiği günleri işaretle.</string>
-    <string name="intro_title_4">Gelişimini takip et</string>
-    <string name="intro_description_4">Ayrıntılı tablolarla katettiğin ilerlemeyi gör.</string>
     <string name="interval_15_minutes">15 dakika</string>
     <string name="interval_30_minutes">30 dakika</string>
     <string name="interval_1_hour">1 saat</string>

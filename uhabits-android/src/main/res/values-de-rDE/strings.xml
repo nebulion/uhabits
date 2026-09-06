@@ -59,12 +59,6 @@
     <string name="edit_habit">Gewohnheit bearbeiten</string>
     <string name="check">Abhaken</string>
     <string name="snooze">Später</string>
-    <string name="intro_title_1">Willkommen</string>
-    <string name="intro_description_1">Loop Habit Tracker hilft dir dabei, gute Gewohnheiten zu entwickeln.</string>
-    <string name="intro_title_2">Erstelle neue Gewohnheiten</string>
-    <string name="intro_description_2">Hake die Gewohnheit jeden Tag in der App ab, nachdem du sie erledigt hast.</string>
-    <string name="intro_title_4">Verfolge deinen Fortschritt</string>
-    <string name="intro_description_4">Detaillierte Diagramme zeigen dir an, wie sich deine Gewohnheiten entwickelt haben.</string>
     <string name="interval_15_minutes">15 Minuten</string>
     <string name="interval_30_minutes">30 Minuten</string>
     <string name="interval_1_hour">1 Stunde</string>

@@ -59,12 +59,6 @@
     <string name="edit_habit">ویرایش عادت</string>
     <string name="check">تیک زدن</string>
     <string name="snooze">بعداً </string>
-    <string name="intro_title_1">خوش آمدید</string>
-    <string name="intro_description_1">عادت‌سنج لوپ به شما کمک می‌کند تا برای خودتان عادت‌های خوبی بسازید. </string>
-    <string name="intro_title_2">ساخت چند عادت جدید</string>
-    <string name="intro_description_2">هر روز بعد از انجام عادت، آن را در برنامه تیک بزنید. </string>
-    <string name="intro_title_4">پیشرفت خود را پیگیری کنید</string>
-    <string name="intro_description_4">نمودار جزئیات به شما نشان می‌دهد که چطور عادت‌هایتان با گذشت زمان بهبود پیدا کرده‌اند.</string>
     <string name="interval_15_minutes">۱۵ دقیقه</string>
     <string name="interval_30_minutes">۳۰ دقیقه</string>
     <string name="interval_1_hour">۱ ساعت</string>

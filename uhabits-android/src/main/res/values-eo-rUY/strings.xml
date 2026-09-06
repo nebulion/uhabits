@@ -42,12 +42,6 @@
     <string name="edit_habit">Eldoni kutimon</string>
     <string name="check">Kontrolu</string>
     <string name="snooze">Poste</string>
-    <string name="intro_title_1">Bonvenon</string>
-    <string name="intro_description_1">Loop Habit Tracker helpas vin krei kaj konservi bonajn kutimojn.</string>
-    <string name="intro_title_2">Krei kelkajn novajn kutimojn</string>
-    <string name="intro_description_2">Ĉiutage, post plenumi vian kutimon, metu markostampon en la app.</string>
-    <string name="intro_title_4">Por atenti vian progreson:</string>
-    <string name="intro_description_4">Detalaj grafikaĵoj montras al vi kiel viaj kutimoj pliboniĝis kun la tempo.</string>
     <string name="interval_15_minutes">15 minutoj</string>
     <string name="interval_30_minutes">30 minutoj</string>
     <string name="interval_1_hour">1 horo</string>

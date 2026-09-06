@@ -63,12 +63,6 @@
     <string name="edit_habit">Uređivanje navike</string>
     <string name="check">Potvrdi</string>
     <string name="snooze">Kasnije</string>
-    <string name="intro_title_1">Dobro došli</string>
-    <string name="intro_description_1">„Loop“ vam pomaže da stvorite i održite zdrave navike.</string>
-    <string name="intro_title_2">Stvorite nove navike</string>
-    <string name="intro_description_2">Svakog dana, nakon što obavite zacrtano, otkačite polje u aplikaciji.</string>
-    <string name="intro_title_4">Pratite svoj napredak</string>
-    <string name="intro_description_4">Detaljni grafikoni će vam pokazati kako su se vaše navike vremenom poboljšale.</string>
     <string name="interval_15_minutes">15 minuta</string>
     <string name="interval_30_minutes">30 minuta</string>
     <string name="interval_1_hour">1 sat</string>

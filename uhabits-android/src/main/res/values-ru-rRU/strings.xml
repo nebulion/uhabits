@@ -67,12 +67,6 @@
     <string name="edit_habit">Изменить привычку</string>
     <string name="check">Отметить</string>
     <string name="snooze">Отложить</string>
-    <string name="intro_title_1">Добро пожаловать</string>
-    <string name="intro_description_1">Loop Habit Tracker помогает вам заводить и поддерживать полезные привычки.</string>
-    <string name="intro_title_2">Добавьте несколько привычек</string>
-    <string name="intro_description_2">Каждый день, после выполнения вашей привычки, поставьте галочку в приложении.</string>
-    <string name="intro_title_4">Отслеживайте свои успехи</string>
-    <string name="intro_description_4">Детализированные диаграммы демонстрируют, как ваши привычки улучшились со временем.</string>
     <string name="interval_15_minutes">15 минут</string>
     <string name="interval_30_minutes">30 минут</string>
     <string name="interval_1_hour">1 час</string>

@@ -42,12 +42,6 @@
     <string name="edit_habit">Redigér vane</string>
     <string name="check">Sjekk</string>
     <string name="snooze">Senere</string>
-    <string name="intro_title_1">Velkommen</string>
-    <string name="intro_description_1">Loop Vaneoversikt hjelper deg med å lage og beholde gode vaner.</string>
-    <string name="intro_title_2">Lag noen nye vaner</string>
-    <string name="intro_description_2">Hver dag, etter du utfører vanen din, sett en hake på appen.</string>
-    <string name="intro_title_4">Hold oversikt over fremgangen din</string>
-    <string name="intro_description_4">Detaljerte grafer viser deg hvordan vanene dine forbedrer seg over tid.</string>
     <string name="interval_15_minutes">15 minutter</string>
     <string name="interval_30_minutes">30 minutter</string>
     <string name="interval_1_hour">1 time</string>

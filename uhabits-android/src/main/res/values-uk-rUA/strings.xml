@@ -67,12 +67,6 @@
     <string name="edit_habit">Змінити звичку</string>
     <string name="check">Відзначити</string>
     <string name="snooze">Відкласти</string>
-    <string name="intro_title_1">Вітаємо</string>
-    <string name="intro_description_1">Трекер звичок Loop допомагає Вам розвивати і підтримувати корисні звички.</string>
-    <string name="intro_title_2">Додайте нові звички</string>
-    <string name="intro_description_2">Щодня, після виконання Вашої звички, ставте пташку в програмі.</string>
-    <string name="intro_title_4">Відстежуйте свій поступ</string>
-    <string name="intro_description_4">Деталізовані хвилеписи демонструють, як Ваші звички покращилися з часом.</string>
     <string name="interval_15_minutes">15 хвилин</string>
     <string name="interval_30_minutes">30 хвилин</string>
     <string name="interval_1_hour">1 година</string>

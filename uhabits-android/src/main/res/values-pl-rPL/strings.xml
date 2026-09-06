@@ -67,12 +67,6 @@
     <string name="edit_habit">Edytuj nawyk</string>
     <string name="check">Zaznacz</string>
     <string name="snooze">Później</string>
-    <string name="intro_title_1">Witaj</string>
-    <string name="intro_description_1">Śledzenie nawyków Loop pozwala Ci na utworzenie i prowadzenie dobrych nawyków.</string>
-    <string name="intro_title_2">Utwórz nowe nawyki</string>
-    <string name="intro_description_2">Codziennie, po wykonaniu swojego nawyku, postaw znaczek w aplikacji.</string>
-    <string name="intro_title_4">Śledź swój postęp</string>
-    <string name="intro_description_4">Szczegółowe grafiki pokazują jak Twoje nawyki polepszyły się z biegiem czasu.</string>
     <string name="interval_15_minutes">15 minut</string>
     <string name="interval_30_minutes">30 minut</string>
     <string name="interval_1_hour">1 godzina</string>

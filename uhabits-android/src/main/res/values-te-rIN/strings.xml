@@ -37,11 +37,6 @@
     <string name="edit_habit">అలవాటును సవరించండి</string>
     <string name="check">తనిఖీ చేయి</string>
     <string name="snooze">తరువాత</string>
-    <string name="intro_title_1">స్వాగతం</string>
-    <string name="intro_description_1">లూప్ అలవాటు ట్రాకర్ మంచి అలవాట్లను సృష్టించడానికి మరియు నిర్వహించడానికి మీకు సహాయపడుతుంది.</string>
-    <string name="intro_title_2">కొన్ని కొత్త అలవాట్లను సృష్టించండి</string>
-    <string name="intro_description_2">ప్రతి రోజు, మీ అలవాటు చేసిన తర్వాత, అనువర్తనంలో చెక్‌మార్క్ ఉంచండి.</string>
-    <string name="intro_description_4">కాలక్రమేణా మీ అలవాట్లు ఎలా మెరుగుపడ్డాయో వివరణాత్మక గ్రాఫ్‌లు మీకు చూపుతాయి.</string>
     <string name="interval_15_minutes">15 నిమిషాలు</string>
     <string name="interval_30_minutes">30 నిమిషాలు</string>
     <string name="interval_1_hour">1 గంట</string>

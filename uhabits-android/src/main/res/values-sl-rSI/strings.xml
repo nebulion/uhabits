@@ -67,12 +67,6 @@
     <string name="edit_habit">Spremeni navado</string>
     <string name="check">Označi</string>
     <string name="snooze">Kasneje</string>
-    <string name="intro_title_1">Dobrodošli</string>
-    <string name="intro_description_1">Loop Sledilnik Navad vam pomaga ustvariti in vzdrževati dobre navade.</string>
-    <string name="intro_title_2">Ustvari nekaj novih navad</string>
-    <string name="intro_description_2">Vsak dan, potem ko opravite vašo navado, vnesite kljukico v aplikacijo.</string>
-    <string name="intro_title_4">Spremljaj svoj napredek</string>
-    <string name="intro_description_4">Podrobni grafi vam pokažejo kako so se skozi čas vaše navede izboljšale.</string>
     <string name="interval_15_minutes">15 minut</string>
     <string name="interval_30_minutes">30 minut</string>
     <string name="interval_1_hour">1 ura</string>

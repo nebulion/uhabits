@@ -75,15 +75,6 @@
     <string name="edit_habit">Edit habit</string>
     <string name="check">Check</string>
     <string name="snooze">Later</string>
-    <string name="intro_title_1">Welcome</string>
-    <string name="intro_description_1">Loop Habit Tracker helps you create and maintain good habits.</string>
-    <string name="intro_title_2">Create some new habits</string>
-    <string name="intro_description_2">Every day, after performing your habit, put a checkmark on the app.</string>
-    <string name="intro_title_4">Track your progress</string>
-    <string name="intro_description_4">Detailed graphs show you how your habits improved over time.</string>
-    <string name="intro_skip">Skip</string>
-    <string name="intro_back">Back</string>
-    <string name="intro_next">Next</string>
     <string name="interval_15_minutes">15 minutes</string>
     <string name="interval_30_minutes">30 minutes</string>
     <string name="interval_1_hour">1 hour</string>

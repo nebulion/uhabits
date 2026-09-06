@@ -59,12 +59,6 @@
     <string name="edit_habit">Editar hábito</string>
     <string name="check">Marcar</string>
     <string name="snooze">Mais tarde</string>
-    <string name="intro_title_1">Bem vindo</string>
-    <string name="intro_description_1">Loop é um aplicativo que te ajuda a criar e manter bons hábitos.</string>
-    <string name="intro_title_2">Adicione alguns hábitos</string>
-    <string name="intro_description_2">Todo dia, depois de praticar o seu hábito, marque no aplicativo.</string>
-    <string name="intro_title_4">Acompanhe o seu progresso</string>
-    <string name="intro_description_4">Veja como seus hábitos estão progredindo através de diagramas.</string>
     <string name="interval_15_minutes">15 minutos</string>
     <string name="interval_30_minutes">30 minutos</string>
     <string name="interval_1_hour">1 hora</string>
