@@ -192,15 +192,9 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
 
     init {
         cards = listOf(
-            Card("subtitle", binding.subtitleCard),
-            Card("notes", binding.notesCard),
-            Card("overview", binding.overviewCard),
             Card("target", binding.targetCard),
             Card("score", binding.scoreCard),
             Card("bar", binding.barCard),
-            Card("history", binding.historyCard),
-            Card("streak", binding.streakCard),
-            Card("frequency", binding.frequencyCard),
         )
         // The inflated LinearLayout was only ever a holder: the cards are laid
         // out by the lazy list now. Their own backgrounds go with it -- the
@@ -475,14 +469,8 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
 
     fun setState(data: ShowHabitState) {
         title = data.title
-        binding.subtitleCard.setState(data.subtitle)
-        binding.overviewCard.setState(data.overview)
-        binding.notesCard.setState(data.notes)
         binding.targetCard.setState(data.target)
-        binding.streakCard.setState(data.streaks)
         binding.scoreCard.setState(data.scores)
-        binding.frequencyCard.setState(data.frequency)
-        binding.historyCard.setState(data.history)
         history = data.history
         streaks = data.streaks
         frequency = data.frequency
@@ -495,10 +483,9 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
             data.bar.boolSpinnerPosition
         }
 
-        // A numerical habit has a target rather than an overview, and vice
-        // versa. Set both ways round, because the same view instances are
-        // reused when the habit is edited from numerical to boolean.
-        binding.overviewCard.visibility = if (data.isNumerical) GONE else VISIBLE
+        // Only a numerical habit has a target. The overview card that used
+        // to be its counterpart is deleted -- the pinned summary above the
+        // tabs says everything it said, for both kinds of habit.
         binding.targetCard.visibility = if (data.isNumerical) VISIBLE else GONE
 
         // The summary figures. Score is a fraction, and the month delta is a
@@ -526,7 +513,6 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
         scorePresenter = presenter.scoreCardPresenter
         barPresenter = presenter.barCardPresenter
         binding.scoreCard.setListener(presenter.scoreCardPresenter)
-        binding.historyCard.setListener(presenter.historyCardPresenter)
         binding.barCard.setListener(presenter.barCardPresenter)
     }
 }

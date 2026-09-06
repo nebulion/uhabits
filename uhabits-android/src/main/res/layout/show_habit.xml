@@ -30,20 +30,6 @@
     android:id="@+id/linearLayout"
     android:clipToPadding="false">
 
-    <org.isoron.uhabits.activities.habits.show.views.SubtitleCardView
-        android:id="@+id/subtitleCard"
-        style="@style/ShowHabit.Subtitle" />
-
-    <org.isoron.uhabits.activities.habits.show.views.NotesCardView
-        android:id="@+id/notesCard"
-        style="@style/Card"
-        android:gravity="center" />
-
-    <org.isoron.uhabits.activities.habits.show.views.OverviewCardView
-        android:id="@+id/overviewCard"
-        style="@style/Card"
-        android:paddingTop="12dp" />
-
     <org.isoron.uhabits.activities.habits.show.views.TargetCardView
         android:id="@+id/targetCard"
         style="@style/Card"
@@ -58,19 +44,5 @@
         android:id="@+id/barCard"
         style="@style/Card"
         android:gravity="center" />
-
-    <org.isoron.uhabits.activities.habits.show.views.HistoryCardView
-        android:id="@+id/historyCard"
-        style="@style/Card"
-        android:gravity="center"
-        android:paddingBottom="0dp" />
-
-    <org.isoron.uhabits.activities.habits.show.views.StreakCardView
-        android:id="@+id/streakCard"
-        style="@style/Card" />
-
-    <org.isoron.uhabits.activities.habits.show.views.FrequencyCardView
-        android:id="@+id/frequencyCard"
-        style="@style/Card" />
 
 </LinearLayout>
