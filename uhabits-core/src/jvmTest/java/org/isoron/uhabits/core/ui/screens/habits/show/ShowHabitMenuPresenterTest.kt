@@ -57,13 +57,4 @@ class ShowHabitMenuPresenterTest : BaseUnitTest() {
         verify(screen).showEditHabitScreen(habit)
     }
 
-    @Test
-    @Throws(Exception::class)
-    fun testOnExport() {
-        val outputDir = Files.createTempDirectory("CSV").toFile()
-        whenever(system.getCSVOutputDir()).thenReturn(outputDir)
-        menu.onExportCSV()
-        assertThat(FileUtils.listFiles(outputDir, null, false).size, equalTo(1))
-        FileUtils.deleteDirectory(outputDir)
-    }
 }

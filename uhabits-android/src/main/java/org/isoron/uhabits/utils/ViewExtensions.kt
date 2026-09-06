@@ -118,19 +118,6 @@ fun Activity.showMessage(msg: String) {
     this.findViewById<View>(android.R.id.content).showMessage(msg)
 }
 
-fun Activity.showSendFileScreen(archiveFilename: String) {
-    val file = File(archiveFilename)
-    val fileUri = FileProvider.getUriForFile(this, "org.isoron.uhabits", file)
-    this.startActivitySafely(
-        Intent().apply {
-            action = Intent.ACTION_SEND
-            type = "application/zip"
-            putExtra(Intent.EXTRA_STREAM, fileUri)
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }
-    )
-}
-
 fun Activity.startActivitySafely(intent: Intent) {
     try {
         startActivity(intent)

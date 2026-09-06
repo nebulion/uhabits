@@ -55,19 +55,6 @@ class ShowHabitMenuPresenter(
         screen.showMessage(Message.HABIT_ARCHIVED)
     }
 
-    fun onExportCSV() {
-        val outputDir = system.getCSVOutputDir()
-        taskRunner.execute(
-            ExportCSVTask(habitList, listOf(habit), outputDir) { filename: String? ->
-                if (filename != null) {
-                    screen.showSendFileScreen(filename)
-                } else {
-                    screen.showMessage(Message.COULD_NOT_EXPORT)
-                }
-            }
-        )
-    }
-
     fun onDeleteHabit() {
         screen.showDeleteConfirmationScreen {
             commandRunner.run(DeleteHabitsCommand(habitList, listOf(habit)))
@@ -89,7 +76,6 @@ class ShowHabitMenuPresenter(
     interface Screen {
         fun showEditHabitScreen(habit: Habit)
         fun showMessage(m: Message?)
-        fun showSendFileScreen(filename: String)
         fun showDeleteConfirmationScreen(callback: OnConfirmedCallback)
         fun close()
         fun refresh()

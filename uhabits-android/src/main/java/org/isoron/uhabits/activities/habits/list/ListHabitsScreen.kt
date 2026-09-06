@@ -76,7 +76,6 @@ import org.isoron.uhabits.utils.dismissCurrentAndShow
 import org.isoron.uhabits.utils.restartWithFade
 import org.isoron.uhabits.utils.showMessage
 import org.isoron.uhabits.utils.showSendEmailScreen
-import org.isoron.uhabits.utils.showSendFileScreen
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -88,6 +87,7 @@ const val RESULT_EXPORT_DB = 103
 const val RESULT_BUG_REPORT = 104
 const val RESULT_REPAIR_DB = 105
 const val REQUEST_OPEN_DOCUMENT = 106
+const val REQUEST_CREATE_DOCUMENT = 107
 const val REQUEST_SETTINGS = 107
 
 @ActivityScope
@@ -178,6 +178,7 @@ class ListHabitsScreen
     fun onResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
             REQUEST_OPEN_DOCUMENT -> onOpenDocumentResult(resultCode, data)
+            REQUEST_CREATE_DOCUMENT -> onCreateDocumentResult(resultCode, data)
             REQUEST_SETTINGS -> onSettingsResult(resultCode)
         }
     }
@@ -258,8 +259,76 @@ class ListHabitsScreen
         activity.showSendEmailScreen(to, subject, log)
     }
 
+    /**
+     * Hands an exported file to the file manager to be saved, rather than to
+     * the share sheet.
+     *
+     * An export is a file you want to keep, and the share sheet answers a
+     * different question -- who do you want to send this to. It offered
+     * Signal, WhatsApp and a mail client before it offered anywhere to put the
+     * file. `ACTION_CREATE_DOCUMENT` asks the question actually being asked,
+     * and the same picker already handles import.
+     *
+     * The exported file is written to the cache first, as it always was, and
+     * copied into whatever the picker returns. It is remembered across the
+     * round trip because the result comes back to the activity, not to us.
+     */
     override fun showSendFileScreen(filename: String) {
-        activity.showSendFileScreen(filename)
+        pendingExport = File(filename)
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = mimeTypeOf(filename)
+            putExtra(Intent.EXTRA_TITLE, pendingExport?.name)
+        }
+        activity.startActivityForResult(intent, REQUEST_CREATE_DOCUMENT)
+    }
+
+    /**
+     * The export waiting for somewhere to be saved, if any.
+     *
+     * On disk, because nothing smaller survives. The file picker is a
+     * separate, heavy activity, and on a device with this little memory the
+     * whole habits process is killed while it is open -- confirmed on the
+     * Kompakt, which came back to the launcher after saving. An instance field
+     * was lost with the screen and a static one was lost with the process;
+     * both produced a zero-byte export, because the result arrived with
+     * nothing queued and the copy had nothing to copy.
+     *
+     * SharedPreferences outlives both. Cleared as soon as the result is
+     * handled, so a stale path can never be written over a later export.
+     */
+    private var pendingExport: File?
+        get() = activity.getSharedPreferences(EXPORT_PREFS, Context.MODE_PRIVATE)
+            .getString(EXPORT_KEY, null)
+            ?.let(::File)
+        set(value) {
+            activity.getSharedPreferences(EXPORT_PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putString(EXPORT_KEY, value?.absolutePath)
+                .apply()
+        }
+
+    private fun mimeTypeOf(filename: String) = when {
+        filename.endsWith(".csv") -> "text/csv"
+        filename.endsWith(".db") -> "application/octet-stream"
+        else -> "application/zip"
+    }
+
+    private fun onCreateDocumentResult(resultCode: Int, data: Intent?) {
+        val source = pendingExport
+        pendingExport = null
+        if (resultCode != Activity.RESULT_OK) return
+        val target = data?.data ?: return
+        if (source == null) return
+        try {
+            activity.contentResolver.openOutputStream(target)!!.use { out ->
+                source.inputStream().use { it.copyTo(out) }
+            }
+            postMessage(activity.resources.getString(R.string.export_to_csv))
+        } catch (e: IOException) {
+            postMessage(activity.resources.getString(R.string.could_not_export))
+            e.printStackTrace()
+        }
     }
 
     /**
@@ -379,7 +448,7 @@ class ListHabitsScreen
         taskRunner.execute(
             exportDBFactory.create { filename ->
                 if (filename != null) {
-                    activity.showSendFileScreen(filename)
+                    showSendFileScreen(filename)
                 } else {
                     postMessage(activity.resources.getString(R.string.could_not_export))
                 }
@@ -387,3 +456,6 @@ class ListHabitsScreen
         )
     }
 }
+
+private const val EXPORT_PREFS = "export"
+private const val EXPORT_KEY = "pending_export_path"

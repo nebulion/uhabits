@@ -52,7 +52,6 @@ import org.isoron.uhabits.utils.currentTheme
 import org.isoron.uhabits.utils.dismissCurrentAndShow
 import org.isoron.uhabits.utils.dismissCurrentDialog
 import org.isoron.uhabits.utils.showMessage
-import org.isoron.uhabits.utils.showSendFileScreen
 
 class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
 
@@ -281,10 +280,6 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
 
                 else -> {}
             }
-        }
-
-        override fun showSendFileScreen(filename: String) {
-            this@ShowHabitActivity.showSendFileScreen(filename)
         }
 
         override fun showDeleteConfirmationScreen(callback: OnConfirmedCallback) {
