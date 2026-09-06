@@ -49,7 +49,6 @@ import org.isoron.uhabits.core.models.NumericalHabitType
 import org.isoron.uhabits.core.models.PaletteColor
 import org.isoron.uhabits.core.models.Reminder
 import org.isoron.uhabits.core.models.WeekdayList
-import org.isoron.uhabits.databinding.ActivityEditHabitBinding
 import org.isoron.uhabits.utils.applyRootViewInsets
 import org.isoron.uhabits.utils.applyToolbarInsets
 import org.isoron.uhabits.utils.dismissCurrentAndShow
@@ -69,7 +68,6 @@ fun formatFrequency(freqNum: Int, freqDen: Int, resources: Resources) = when {
 class EditHabitActivity : AppCompatActivity() {
 
     private lateinit var themeSwitcher: AndroidThemeSwitcher
-    private lateinit var binding: ActivityEditHabitBinding
     private lateinit var commandRunner: CommandRunner
 
     var habitId = -1L
