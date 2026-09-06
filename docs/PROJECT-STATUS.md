@@ -111,12 +111,12 @@ to put inline inside a sentence.
 
 | | |
 | --- | --- |
-| Layout files | **25** (from 45) — target 0 |
-| viewBinding | still `true`; the ShowHabit cards are most of what is left |
-| Screens on MMD | Settings, Habits list, Intro, EditHabit, ShowHabit, Snooze |
-| Popups on MMD | Checkmark, Number, Confirm-delete, Frequency, Reminder, Weekdays, Snackbar, HabitType, HistoryEditor |
-| Still on Views | ShowHabit card *contents*, Automation |
-| Of the 25 layouts | 12 are dead widget layouts, 10 are ShowHabit cards, 3 are Automation/edit/toolbar |
+| Layout files | **5** (from 45) — target 0 |
+| viewBinding | still `true`, and only two cards keep it alive |
+| Screens on MMD | Settings, Habits list, EditHabit, ShowHabit, Snooze |
+| Popups on MMD | Checkmark, Number, Confirm-delete, Frequency, Reminder, Weekdays, Snackbar, HabitType |
+| Still on Views | the score and bar charts, and Automation |
+| The 5 layouts | `show_habit.xml` + `show_habit_score.xml` + `show_habit_bar.xml` (the last two charts), `automation.xml` + `toolbar.xml` (the Tasker plugin, and a toolbar nothing else inflates) |
 
 ### Done
 
@@ -161,24 +161,16 @@ cancel, then edit / archive / unarchive / delete, each shown according to
 back leaves the screen. `ListHabitsSelectionMenu` and its `ActionMode` are
 deleted, and with them the `Lazy<>` cycle through `HabitCardListController`.
 
-**Intro** — now MMD, in `IntroScreenMMD.kt`. The `appIntro` dependency is gone
-from `build.gradle.kts` and `libs.versions.toml`, and so is
-`stripButtonBackgrounds()`. The deck pages on explicit Back / Next buttons with
-no swipe and no cross-fade; the page indicator is filled vs. outlined dots,
-since `eInkColorScheme` has no grey to dim one with.
-
-Its **illustrations had to be re-derived**. Slides 2 and 3 are Material art -
-white cards carrying blue checkmarks and a yellow chart line - and the earlier
-e-ink pass had whitened the coloured ink, so slide 2 showed floating marks with
-no card and slide 3 was a blank white rectangle on a white page. They are now
-regenerated from the originals in the `original-intro-icons` folder of the
-`uhabits-reset-2026-08-17` backup, by compositing over white and thresholding
-at **240**, which keeps the card outline, the gridlines, the chart line and
-both the check and cross marks. Two details matter: the threshold turns the
-art's **drop shadow into a solid black smear**, so each image is cropped above
-it (and slide 3's card border re-closed by hand), and the images are not the
-same aspect ratio, so the slide sizes them with a fixed 200dp band and
-`ContentScale.Fit` rather than a square box.
+**Intro is deleted**, and was MMD before that. It is recorded here only
+because the work is a useful warning: the deck was ported to MMD, and its three
+illustrations had to be re-derived from the originals in the
+`original-intro-icons` folder of the `uhabits-reset-2026-08-17` backup, because
+an earlier e-ink pass had whitened their coloured ink into blank rectangles.
+Thresholding at 240, cropping each above the drop shadow the threshold turned
+into a black smear, closing one card border by hand. All of it now deleted,
+because the screen explained what a habit tracker is to someone who had just
+installed a habit tracker. **Check whether a screen should exist before making
+it beautiful.**
 
 **ShowHabit** — MMD shell, Views inside. The header is `TopAppBarMMD`, the
 scroll is `LazyColumnMMD` and each of the nine cards is a real `CardMMD`
@@ -443,53 +435,50 @@ both are 6 now.
 
 ### Half-done — read before touching the habits screen
 
-- **Drag-to-reorder works, and is not yet right.** Long press a habit to
-  select it, long press again to pick it up, drag, release. The list holds
-  still while you drag and the separator you would drop into thickens; the
-  reorder happens once, on release.
+- **Drag-to-reorder: built, rebuilt, and awaiting one human check.**
+  Long press a habit to select it, long press again to pick it up, drag,
+  release. The list holds still while you drag and the separator you would
+  drop into thickens; the reorder happens once, on release. Holding at the top
+  or bottom edge turns a page every second.
 
-  Three things are wrong or unfinished, in the order they annoy:
+  **The gesture is owned by a container around the list, not by a row**, and
+  four separate bugs are the reason. Anyone touching this should read them
+  before "simplifying" it back:
 
-  1. **Turning a page loses the indicator, which makes the scroll useless.**
-     Drag to the edge, a page turns -- and from then on no separator
-     highlights, so you can scroll but you cannot place anything. This is the
-     worst of the three and it has a single cause: the drag reads the finger's
-     position as `here.offset + change.position.y`, where `here` is *the
-     dragged row's own entry* in `listState.layoutInfo.visibleItemsInfo`. Turn
-     a page and that row is no longer visible, `here` is null, the loop hits
-     its `continue`, and no boundary is computed again. Worse, a `LazyColumn`
-     disposes items it has scrolled past, so the row hosting the gesture can be
-     destroyed underneath it.
+  1. `positionChange()` reports a movement as **zero** once the change has been
+     consumed. Consuming before reading silently zeroed every drag: the habit
+     picked up and then never travelled. Read first, consume second — or use
+     `positionChangeIgnoreConsumed`.
+  2. `LazyColumnMMD` claims drags for its own paging. `verticalDrag` and
+     `detectDragGesturesAfterLongPress` both treat a claimed movement as a
+     *cancelled* drag and give up, so neither works here. The gesture runs in
+     the **`Initial` pointer pass**, where a parent sees events before its
+     children, and consumes only once a drag is actually running — so taps,
+     long presses and the list's own scrolling are untouched.
+  3. Reading the finger as `thatRow.offset + local y` broke the moment a page
+     turned: the row left `visibleItemsInfo`, the lookup returned nothing, and
+     no boundary could be computed again — you could scroll but not place.
+     Worse, a `LazyColumn` may **dispose** a row it has scrolled past,
+     destroying the node hosting the gesture. A container is never disposed and
+     its coordinates are the list's own.
+  4. Folding tap, long press and drag into a single detector — tried, reverted.
+     It stopped the name column receiving any pointer events at all, taps
+     included. `combinedClickable` keeps tap and long-press-to-select; the drag
+     detector is simply not armed until a habit is selected, so at any moment
+     exactly one of them wants the long press.
 
-     The fix is structural, not a patch: **the drag has to be tracked by a
-     container spanning the list, not by the row it started on.** A
-     `pointerInput` on the Box around `LazyColumnMMD` is never disposed, its
-     coordinates are the list's own, and it can hit-test which row the finger
-     went down on from `layoutInfo`. That is how reorderable lists are normally
-     built, and it deletes the `here` lookup entirely.
-  2. **The list scrolls when you release.** Not the page turn -- that is
-     cancelled on release -- but `LazyColumn` re-anchoring: it keeps the
-     keyed first-visible item in view, and dropping a habit moves that item.
-     The fix is to snapshot `firstVisibleItemIndex`/`firstVisibleItemScrollOffset`
-     before the drop and restore them once the list has rebuilt.
-  3. **It only works in manual order** (`BY_POSITION`), silently. Sorted by
-     name or score, the gesture picks the habit up and the drop does nothing,
-     with no explanation anywhere.
+  Still open:
 
-  **Do not try to verify this over adb.** `input motionevent` injections
-  arrive as a fresh pointer each time, so the gesture's own `down.id` never
-  matches and the drag loop exits immediately -- instrumentation logs nothing
-  while a real finger drives it perfectly well. Several rounds were spent
-  "fixing" a drag that was not broken in the way the harness suggested. Test
-  it by hand, on the device.
-
-  Two traps are already paid for and worth not re-learning, both in
-  `HabitListScreenMMD.reorderDragHandle`: `positionChange()` reports a
-  movement as **zero** once the change has been consumed, so the movement has
-  to be read before consuming (or via `positionChangeIgnoreConsumed`); and
-  `LazyColumnMMD` claims drags for its own paging, so `verticalDrag` and
-  `detectDragGesturesAfterLongPress` both treat a claimed movement as a
-  cancelled drag and give up. Hence the raw pointer loop.
+  - **The list scrolls when you release.** Not the page turn — that is
+    cancelled on release — but `LazyColumn` re-anchoring: it keeps the keyed
+    first-visible item in view, and dropping a habit moves that item. The fix
+    is to snapshot `firstVisibleItemIndex`/`firstVisibleItemScrollOffset`
+    before the drop and restore them once the list has rebuilt.
+  - **It only works in manual order** (`BY_POSITION`), silently. Sorted by name
+    or score the habit picks up and the drop does nothing, with no explanation
+    anywhere.
+  - **The page-turn case has never been confirmed working by a human.** It
+    cannot be driven over adb at all — see "Verified on the device".
 
 - **`ScrollableChart` cannot be deleted yet** — it is still the base class for
   `ScoreChart` and `FrequencyChart` on the ShowHabit screen.
@@ -506,12 +495,11 @@ both are 6 now.
   should use `createAndroidComposeRule`, not `withClassName`.
   A copy of everything deleted is in
   `C:\Users\Antonio\Backups\uhabits-deleted-views-2026-08-17\`.
-- **The widget Kotlin is dead but present.** Unregistered in the manifest, but
-  `WidgetUpdater` is still called from `ListHabitsActivity`, `ShowHabitActivity`
-  and `HabitsApplication`, and `WidgetReceiver` **must stay** — despite the
-  name, the reminder *notification* buttons use its actions.
-- **`AboutActivity` is now unreachable.** Its Settings row is gone, but the
-  activity and its layout are still in the tree, still on Views.
+- **Two classes are misnamed and load-bearing.** `WidgetReceiver` survives the
+  widgets' deletion because the reminder *notification* action buttons use its
+  intents, and `WidgetPreferences` survives because `ReminderScheduler` keeps
+  snooze times in it. Neither has anything to do with home-screen widgets any
+  more. Check before deleting anything matching `*Widget*`.
 
 ### Known-good details worth not breaking
 
@@ -639,159 +627,134 @@ offers the primitive we want, and app-level access is unverified.
 Both jars, the dexdump, and InkOS's `EinkRefreshHelper.kt` are pulled into the
 scratchpad noted at the end of this file.
 
-## Untested — verify these before building on them
+## Verified on the device
 
-Everything below is **written and compiling, and was never exercised on the
-device**. It is the first thing to do in the next session. Most of it is one
-screen's worth of tapping.
-
-**Test on a throwaway habit, never on the real ones.** The database on
-`MK20250408317` is the owner's actual 41 habits with years of entries, and
-there is no backup of it inside the repo. Create a habit called `zzz test`, do
-the destructive checks on that, and delete it at the end. If something does get
-written by accident, pull the database and look:
+Everything in this section was exercised on `MK20250408317` against a
+throwaway habit and checked in the database, not on screen. **Keep doing it
+that way**: the panel repaints slowly enough that a screenshot taken after an
+`input tap` often shows the previous screen, and an action that silently did
+nothing looks identical to one that worked.
 
 ```bash
 C:\Users\Antonio\android-sdk\platform-tools\adb.exe -s MK20250408317 exec-out "run-as org.isoron.uhabits cat databases/uhabits.db" > uh.db
 ```
 
+**Test on a throwaway habit, never on the real ones.** The database is the
+owner's actual habits with years of entries and there is no copy in the repo.
+Create one called `zzz test`, do the destructive checks on it, delete it after.
 An entry set back to UNKNOWN stores `value = -1`, which renders and behaves
 exactly like no row at all — that is the safe way to undo a mis-tapped
 checkmark.
 
-### 1. EditHabit's save path — mostly done, one confirmed crash
+Passing as of the last pass:
 
-Verified on device: **create** a boolean habit with name, question, frequency,
-reminder and weekdays, then Save, writes the right row. Checked in the
-database, not just on screen — `reminder_days = 115` decodes to exactly the
-Sat/Sun/Wed/Thu/Fri that were ticked, so the Saturday-first order is right and
-nothing is rotated by one. The frequency page's Done also round-trips back to
-the form.
+- **EditHabit** — create writes the right row; editing an existing habit's
+  question persists and survives reopening; saving with a blank name shows
+  "Cannot be blank" under the field and stays on the screen rather than
+  crashing.
+- **Selection actions** — archive sets the flag and the habit leaves the
+  default filter; the bar swaps Archive for Unarchive when an archived habit is
+  selected; unarchive clears the flag; delete asks first and then deletes.
+  There are no move-up/move-down buttons, which is correct — dragging replaced
+  them.
+- **Export** — opens the file manager and writes a real file (10,000 bytes for
+  one habit). The old worry about "a device with no mail client" is moot: it no
+  longer uses the share sheet at all.
 
-**Confirmed crash — a malformed numeric target takes the app down.**
-Reproduced live: create a measurable habit, type `1.2.3` into Target, Save.
+**A trap that cost a wrong conclusion once.** There were two habits called
+`zzz test` — one left over from an earlier session — and scrolling found the
+older one first, so an unarchive appeared to fail when it had actually worked
+on the wrong habit. If a check surprises you, confirm *which row* you acted on
+by id in the database before believing it.
 
-```
-java.lang.NumberFormatException: multiple points
-    at java.lang.Double.parseDouble(Double.java:538)
-    at ...EditHabitActivity.save(EditHabitActivity.kt:231)
-```
+Still not verified, and both need a human:
 
-`validate()` only checks `targetText.isBlank()`; `save()` then calls
-`targetText.toDouble()` unguarded. `KeyboardType.Number` is a hint about which
-keyboard to raise — it filters nothing, and the field accepts `1.2.3` happily.
-A locale that types `1,5` crashes the same way. It throws *before*
-`commandRunner.run(...)`, so nothing is written and no data is corrupted; the
-app just dies. **Not yet fixed.** `NumberDialog` was given `toDoubleOrNull`
-when it was rebuilt; this path still needs the same treatment.
+- **Drag-to-reorder across a page turn.** `adb input motionevent` delivers each
+  injection as a fresh pointer, so the gesture's own `down.id` never matches
+  and the drag never starts under automation. It has to be tried by hand.
+- **The ghosting flash firing.** Written, enabled in Settings, and still never
+  observed. It is the one feature here whose whole value is empirical.
 
-**Confirmed by reading, not yet reproduced — typed text is lost on process
-death.** `onSaveInstanceState` saves habitId, type, colour, frequency and
-reminder, and none of `nameText`, `questionText`, `notesText`, `targetText`,
-`unitText` — all plain `mutableStateOf`. A device attempt to force this with
-`always_finish_activities` came back inconclusive (the activity was never
-actually torn down, so the text survived trivially), so the live repro is
-still open even though the code is unambiguous. Fix is `rememberSaveable` or
-the bundle.
-
-Still unchecked here:
-
-- [ ] **Edit** an existing habit: change each field, save, reopen.
-- [ ] **Validation**: save with the name blank — error under the name field,
-      cleared by typing.
-- [ ] **Reminder → Off**: confirm it clears and the "Select days" row goes.
-
-### 2. Selection actions on the habits list
-
-Only the icons and their show/hide gating were verified. The commands were
-never fired, because they act on real habits.
-
-- [ ] Archive a selection; confirm it disappears under the default filter and
-      that the header swaps to the unarchive icon when it is selected again.
-- [ ] Unarchive it back.
-- [ ] Delete the throwaway habit from a selection, and confirm the confirmation
-      dialog appears first.
-
-### 3. ShowHabit header actions
-
-- [ ] Edit opens the edit screen for the right habit.
-- [ ] Archive and unarchive swap correctly — they are recomputed on every
-      refresh, via `menuPresenter.canArchive()`.
-- [ ] Export CSV. This writes a file and then opens a share sheet, which is a
-      hardware assumption worth checking on a device with no mail client.
-- [ ] Delete asks first.
-
-### 4. The conditional scrollbar gutter
-
-The day-heading inset now follows whether the list actually scrolls. With 31
-habits it always scrolls, so **the interesting case has never been rendered**.
-
-- [ ] Filter or archive down to two or three visible habits and confirm the
-      SUN/MON/TUE headings still sit directly above their columns. If they are
-      40dp out, `isScrollable` in `HabitListScreenMMD` is not tracking
-      `LazyColumnMMD`'s own condition.
-
-### 5. Odds and ends
-
-- [ ] Intro: only Next and Done were pressed. Check **Skip** on the first slide
-      and **Back** from the second. (Trigger it by setting `pref_first_run` to
-      true in `shared_prefs`; the app clears it again on show.)
-- [ ] ShowHabit with a **numerical** habit — the target card replaces the
-      overview card, and that swap is driven by the new `hiddenKeys` logic.
-- [ ] A habit **with notes**, so the notes card is visible, and one without, to
-      confirm no stray divider is left behind.
+**`Log.d` does not reach `logcat` on this device.** Debug logging added during
+both the drag work and the export work produced nothing at all, twice, while
+the code around it demonstrably ran. Reason from outcomes — a file's size, a
+row in the database — rather than from traces, and do not spend time
+disbelieving working code because the log is silent.
 
 ## What is next
 
-0. **Verify the ghosting flash actually fires.** Switch it on in Settings and
-   make five changes. It is written and installed but has never been seen to
-   run, and it is the one feature here whose whole value is empirical.
-1. **The launcher icon's stroke weight.** The mark and the frame are right; the
+Ranked by what it costs the owner, not by what it costs to build.
+
+1. **Confirm drag-to-reorder survives a page turn.** Rebuilt so the gesture is
+   owned by a container around the list rather than by the dragged row, which
+   is what broke it: the row scrolled out of view mid-drag, took its layout
+   entry with it, and no drop boundary could be computed again. It cannot be
+   tested over adb (see "Verified on the device"), so this needs a finger.
+2. **See the ghosting flash fire.** Enabled, interval 12, never observed.
+3. **The two remaining charts** — `ScoreChart` and `BarChart`. These are the
+   only thing keeping `viewBinding` alive and the only Views left on ShowHabit.
+   They are also the hardest piece in the app, because both are interactive:
+   dragging them scrolls back through history via `ScrollableChart`, and that
+   has to be rebuilt in Compose without losing the ability to look back.
+4. **Decide on Automation** (the Tasker/Locale plugin). It is registered and
+   would work, but **no Tasker, Locale, Automate or MacroDroid is installed on
+   the device**, so today it advertises a capability nothing can use. Deleting
+   it takes `automation.xml` and `toolbar.xml` with it -- nothing else in the
+   app inflates a toolbar any more -- leaving only the two chart layouts. This
+   is a judgement call about a real feature, not dead-code removal, so it wants
+   the owner's word rather than a cleanup pass.
+5. **The launcher icon's stroke weight.** The mark and the frame are right; the
    weight is not. Next to Weather and Calculator it reads heavier than the
    house style, and the 16-unit corner radius may be off too. MMD ships no icon
    set and no drawing guideline, so this needs Mudita's design documentation or
    measurements taken off the system icons themselves.
-2. **Finish drag-to-reorder.** It works and it is not right; the three
-   problems and the structural fix are written up under "Half-done" above.
-   The page-turn one makes the feature unusable past a screenful, so it is
-   the real item here.
-3. **Delete the dead widgets.** Twelve of the 25 remaining layouts belong to
-   the six home-screen widgets, which are unregistered from the manifest and
-   unreachable. The Kotlin under `widgets/` goes with them, but
-   **`WidgetReceiver` must stay** — despite the name, the reminder
-   *notification* buttons use its actions. This is now the single biggest
-   step left towards `viewBinding = false`, and it is mechanical.
-4. **The charts port** (below), then ShowHabit's card contents → Compose,
-   then its ten `show_habit_*` layouts.
-5. **`EditSettingActivity`** (Tasker plugin, easy to forget) and
-   **`Automation`**, the last non-widget screens on Views.
-6. **`ktlintCheck` is red** — 287 violations, nearly all trailing commas.
+6. **`ktlintCheck` is red** — ~287 violations, nearly all trailing commas.
    `ktlintFormat` fixes it mechanically but rewrites most of the restyled
    files, so it wants its own pass when nothing else is in flight.
 7. **Rewrite the habits-screen tests** on `createAndroidComposeRule`.
-8. **Then** `buildFeatures.viewBinding = false`.
+8. **Then** `buildFeatures.viewBinding = false`, which is the finish line the
+   whole restyle has been walking towards.
 
 ### Done since this list was written
 
-- **The `Week`/`Month` spinners are gone.** `TabsMMD` was the stated target
-  and it does not fit: five spans, a row that divides the width evenly, and
-  16dp off each side of a tab leaves about 40dp of label — enough for "Week",
-  not "Quarter". They are `ModalBottomSheetMMD` sheets of `RadioButtonMMD`
-  rows instead, following the other rule (*a choice is a sheet*), which is
-  also what the frequency picker and first-weekday setting do.
-- **All three View dialogs are MMD.** Snooze is a sheet with `TimeInputMMD`
-  for its custom time; `HabitTypeDialog` and `HistoryEditorDialog` are both
-  `MmdPanelDialogFragment`.
+Kept because several entries record *why* something was built the way it was,
+and because two of them contradict what this file used to recommend.
+
+- **The `Week`/`Month` spinners are gone.** `TabsMMD` was the stated target and
+  it does not fit: five spans, a row that divides the width evenly, and 16dp
+  off each side of a tab leaves about 40dp of label — enough for "Week", not
+  "Quarter". They are `ModalBottomSheetMMD` sheets of `RadioButtonMMD` rows
+  instead, following the other rule (*a choice is a sheet*), which is what the
+  frequency picker and the first-weekday setting already do.
+- **All three View dialogs became MMD**, and the history editor was then
+  **deleted** — it turned out to be unreachable (the Calendar tab going Compose
+  had orphaned the card carrying its entry point), and the owner did not want
+  it back. Days older than the three columns on the habits list can no longer
+  be edited anywhere. That is a decision, not an oversight.
 - **Both bundled pickers are deleted** — `com.android.datetimepicker` (26
   files) and `com.android.colorpicker`, with `pickers.xml` and every layout,
-  colour and drawable they owned. That file held the last literal greys in
-  the app.
-- **Export has a home** (habits-list selection bar, and it takes any subset).
-- **Settings' second pass** restored reverse-days, midnight delay, sticky
-  notifications and first-weekday. Reminder sound needed no row: "Customize
-  notification" opens the system channel, where Android has kept sound since
-  8.0. The developer section is not restored — developer mode is deleted.
-- **About is deleted**, its version line moved to the foot of Settings.
+  colour and drawable they owned. That file held the last literal greys in the
+  tree.
+- **The six home-screen widgets are gone**, and with them a daily
+  `setExactAndAllowWhileIdle` alarm that woke the CPU out of Doze forever to
+  redraw widgets that could not exist.
+- **The intro is gone.** Three slides explaining what a habit tracker is, to
+  someone who had just installed one.
+- **About is gone**, its version line moved to the foot of Settings.
+- **Export has a home and no longer uses the share sheet** — it opens the file
+  manager. The pending path lives in SharedPreferences because this device
+  kills the app's process while the picker is open; see that commit.
+- **Settings' second pass** restored midnight delay, sticky notifications and
+  first-weekday. Reverse-days was restored and then **removed**: nothing had
+  read it since the list went Compose, so the toggle did nothing. Reminder
+  sound needs no row — "Customize notification" opens the system channel, where
+  Android has kept sound since 8.0. The developer section is not coming back;
+  developer mode is deleted.
+- **ShowHabit's metrics were redesigned from mockups** rather than by taste.
+  Streaks is a divided list, Frequency is a grid of squares in the calendar's
+  own vocabulary and now lives under Score, and the score chart lost a
+  duplicated heading, gained a control row and a y-axis gutter, and labels its
+  months with single letters. See the three commits for what each fixed.
 
 ### Two things the audits flagged that are decisions, not bugs
 
@@ -805,42 +768,63 @@ habits it always scrolls, so **the interesting case has never been rendered**.
   MMD cannot draw it (see MMD's own gaps). Either hand-roll a dashed `Canvas`
   line or amend the rule.
 
-### The charts problem, unsolved
+### The charts problem, mostly solved
 
-Two pipelines, and it gates the ShowHabit screen:
+It used to be framed as one large porting job. Most of it turned out not to
+need porting at all: `StreakChart`, `FrequencyChart` and `TargetChart` were
+**replaced** rather than moved, because each was drawing something a 1-bit
+panel cannot show. Their states were already plain data, so the Compose
+versions read the same `…CardState` the Views did and no core change was
+needed.
 
-- **Pipeline A** — core draws against the abstract
-  `org.isoron.platform.gui.Canvas`: `BarChart`, `HistoryChart`, `Ring`,
-  `CheckmarkButton`, `HabitListHeader`. `AndroidCanvas` is a thin adapter over
-  `android.graphics.Canvas`, and Compose hands you the same object via
-  `drawIntoCanvas { it.nativeCanvas }`. **These move with no core changes.**
-- **Pipeline B** — `ScoreChart`, `StreakChart`, `FrequencyChart`,
-  `TargetChart`, `RingView` are `android.view.View` subclasses with their own
-  `onDraw`. They must be **ported onto the core `View`/`Canvas` interface
-  first**. This is the single largest remaining piece of engineering.
+What is left is the two that really are charts:
 
-MMD has nothing chart-shaped, so no chart becomes an MMD component.
+- **`ScoreChart`** — a scrolling line chart, and **`BarChart`** behind
+  `show_habit_bar.xml`. Both are `android.view.View` with their own `onDraw`,
+  and both are *interactive*: you drag them to scroll back through time, and
+  that paging lives in `ScrollableChart`. Porting them means reimplementing
+  that in Compose, which is where a regression would actually cost something —
+  losing the ability to look back through your own history.
+- `RingView` is still in the tree and no longer drawn by anything on this
+  screen.
+
+MMD has nothing chart-shaped, so neither becomes an MMD component. Pipeline A
+(`BarChart`, `HistoryChart`, `Ring`, `CheckmarkButton`, `HabitListHeader` drawing
+against the abstract `org.isoron.platform.gui.Canvas`) still moves with no core
+changes when the time comes: Compose hands you the same
+`android.graphics.Canvas` via `drawIntoCanvas { it.nativeCanvas }`.
 
 ## Things that are mine, not Mudita's
 
 Flagged so a future pass can judge them rather than assume they came from MMD:
 
-- **Halftone dithering**, now `org.isoron.platform.gui.Halftone`, used by
-  `AndroidCanvas.setColor` and by the five View-drawn charts. Non-pure colours
-  become 4×4 Bayer dot patterns. Deliberately kept: charts must distinguish an
-  unfilled checkmark from a filled one, MMD has no midtone token, and Mudita's
-  own e-reader does dither its placeholders. **Charts only** — text always
-  snaps to the nearer of black or white.
+- **Halftone dithering**, `org.isoron.platform.gui.Halftone`. Non-pure colours
+  become 4×4 Bayer dot patterns. Used by `AndroidCanvas.setColor` and by what
+  is left of the View-drawn charts — `ScoreChart` and `BarChart`. It had five
+  users; three of them (`StreakChart`, `FrequencyChart`, `TargetChart`) are
+  deleted, and each was deleted **because** of what the dither did to it: a
+  streak bar became a grey blob carrying a grey numeral, a frequency bubble
+  became a smudge, a target bar put its own label on the boundary between
+  filled and unfilled.
+
+  That is worth stating plainly, because it qualifies the rule rather than
+  overturning it. Halftone earns its place where a chart genuinely needs a
+  midtone it can spare — gridlines, a ring's inactive arc. It is the wrong
+  answer wherever a *shape* or a *number* has to stay legible, and there the
+  MMD language (filled versus outlined, inversion for emphasis) wins. Text has
+  always been exempt; the lesson is that small marks should be too.
   `Halftone.DOT` is **1** by preference; see "Known-good details".
-- **The unknown-checkmark glyph** is a hollow circle (`fa_circle` drawn with
-  `Stroke`). MMD has no icon for "no data"; the outline-versus-fill logic is
-  borrowed from `SwitchMMD` / `CheckboxMMD`, but the choice of a circle is ours.
+- **The unknown-checkmark glyph** is a hollow cross: the same `fa_times` a
+  recorded no draws, at the same size, outlined instead of filled. It was a
+  hollow circle, which needed its own smaller size to stop out-weighing the
+  check beside it and put a third shape in a row that holds two ideas. Sharing
+  the cross's shape leaves fill as the only difference between a missed day and
+  an unrecorded one, which is the distinction MMD draws everywhere else. The
+  outline comes from drawing a solid glyph with `drawStyle = Stroke`; MMD has
+  no icon for "no data".
 - **`SelectionTopBar`** and **`ShowHabitTopBarMMD`** are compositions of
   `TopAppBarMMD`, not MMD components in their own right. MMD has no
   selection-mode bar because MuditaOS has no `ActionMode`.
-- **The intro deck** — MMD has no onboarding component. The pager, the
-  filled/hollow dot indicator and the Back/Next pairing are ours, built from
-  `ButtonMMD` and the type scale.
 - The `eink_rule` hairline, `selected_box_eink`, `toolbar_eink_background` —
   hold-overs keeping the remaining XML screens consistent. They die with the
   last XML screen. `card_eink_background` is no longer used by ShowHabit, which
@@ -875,7 +859,7 @@ C:\Users\Antonio\android-sdk\platform-tools\adb.exe -s MK20250408317 exec-out sc
   items have been counted.
 - **Do not chain `input tap` calls.** A tap that lands before the next screen
   is up hits whatever is underneath. One of them toggled a real habit's
-  checkmark on the list while aiming at the intro's Next button.
+  checkmark on a real habit while aiming at a button on the screen behind.
 - **Verify a FontAwesome codepoint before using it.** The bundled
   `fontawesome-webfont.ttf` is a 1001-glyph subset and most of
   `fontawesome.xml` is commented out for that reason. A missing glyph renders
@@ -902,11 +886,16 @@ C:\Users\Antonio\android-sdk\platform-tools\adb.exe -s MK20250408317 exec-out sc
 
 ## Repo
 
-Fresh clone of `nebulion/uhabits`, branch **`dev`**, all uncommitted - now
-~175 changed paths, about 60 of them deletions.
+Fresh clone of `nebulion/uhabits`. The work lives on branch **`mmd-eink`**,
+branched from `dev`, with 27 commits on it and **nothing pushed** — the remote
+has never seen any of this.
 
-**Everything is uncommitted, so there is no history to recover from.** Two
-backup folders were made before the destructive passes, both under
+**There is history now**, which there was not for most of this project's life:
+the first of those commits captured 229 uncommitted paths that had no history
+behind them at all. Everything since is committed as it lands. `git branch -f
+dev mmd-eink` moves `dev` onto it if the branch is not wanted.
+
+Two backup folders were made before the early destructive passes, both under
 `C:\Users\Antonio\Backups\`:
 
 - `uhabits-deleted-views-2026-08-17` - the deleted habits-list View classes,

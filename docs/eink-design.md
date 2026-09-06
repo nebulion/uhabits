@@ -98,8 +98,11 @@ steps have no counterpart in MMD and were illegible on the panel.
 - `DividerDefaultsMMD.Thickness` is **3dp**, solid, `outlineVariant` — which in
   `eInkColorScheme` is black. This is the heavy rule under every screen header
   in Notes, Settings, Library and Calculator.
-- List rows are separated by a **dotted** black hairline, indented to align
-  with the text rather than running the full width.
+- List rows are separated by a **solid** black hairline, indented to align with
+  the text rather than running the full width. The rule asked for dotted, and
+  MMD cannot draw it: `HorizontalDividerMMD` is solid-only and the
+  `DashedDivider()` its own KDoc calls does not exist anywhere in the library.
+  Solid by necessity, not by choice — see PROJECT-STATUS.
 - Corners are lightly rounded on buttons and controls. (MuditaOS Pure used 0;
   the Kompakt does not.)
 - Elevation is never used. Shadows dither into smears.
@@ -176,7 +179,6 @@ a ghost:
 | --- | --- |
 | Confetti on completion | `ListHabitsScreen.showConfetti` is a no-op |
 | List add/remove/move | gone with the RecyclerView; Compose list has no item animation |
-| Intro slide cross-fade | `IntroScreenMMD` pages on buttons, no pager |
 | Scroll momentum (two paths) | `ScrollableChart.onFling`, `AndroidDataView.onFling` |
 | Overscroll stretch and glow | `OVER_SCROLL_NEVER` |
 | Ripples | `colorControlHighlight` transparent; MMD disables them globally |
@@ -192,6 +194,10 @@ Rate this app (Play Store), Send feedback (mail), Help translate, View source,
 Privacy policy (all browser), and **all six home-screen widgets** plus their
 configuration dialogs and the stack-widget service, since the launcher has no
 widget host.
+
+**The onboarding deck is gone too**, and that one is not about hardware. Three
+slides explaining what a habit tracker is, to someone who has just installed a
+habit tracker, on a device whose whole appeal is that it does not do this.
 
 **Larger touch targets.** Checkmark buttons 48 → 56dp: a refresh is slow enough
 that undoing a mistap is expensive.
@@ -214,8 +220,9 @@ that undoing a mistap is expensive.
   sheets now, and the bundled radial date picker and colour picker are deleted
   outright. `pickers.xml` went with them, and with it the last literal greys
   in the tree: `#8c8c8c` clock numerals no theme could reach.
-- **The widget Kotlin is dead, not deleted.** Unregistered in the manifest and
-  unreachable, but `WidgetUpdater` is still called from `ListHabitsActivity`
-  and `AutoBackup`, so the classes remain.
+- **The widgets are deleted outright**, Kotlin and all. Two classes keep the
+  name and are load-bearing for other reasons: `WidgetReceiver`, whose intents
+  the reminder *notification* buttons use, and `WidgetPreferences`, where
+  `ReminderScheduler` keeps snooze times.
 - **Settings categories** still render as plain headers rather than MMD's
   drill-down chevron pages.
