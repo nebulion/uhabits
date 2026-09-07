@@ -909,9 +909,16 @@ private fun EmptyState() {
  * **And its own divider is the `TopAppBarMMD` bug again.** `SnackbarMMD` hands
  * its 3dp `dividerLineHeight` to a raw Material3 `HorizontalDivider` as a
  * *width* and passes no thickness, so the rule falls back to Material's 1dp.
- * MMD's anatomy for this component actually calls for two stacked rules — a
- * black one over a white one — so both are drawn here, at the weight
- * `DividerDefaultsMMD.Thickness` really is.
+ * That much is real, and is why the rule is drawn here instead.
+ *
+ * **One rule, not two.** An earlier version of this drew a black rule over a
+ * white one, on the belief that MMD's anatomy called for a stacked pair. It
+ * does not: `SnackbarMMD` draws a single `HorizontalDivider` coloured
+ * `dividerColor`, whose default is `inverseOnSurface` — black on this theme.
+ * The second, white rule was invisible on a white page and did nothing but
+ * insert 3dp of blank space, leaving the black line floating detached above
+ * the bar. Checked against `mmd-core` rather than against a screenshot, which
+ * is rule 3 at the top of PROJECT-STATUS and was not followed the first time.
  */
 @Composable
 private fun MessageBar(data: SnackbarDataMMD) {
@@ -919,7 +926,6 @@ private fun MessageBar(data: SnackbarDataMMD) {
     val paper = MaterialTheme.colorScheme.surface
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalDividerMMD(color = ink)
-        HorizontalDividerMMD(color = paper)
         SnackbarMMD(
             snackbarData = data,
             containerColor = paper,
