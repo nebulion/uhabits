@@ -45,19 +45,25 @@ class JdbcDatabase(private val connection: Connection) : Database {
     ): Int {
         return try {
             val fields = ArrayList<String?>()
-            val valuesStr = ArrayList<String>()
+            val args = ArrayList<Any?>()
             for ((key, value) in values) {
                 fields.add("$key=?")
-                valuesStr.add(value.toString())
+                // Passed through as-is, the way insert() does. Converted to a
+                // String here, null bound as the literal text "null", so
+                // clearing a column wrote four characters into it instead of
+                // emptying it -- and reading that back as an Int gave 0. It was
+                // invisible on Android, which uses AndroidDatabase, and surfaced
+                // only once something updated a nullable column off-device.
+                args.add(value)
             }
-            valuesStr.addAll(listOf(*params))
+            args.addAll(params)
             val query = String.format(
                 "update %s set %s where %s",
                 tableName,
                 StringUtils.join(fields, ", "),
                 where
             )
-            val st = buildStatement(query, valuesStr.toTypedArray())
+            val st = buildStatement(query, args.toTypedArray())
             st.executeUpdate()
         } catch (e: SQLException) {
             throw RuntimeException(e)
