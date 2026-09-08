@@ -4,6 +4,13 @@ Handoff notes. Read [eink-design.md](eink-design.md) first for the design rules
 and their sources; this file covers what is done, what is half-done, and what
 is next.
 
+> **There is a second workstream now.** Two-way habit sync over Syncthing, plus
+> a terminal client in a new `:uhabits-desktop` module. It is working end to end
+> on the device and has its own document: **[sync.md](sync.md)**. It is
+> independent of the restyle — it touches no screen and no MMD component — but
+> it added two Settings rows and fixed a request-code collision that had
+> silently disabled Export, Import and Repair from Settings.
+
 > **Start here:** read [MMD's own gaps](#mmds-own-gaps-verified-in-its-source)
 > first. Two of them are live bugs on screens that already look finished, and
 > one of them explains a thing you would otherwise spend an afternoon
