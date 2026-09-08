@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import org.isoron.platform.gui.EinkRefresh
 import org.isoron.platform.gui.toInt
+import org.isoron.uhabits.HabitsApplication
 import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.common.dialogs.CheckmarkDialog
 import org.isoron.uhabits.activities.common.dialogs.ConfirmDeleteDialog
@@ -50,6 +51,7 @@ import org.isoron.uhabits.core.commands.UnarchiveHabitsCommand
 import org.isoron.uhabits.core.models.Habit
 import org.isoron.uhabits.core.models.PaletteColor
 import org.isoron.uhabits.core.preferences.Preferences
+import org.isoron.uhabits.core.tasks.Task
 import org.isoron.uhabits.core.tasks.TaskRunner
 import org.isoron.uhabits.core.ui.ThemeSwitcher
 import org.isoron.uhabits.core.ui.callbacks.OnColorPickedCallback
@@ -66,6 +68,7 @@ import org.isoron.uhabits.core.ui.screens.habits.list.ListHabitsSelectionMenuBeh
 import org.isoron.uhabits.inject.ActivityContext
 import org.isoron.uhabits.inject.ActivityScope
 import org.isoron.uhabits.intents.IntentFactory
+import org.isoron.uhabits.sync.AndroidSync
 import org.isoron.uhabits.tasks.ExportDBTaskFactory
 import org.isoron.uhabits.tasks.ImportDataTask
 import org.isoron.uhabits.tasks.ImportDataTaskFactory
@@ -86,9 +89,19 @@ const val RESULT_EXPORT_CSV = 102
 const val RESULT_EXPORT_DB = 103
 const val RESULT_BUG_REPORT = 104
 const val RESULT_REPAIR_DB = 105
+const val RESULT_SYNC_NOW = 110
+const val RESULT_PICK_SYNC_FOLDER = 111
+const val RESULT_FORGET_SYNC_FOLDER = 112
+const val RESULT_USE_DEFAULT_SYNC_FOLDER = 113
+const val RESULT_GRANT_FILE_ACCESS = 114
 const val REQUEST_OPEN_DOCUMENT = 106
 const val REQUEST_CREATE_DOCUMENT = 107
-const val REQUEST_SETTINGS = 107
+
+// Was also 107. Kotlin's `when` takes the first matching branch, so every
+// result coming back from SettingsActivity was routed to the create-document
+// handler instead -- which silently disabled Export, Import and Repair.
+const val REQUEST_SETTINGS = 108
+const val REQUEST_PICK_SYNC_FOLDER = 109
 
 @ActivityScope
 class ListHabitsScreen
@@ -180,6 +193,7 @@ class ListHabitsScreen
             REQUEST_OPEN_DOCUMENT -> onOpenDocumentResult(resultCode, data)
             REQUEST_CREATE_DOCUMENT -> onCreateDocumentResult(resultCode, data)
             REQUEST_SETTINGS -> onSettingsResult(resultCode)
+            REQUEST_PICK_SYNC_FOLDER -> onPickSyncFolderResult(resultCode, data)
         }
     }
 
@@ -205,7 +219,89 @@ class ListHabitsScreen
             RESULT_EXPORT_DB -> onExportDB()
             RESULT_BUG_REPORT -> behavior.get().onSendBugReport()
             RESULT_REPAIR_DB -> behavior.get().onRepairDB()
+            RESULT_SYNC_NOW -> onSyncNow()
+            RESULT_GRANT_FILE_ACCESS -> showAllFilesAccessScreen()
+            RESULT_USE_DEFAULT_SYNC_FOLDER -> {
+                if (AndroidSync.hasAllFilesAccess()) {
+                    AndroidSync.useDefaultFolder(activity)
+                    onSyncNow()
+                } else {
+                    showAllFilesAccessScreen()
+                }
+            }
+            RESULT_PICK_SYNC_FOLDER -> showPickSyncFolderScreen()
+            RESULT_FORGET_SYNC_FOLDER -> {
+                AndroidSync.clearFolder(activity)
+                postMessage(activity.resources.getString(R.string.sync_folder_cleared))
+            }
         }
+    }
+
+    /**
+     * Opens the system screen where "All files access" is granted.
+     *
+     * Wrapped because the per-app screen does not exist on every build; the
+     * global list always does, and is one tap further away.
+     */
+    private fun showAllFilesAccessScreen() {
+        try {
+            activity.startActivity(AndroidSync.allFilesAccessIntent(activity.packageName))
+        } catch (e: Exception) {
+            try {
+                activity.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+            } catch (e2: Exception) {
+                postMessage(activity.resources.getString(R.string.sync_grant_failed))
+            }
+        }
+    }
+
+    private fun showPickSyncFolderScreen() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            )
+        }
+        activity.startActivityForResult(intent, REQUEST_PICK_SYNC_FOLDER)
+    }
+
+    private fun onPickSyncFolderResult(resultCode: Int, data: Intent?) {
+        val uri = data?.data ?: return
+        if (resultCode != Activity.RESULT_OK) return
+        AndroidSync.setFolder(activity, uri)
+        onSyncNow()
+    }
+
+    fun onSyncNow() {
+        val component = (activity.application as HabitsApplication).component
+        taskRunner.execute(
+            object : Task {
+                private var message: String? = null
+
+                override fun doInBackground() {
+                    message = try {
+                        val report = AndroidSync.run(
+                            activity,
+                            component.habitList,
+                            component.modelFactory,
+                        )
+                        when {
+                            report == null ->
+                                activity.resources.getString(R.string.sync_folder_not_set)
+                            else -> AndroidSync.describe(report)
+                        }
+                    } catch (e: Exception) {
+                        activity.resources.getString(R.string.sync_failed, e.message ?: "")
+                    }
+                }
+
+                override fun onPostExecute() {
+                    model.refresh()
+                    message?.let { postMessage(it) }
+                }
+            }
+        )
     }
 
     override fun applyTheme() {

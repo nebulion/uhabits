@@ -47,6 +47,7 @@ import org.isoron.uhabits.core.tasks.TaskRunner
 import org.isoron.uhabits.core.utils.DateUtils
 import org.isoron.uhabits.core.utils.MidnightTimer
 import org.isoron.uhabits.database.AutoBackup
+import org.isoron.uhabits.sync.AndroidSync
 import org.isoron.uhabits.inject.ActivityContextModule
 import org.isoron.uhabits.inject.DaggerHabitsActivityComponent
 import org.isoron.uhabits.inject.HabitsActivityComponent
@@ -264,6 +265,18 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
                 AutoBackup(this@ListHabitsActivity).run()
             } catch (e: Exception) {
                 Log.e("ListHabitActivity", "TaskRunner failed", e)
+            }
+            // Sync sits here for the same reason the backup does: it is the
+            // moment the app is known to be in the foreground and idle. It
+            // returns immediately when no folder has been chosen.
+            try {
+                AndroidSync.run(
+                    this@ListHabitsActivity,
+                    appComponent.habitList,
+                    appComponent.modelFactory,
+                )
+            } catch (e: Exception) {
+                Log.e("ListHabitActivity", "Sync failed", e)
             }
         }
         parseIntents()

@@ -18,6 +18,16 @@
   -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        Needed to read and write the Syncthing folder on shared storage.
+        With targetSdk 36 an app cannot touch /sdcard/Sync any other way, and
+        the Storage Access Framework alternative depends on the user getting
+        through a file picker on an E Ink panel. Syncthing-Fork, which owns the
+        folder on the other side, holds this same permission. This build is
+        sideloaded and never goes near a store, so the distribution rules that
+        make this permission awkward do not apply.
+    -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
