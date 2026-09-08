@@ -19,6 +19,7 @@
 
 plugins {
     kotlin("multiplatform")
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktlint.plugin)
 }
 
@@ -49,6 +50,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core.jvm)
                 implementation(libs.annotation)
                 implementation(libs.jsr305)
+                implementation(libs.kotlinx.serialization.json)
                 implementation(libs.opencsv)
                 implementation(libs.commons.codec)
                 implementation(libs.commons.lang3)
