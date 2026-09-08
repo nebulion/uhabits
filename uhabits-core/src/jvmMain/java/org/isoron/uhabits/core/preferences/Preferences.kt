@@ -226,6 +226,7 @@ open class Preferences(private val storage: Storage) {
             val weekday = storage.getString("pref_first_weekday", "")
             return if (weekday.isEmpty()) getFirstWeekdayNumberAccordingToLocale() else weekday.toInt()
         }
+
     /**
      * Sets the first day of the week, 1 for Sunday through 7 for Saturday, or
      * a negative number to go back to following the system locale.
