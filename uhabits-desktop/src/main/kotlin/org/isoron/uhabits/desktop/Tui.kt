@@ -60,8 +60,22 @@ class Tui(private val store: HabitStore, private val config: Config) {
     private val habits: List<Habit>
         get() = store.habitList.filter { !it.isArchived }
 
-    fun run() {
+    /**
+     * Returns false when this terminal cannot host a full-screen UI.
+     *
+     * JLine reports a "dumb" terminal when it cannot negotiate cursor control --
+     * a plain conhost window without virtual-terminal processing, output piped
+     * to a file, or a bare TERM. Drawing to it anyway produces either escape
+     * codes printed literally or, worse, an apparently empty screen, which is
+     * indistinguishable from "the program has no data". The caller prints the
+     * list instead.
+     */
+    fun run(): Boolean {
         val terminal = TerminalBuilder.builder().system(true).build()
+        if (terminal.type == Terminal.TYPE_DUMB || terminal.type == Terminal.TYPE_DUMB_COLOR) {
+            terminal.close()
+            return false
+        }
         try {
             terminal.enterRawMode()
             terminal.puts(Capability.enter_ca_mode)
@@ -74,6 +88,7 @@ class Tui(private val store: HabitStore, private val config: Config) {
             terminal.flush()
             terminal.close()
         }
+        return true
     }
 
     /**

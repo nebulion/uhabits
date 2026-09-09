@@ -61,9 +61,9 @@ fun main(args: Array<String>) {
     System.setOut(PrintStream(System.out, true, StandardCharsets.UTF_8))
 
     val argv = args.toMutableList()
-    val dbOverride = takeOption(argv, "--db")?.let(::File)
-    val syncOverride = takeOption(argv, "--sync-folder")?.let(::File)
-    val configOverride = takeOption(argv, "--config")?.let(::File)
+    val dbOverride = takeOption(argv, "--db")?.let(::resolvePath)
+    val syncOverride = takeOption(argv, "--sync-folder")?.let(::resolvePath)
+    val configOverride = takeOption(argv, "--config")?.let(::resolvePath)
 
     val config = if (configOverride != null) Config(configOverride) else Config()
     if (syncOverride != null) config.syncFolder = syncOverride
@@ -81,7 +81,19 @@ fun main(args: Array<String>) {
     if (command == "where") {
         val db = dbOverride ?: DesktopEnv.defaultDatabase
         println("database    $db")
-        println("sync folder ${config.syncFolder ?: "(not set - pass --sync-folder once)"}")
+        // Say how many habits are actually in the folder, not just its path. A
+        // path that looks plausible but points somewhere empty is the failure
+        // that reads as "sync does nothing" with no other symptom.
+        val folder = config.syncFolder
+        val contents = when {
+            folder == null -> "(not set - pass --sync-folder once)"
+            !folder.isDirectory -> "$folder  << does not exist"
+            else -> {
+                val n = folder.listFiles()?.count { it.isDirectory && !it.name.startsWith(".") } ?: 0
+                if (n == 0) "$folder  << no habits in it" else "$folder  ($n habits)"
+            }
+        }
+        println("sync folder $contents")
         println("merge base  ${File(db.absoluteFile.parentFile, db.nameWithoutExtension + ".sync-base")}")
         println("config      ${configOverride ?: DesktopEnv.configFile}")
         return
@@ -96,7 +108,12 @@ fun main(args: Array<String>) {
             "add" -> add(store, rest)
             "delete" -> delete(store, rest)
             "sync" -> sync(store, config)
-            "tui" -> Tui(store, config).run()
+            "tui" -> if (!Tui(store, config).run()) {
+                System.err.println("This terminal can't run the full-screen client, so here is the list.")
+                System.err.println("Try Windows Terminal, or use `uhabits list` directly.")
+                System.err.println()
+                list(store, emptyList())
+            }
             "dump" -> {
                 val rows = rest.getOrNull(0)?.toIntOrNull() ?: 24
                 val cols = rest.getOrNull(1)?.toIntOrNull() ?: 100
@@ -109,6 +126,27 @@ fun main(args: Array<String>) {
             }
         }
     }
+}
+
+/**
+ * Expands a leading `~`, and makes the result absolute.
+ *
+ * A shell normally expands `~` before the program ever sees it -- but only its
+ * own. PowerShell hands the literal character straight to a native executable,
+ * so `--sync-folder ~/Sync/loop` arrived here as the three-segment relative path
+ * `~/Sync/loop` and quietly created a directory actually named `~` next to the
+ * working directory. Sync then ran against that empty folder and truthfully
+ * reported nothing to do, which is a miserable thing to debug.
+ */
+private fun resolvePath(path: String): File {
+    val trimmed = path.trim().trim('"')
+    val expanded = when {
+        trimmed == "~" -> File(System.getProperty("user.home"))
+        trimmed.startsWith("~/") || trimmed.startsWith("~\\") ->
+            File(System.getProperty("user.home"), trimmed.drop(2))
+        else -> File(trimmed)
+    }
+    return expanded.absoluteFile
 }
 
 private fun takeOption(argv: MutableList<String>, name: String): String? {
@@ -125,7 +163,22 @@ private fun list(store: HabitStore, args: List<String>) {
     val days = args.indexOf("--days").let { if (it >= 0) args[it + 1].toInt() else 21 }
     val habits = store.habitList.filter { !it.isArchived }
     if (habits.isEmpty()) {
-        println("No habits yet. Copy a Loop backup over ${store.file}, or run sync.")
+        // Say which file, how big it is and what is in it. "No habits yet" on
+        // its own cannot tell an empty database from a full one whose habits
+        // were all filtered out, nor from a path that resolved somewhere other
+        // than where the reader expects -- and all three have been suspected.
+        val total = store.habitList.size()
+        println("No habits to show.")
+        println("  database   ${store.file.absolutePath}")
+        println("  exists     ${store.file.isFile}, ${store.file.length()} bytes")
+        println("  habits     $total in the file, ${total - habits.size} of them archived")
+        println("  user.home  ${System.getProperty("user.home")}")
+        println("  APPDATA    ${System.getenv("APPDATA")}")
+        println("  java       ${System.getProperty("java.version")} at ${System.getProperty("java.home")}")
+        if (total == 0) {
+            println()
+            println("The file really is empty. Run `uhabits sync` to pull them from the shared folder.")
+        }
         return
     }
     val end = DateUtils.getTodayWithOffset()
