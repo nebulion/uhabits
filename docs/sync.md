@@ -67,6 +67,7 @@ Windows both live under `%APPDATA%\uhabits`. `uhabits where` prints them.
 
 | | |
 | --- | --- |
+| `uhabits gui` | the window |
 | `uhabits` | the terminal client |
 | `uhabits list [--days N]` | the grid, printed once |
 | `uhabits show <habit>` | one habit, with streaks |

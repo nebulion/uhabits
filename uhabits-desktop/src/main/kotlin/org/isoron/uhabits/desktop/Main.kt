@@ -45,6 +45,7 @@ uhabits - Loop Habit Tracker on the desktop
                                  create a habit
   uhabits delete <name> --yes    delete a habit and its history
   uhabits sync                   reconcile with the shared folder
+  uhabits gui                    the window
   uhabits tui                    the full-screen terminal client
   uhabits where                  paths this client is using
   uhabits dump [rows cols]       print one frame of the terminal client
@@ -108,6 +109,11 @@ fun main(args: Array<String>) {
             "add" -> add(store, rest)
             "delete" -> delete(store, rest)
             "sync" -> sync(store, config)
+            "gui" -> if (!Gui(store, config).show()) {
+                System.err.println("No display available, so here is the list instead.")
+                System.err.println()
+                list(store, emptyList())
+            }
             "tui" -> if (!Tui(store, config).run()) {
                 System.err.println("This terminal can't run the full-screen client, so here is the list.")
                 System.err.println("Try Windows Terminal, or use `uhabits list` directly.")
