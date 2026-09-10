@@ -48,14 +48,15 @@ object Grid {
             value < 0 -> "·"
             else -> formatNumber(value / 1000.0)
         }
-        value == Entry.YES_MANUAL -> "✓"
-        // Kept distinct from a manual tick on purpose. A non-daily habit
-        // credits the days around one you did perform, and the phone's grid
-        // draws those the same as the real thing -- so a 3-times-a-week habit
-        // reads as a wall of ticks and you cannot see what you actually did.
-        value == Entry.YES_AUTO -> "+"
-        value == Entry.NO -> "✗"
-        value == Entry.SKIP -> "→"
+        // One shape family rather than a tick, a cross and an arrow borrowed
+        // from three different places. Filled means you did it; the same circle
+        // hollow means the frequency credited it; everything else is a mark of
+        // its own. Shape carries the meaning on its own, so the grid still
+        // reads with no colour at all.
+        value == Entry.YES_MANUAL -> "●"
+        value == Entry.YES_AUTO -> "○"
+        value == Entry.NO -> "×"
+        value == Entry.SKIP -> "–"
         else -> "·"
     }
 

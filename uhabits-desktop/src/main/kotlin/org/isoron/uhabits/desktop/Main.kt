@@ -191,7 +191,7 @@ private fun list(store: HabitStore, args: List<String>) {
     for (line in Grid.headerLines(end, days)) println(line)
     for (habit in habits) println(Grid.row(habit, end, days))
     println()
-    println("  ✓ done   + credited by frequency   ✗ missed   → skipped   · nothing recorded")
+    println("  ● done   ○ credited by frequency   × missed   – skipped   · nothing recorded")
 }
 
 private fun show(store: HabitStore, args: List<String>) {

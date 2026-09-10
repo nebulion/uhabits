@@ -102,10 +102,45 @@ class Gui(private val store: HabitStore, private val config: Config) {
         return true
     }
 
+    /**
+     * Paints the whole toolkit gruvbox dark, before any component is built.
+     *
+     * The cross-platform look and feel is used rather than the system one, and
+     * that is the point: the Windows and GTK look and feels draw many of their
+     * components natively and quietly ignore colour keys, so a dark theme comes
+     * out half-applied -- dark table, white buttons. The cross-platform one
+     * honours these, and honours them the same way on both machines.
+     */
+    private fun applyDarkTheme() {
+        runCatching { UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()) }
+        val put = { key: String, value: Any -> UIManager.put(key, value) }
+        for (key in listOf(
+            "Panel.background", "OptionPane.background", "ToolBar.background",
+            "ScrollPane.background", "Viewport.background", "MenuBar.background",
+        )) put(key, BG0)
+        for (key in listOf("Button.background", "TextField.background", "ComboBox.background")) {
+            put(key, BG1)
+        }
+        for (key in listOf(
+            "Label.foreground", "Button.foreground", "OptionPane.messageForeground",
+            "TextField.foreground", "ComboBox.foreground",
+        )) put(key, FG)
+        put("TextField.caretForeground", FG)
+        put("Table.background", BG0)
+        put("Table.foreground", FG)
+        put("Table.gridColor", BG2)
+        put("TableHeader.background", BG1)
+        put("TableHeader.foreground", GRAY)
+        put("Button.select", BG2)
+        put("ToolBar.borderColor", BG2)
+        put("SplitPane.background", BG0)
+    }
+
     private fun build() {
-        runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
+        applyDarkTheme()
 
         frame = JFrame("Loop Habits — ${store.file.name}")
+        frame.contentPane.background = BG0
         frame.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
         frame.layout = BorderLayout()
         frame.addWindowListener(object : WindowAdapter() {
@@ -114,7 +149,11 @@ class Gui(private val store: HabitStore, private val config: Config) {
 
         table.rowHeight = 26
         table.setShowGrid(true)
-        table.gridColor = Color(0xE0, 0xDE, 0xD6)
+        table.gridColor = BG2
+        table.background = BG0
+        table.foreground = FG
+        table.tableHeader.background = BG1
+        table.tableHeader.foreground = GRAY
         table.autoResizeMode = JTable.AUTO_RESIZE_OFF
         table.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
         table.tableHeader.reorderingAllowed = false
@@ -126,8 +165,16 @@ class Gui(private val store: HabitStore, private val config: Config) {
         sizeColumns()
 
         frame.add(toolbar(), BorderLayout.NORTH)
-        frame.add(JScrollPane(table), BorderLayout.CENTER)
-        status.border = BorderFactory.createEmptyBorder(4, 8, 4, 8)
+        val scroll = JScrollPane(table)
+        scroll.background = BG0
+        scroll.viewport.background = BG0
+        scroll.border = BorderFactory.createEmptyBorder()
+        frame.add(scroll, BorderLayout.CENTER)
+
+        status.border = BorderFactory.createEmptyBorder(6, 10, 6, 10)
+        status.isOpaque = true
+        status.background = BG1
+        status.foreground = GRAY
         frame.add(status, BorderLayout.SOUTH)
 
         frame.preferredSize = Dimension(1000, 640)
@@ -143,7 +190,9 @@ class Gui(private val store: HabitStore, private val config: Config) {
     private fun toolbar(): JToolBar {
         val bar = JToolBar()
         bar.isFloatable = false
-        bar.border = BorderFactory.createEmptyBorder(4, 4, 4, 4)
+        bar.isOpaque = true
+        bar.background = BG1
+        bar.border = BorderFactory.createEmptyBorder(6, 6, 6, 6)
 
         bar.add(button("◀") { end = end.minus(days); refresh() })
         bar.add(button("Today") { end = DateUtils.getTodayWithOffset(); refresh() })
@@ -163,6 +212,9 @@ class Gui(private val store: HabitStore, private val config: Config) {
 
     private fun button(text: String, action: () -> Unit) = JButton(text).apply {
         isFocusable = false
+        background = BG2
+        foreground = FG
+        border = BorderFactory.createEmptyBorder(6, 12, 6, 12)
         addActionListener { action() }
     }
 
@@ -203,11 +255,12 @@ class Gui(private val store: HabitStore, private val config: Config) {
                 table, value, isSelected, hasFocus, row, column,
             ) as JLabel
 
+            label.background = if (isSelected) BG2 else BG0
+
             if (column == 0) {
                 label.horizontalAlignment = SwingConstants.LEFT
                 label.border = BorderFactory.createEmptyBorder(0, 8, 0, 0)
-                label.foreground = Color(0x3C, 0x38, 0x36)
-                label.background = if (isSelected) SELECTED else Color.WHITE
+                label.foreground = FG
                 return label
             }
 
@@ -216,30 +269,28 @@ class Gui(private val store: HabitStore, private val config: Config) {
             label.horizontalAlignment = SwingConstants.CENTER
             label.border = null
             label.text = if (habit == null) "" else Grid.cell(habit, v)
-            label.font = label.font.deriveFont(Font.PLAIN, 14f)
+            label.font = label.font.deriveFont(Font.PLAIN, 15f)
             label.foreground = foregroundFor(v)
-            label.background = if (isSelected) SELECTED else backgroundFor(v)
             return label
         }
     }
 
-    // Gruvbox, matched to the terminal client so the two do not disagree about
-    // what a "done" day looks like.
+    /**
+     * The same colours the terminal client uses, so the two cannot disagree
+     * about what a finished day looks like.
+     *
+     * Cells carry no fill of their own. On a dark page a tinted background
+     * behind every square turns the grid into a patchwork and the marks stop
+     * being the thing you read; one colour per glyph on one flat page is
+     * quieter and says exactly as much.
+     */
     private fun foregroundFor(value: Int) = when (value) {
-        Entry.YES_MANUAL -> Color(0x79, 0x74, 0x0E)
-        Entry.YES_AUTO -> Color(0x42, 0x7B, 0x58)
-        Entry.NO -> Color(0x9D, 0x00, 0x06)
-        Entry.SKIP -> Color(0x07, 0x66, 0x78)
-        Entry.UNKNOWN -> Color(0xBD, 0xAE, 0x93)
-        else -> Color(0xB5, 0x76, 0x14)
-    }
-
-    private fun backgroundFor(value: Int) = when (value) {
-        Entry.YES_MANUAL -> Color(0xEC, 0xF3, 0xDE)
-        Entry.YES_AUTO -> Color(0xF3, 0xF7, 0xEE)
-        Entry.NO -> Color(0xFC, 0xEB, 0xEB)
-        Entry.SKIP -> Color(0xE9, 0xF2, 0xF5)
-        else -> Color.WHITE
+        Entry.YES_MANUAL -> GREEN
+        Entry.YES_AUTO -> AQUA
+        Entry.NO -> RED
+        Entry.SKIP -> BLUE
+        Entry.UNKNOWN -> BG2
+        else -> YELLOW
     }
 
     private fun sizeColumns() {
@@ -389,6 +440,16 @@ class Gui(private val store: HabitStore, private val config: Config) {
     }
 
     companion object {
-        private val SELECTED = Color(0xEB, 0xDB, 0xB2)
+        private fun color(hex: Int) = Color(hex)
+        private val BG0 = color(GruvboxPalette.BG0)
+        private val BG1 = color(GruvboxPalette.BG1)
+        private val BG2 = color(GruvboxPalette.BG2)
+        private val FG = color(GruvboxPalette.FG)
+        private val GRAY = color(GruvboxPalette.GRAY)
+        private val RED = color(GruvboxPalette.RED)
+        private val GREEN = color(GruvboxPalette.GREEN)
+        private val YELLOW = color(GruvboxPalette.YELLOW)
+        private val BLUE = color(GruvboxPalette.BLUE)
+        private val AQUA = color(GruvboxPalette.AQUA)
     }
 }
