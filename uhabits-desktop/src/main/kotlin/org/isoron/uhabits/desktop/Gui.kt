@@ -400,6 +400,7 @@ class Gui(private val store: HabitStore, private val config: Config) {
                     FileSyncFolder(folder),
                     FileSyncFolder(store.baseDir),
                     folderId = folder.absolutePath,
+                    localStamp = store::stamp,
                 )
             } catch (e: Exception) {
                 failure = e

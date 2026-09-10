@@ -69,6 +69,7 @@ class SyncRoundTripTest {
             FileSyncFolder(into),
             FileSyncFolder(baseDir),
             folderId = into.absolutePath,
+            localStamp = ::stamp,
         )
     }
 
@@ -207,5 +208,55 @@ class SyncRoundTripTest {
         assertThat(report.deletedLocally.size, equalTo(0))
         // ...and the habits are published into the new folder.
         assertThat(other.listFiles()!!.count { it.isDirectory && !it.name.startsWith(".") }, equalTo(2))
+    }
+
+    /**
+     * The skip has to be safe before it is fast.
+     *
+     * Reading and comparing everything to conclude that nothing moved was five
+     * seconds on the phone, on every launch. Skipping that is only allowed if a
+     * skipped sync is provably one that had nothing to do -- so these check
+     * both halves: that it does skip when idle, and that it stops skipping the
+     * moment either side changes.
+     */
+    @Test
+    fun `an idle sync skips the comparison entirely`() {
+        listOf("Zebra", "Apple").forEach { alice.add(it) }
+        alice.sync()
+        bob.sync()
+        alice.sync()
+
+        val idle = alice.sync()
+        assertThat(idle.skipped, equalTo(true))
+        assertThat(idle.isEmpty, equalTo(true))
+    }
+
+    @Test
+    fun `a local change is never skipped`() {
+        alice.add("Apple")
+        alice.sync()
+        assertThat(alice.sync().skipped, equalTo(true))
+
+        alice.set("Apple", "2026-09-06", Entry.YES_MANUAL)
+        val report = alice.sync()
+
+        assertThat(report.skipped, equalTo(false))
+        assertThat(report.filesWritten, equalTo(1))
+    }
+
+    @Test
+    fun `a change arriving in the folder is never skipped`() {
+        alice.add("Apple")
+        alice.sync()
+        bob.sync()
+        assertThat(bob.sync().skipped, equalTo(true))
+
+        // Alice ticks a day and publishes it; Syncthing would carry the file.
+        alice.set("Apple", "2026-09-06", Entry.YES_MANUAL)
+        alice.sync()
+
+        val report = bob.sync()
+        assertThat(report.skipped, equalTo(false))
+        assertThat(bob.valueOf("Apple", "2026-09-06"), equalTo(Entry.YES_MANUAL))
     }
 }

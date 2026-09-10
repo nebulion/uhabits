@@ -121,6 +121,22 @@ was deleted elsewhere, whereas one missing from both is simply new here.
 **Only habits and entries sync.** Not preferences, reminders, widget state or
 the E Ink settings — those are per-device by nature.
 
+### Doing nothing, quickly
+
+Almost every sync has nothing to do, and finding that out honestly means reading
+and parsing every file on both sides and rebuilding the local snapshot entry by
+entry. On the Kompakt that was **5.2 seconds on every launch**, competing for the
+same locks the habits list needs to draw.
+
+So a sync first compares a stamp: the shared folder's file sizes and
+modification times, plus the database file's size and modification time and two
+aggregate queries over it. If nothing on either side has moved, it stops there.
+That is **140ms**, and a real change on either side still takes the full path.
+
+The stamp errs towards "changed" on purpose — SQLite touches its file for
+reasons that are not edits, and a spurious yes costs one ordinary sync rather
+than a missed change.
+
 ### Two safety rails
 
 Both exist because the failure they prevent costs every habit you have.

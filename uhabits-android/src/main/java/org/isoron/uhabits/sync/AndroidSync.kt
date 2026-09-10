@@ -30,7 +30,10 @@ import org.isoron.uhabits.core.models.HabitList
 import org.isoron.uhabits.core.models.ModelFactory
 import org.isoron.uhabits.core.sync.FileSyncFolder
 import org.isoron.uhabits.core.sync.SyncEngine
+import org.isoron.uhabits.core.models.sqlite.SQLModelFactory
 import org.isoron.uhabits.core.sync.SyncReport
+import org.isoron.uhabits.core.sync.databaseContentStamp
+import org.isoron.uhabits.utils.DatabaseUtils
 import java.io.File
 
 /**
@@ -126,6 +129,21 @@ object AndroidSync {
         File(context.filesDir, "sync-base").apply { mkdirs() }
 
     /**
+     * A cheap value that changes whenever the habit database could have changed.
+     *
+     * Size and modification time of the database file. It errs towards saying
+     * "changed": SQLite touches the file for reasons that are not edits, and a
+     * spurious yes costs one full sync rather than a wrong answer.
+     */
+    private fun databaseStamp(context: Context, modelFactory: ModelFactory): String {
+        val file = DatabaseUtils.getDatabaseFile(context)
+        val content = (modelFactory as? SQLModelFactory)
+            ?.let { databaseContentStamp(it.database) }
+            ?: ""
+        return "${file.length()}@${file.lastModified()}|$content"
+    }
+
+    /**
      * A one-line record of what the last sync did, or why it did nothing.
      *
      * `Log.d` and `Log.e` do not reach logcat on the Kompakt -- see
@@ -156,15 +174,18 @@ object AndroidSync {
             note(context, "no usable folder. pref=${folderUri(context)} allFilesAccess=${hasAllFilesAccess()}")
             return null
         }
+        val startedAt = System.currentTimeMillis()
         return try {
             SyncEngine(habitList, modelFactory).sync(
                 remote = remote,
                 base = FileSyncFolder(baseDir(context)),
                 folderId = folderUri(context).toString(),
+                localStamp = { databaseStamp(context, modelFactory) },
             ).also {
                 note(
                     context,
-                    "ok: wrote=${it.filesWritten} created=${it.createdLocally.size} " +
+                    "ok in ${System.currentTimeMillis() - startedAt}ms: " +
+                        "wrote=${it.filesWritten} created=${it.createdLocally.size} " +
                         "updated=${it.updatedLocally.size} deleted=${it.deletedLocally.size} " +
                         "aborted=${it.abortedEmptyFolder}",
                 )

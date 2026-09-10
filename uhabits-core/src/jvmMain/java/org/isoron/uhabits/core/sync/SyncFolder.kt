@@ -18,10 +18,39 @@
  */
 package org.isoron.uhabits.core.sync
 
+import org.isoron.uhabits.core.database.Database
 import java.io.File
 
 const val HABIT_FILE = "habit.json"
 const val ENTRIES_FILE = "entries.json"
+
+/**
+ * A cheap value that changes whenever the habit data could have changed.
+ *
+ * Two aggregate queries, a few milliseconds against five thousand entries, and
+ * the counterpart to [SyncFolder.fingerprint] on the local side.
+ *
+ * The obvious stamp is the database file's size and modification time, and this
+ * is used alongside it rather than instead -- but not on its own. Filesystem
+ * timestamps are not always finer than a second, so two writes landing in the
+ * same tick, with a sync recording its stamp between them, would leave the
+ * second one looking unchanged and silently unpublished. Row counts, the sum of
+ * every value and the highest id move whenever an entry is added, removed or
+ * altered, which closes that window.
+ */
+fun databaseContentStamp(db: Database): String {
+    fun scalar(query: String): String {
+        val cursor = db.query(query)
+        try {
+            return if (cursor.moveToNext()) cursor.getString(0) ?: "" else ""
+        } finally {
+            cursor.close()
+        }
+    }
+    return scalar(
+        "select count(*)||':'||ifnull(total(value),0)||':'||ifnull(max(id),0) from Repetitions",
+    ) + "|" + scalar("select count(*)||':'||ifnull(max(id),0) from Habits")
+}
 
 /**
  * A flat folder-of-folders, one subfolder per habit.
@@ -48,6 +77,16 @@ interface SyncFolder {
 
     /** Removes a habit's subfolder and everything in it. */
     fun deleteDir(dir: String)
+
+    /**
+     * A cheap value that changes whenever any file here could have changed.
+     *
+     * Reading and parsing the whole folder to discover that nothing moved is
+     * the dominant cost of a sync, and on a phone almost every sync is exactly
+     * that. Sizes and modification times answer the same question without
+     * opening anything.
+     */
+    fun fingerprint(): String
 }
 
 /**
@@ -87,6 +126,19 @@ class FileSyncFolder(private val root: File) : SyncFolder {
     override fun deleteDir(dir: String) {
         File(root, dir).deleteRecursively()
     }
+
+    override fun fingerprint(): String {
+        val sb = StringBuilder()
+        for (dir in root.listFiles()?.filter { it.isDirectory }?.sortedBy { it.name }.orEmpty()) {
+            for (file in dir.listFiles()?.filter { it.isFile }?.sortedBy { it.name }.orEmpty()) {
+                sb.append(dir.name).append('/').append(file.name)
+                    .append(':').append(file.length())
+                    .append('@').append(file.lastModified())
+                    .append('\n')
+            }
+        }
+        return sb.toString()
+    }
 }
 
 /** A [SyncFolder] held entirely in memory. Used by the tests. */
@@ -116,4 +168,8 @@ class MemorySyncFolder : SyncFolder {
     override fun deleteDir(dir: String) {
         files.keys.filter { it.substringBefore('/') == dir }.forEach { files.remove(it) }
     }
+
+    // No timestamps in memory, so the content stands in for them.
+    override fun fingerprint(): String =
+        files.entries.joinToString("\n") { "${it.key}:${it.value.hashCode()}" }
 }

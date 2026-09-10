@@ -304,6 +304,7 @@ fun sync(store: HabitStore, config: Config): SyncReport {
         FileSyncFolder(folder),
         FileSyncFolder(store.baseDir),
         folderId = folder.absolutePath,
+        localStamp = store::stamp,
     )
     printReport(report)
     return report

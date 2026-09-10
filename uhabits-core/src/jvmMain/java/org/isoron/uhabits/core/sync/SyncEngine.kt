@@ -52,10 +52,32 @@ class SyncEngine(
      * When it does not match what the base was last built against, the base is
      * discarded rather than trusted -- see [checkFolderIdentity].
      */
-    fun sync(remote: SyncFolder, base: SyncFolder, folderId: String? = null): SyncReport {
+    fun sync(
+        remote: SyncFolder,
+        base: SyncFolder,
+        folderId: String? = null,
+        localStamp: (() -> String)? = null,
+    ): SyncReport {
         val report = SyncReport()
 
         checkFolderIdentity(base, folderId, report)
+
+        // Almost every sync has nothing to do, and finding that out the honest
+        // way means reading and parsing every file on both sides and rebuilding
+        // the local snapshot entry by entry -- five seconds on a phone with
+        // forty habits, on every launch, to conclude that nothing moved.
+        //
+        // A stamp over the folder's sizes and modification times, plus whatever
+        // the caller can say cheaply about the local database, answers the same
+        // question without opening anything. It is deliberately conservative:
+        // any doubt shows up as a changed stamp and costs one full sync, which
+        // is simply the old behaviour.
+        val stampBefore = localStamp?.let { remote.fingerprint() + " " + it() }
+        if (stampBefore != null && !report.baseReset && base.read(META_DIR, STAMP_FILE) == stampBefore) {
+            report.skipped = true
+            return report
+        }
+
         healConflicts(remote, report)
 
         val local = readLocal()
@@ -81,6 +103,14 @@ class SyncEngine(
 
         if (report.createdLocally.isNotEmpty() || report.deletedLocally.isNotEmpty()) {
             habitList.resort()
+        }
+
+        // Recomputed rather than reused: this sync may have written to the
+        // folder and to the database, so the stamp taken on the way in is
+        // already stale. Recording the stale one would cost a full sync on the
+        // next launch -- correct, but the very thing this avoids.
+        if (localStamp != null) {
+            base.write(META_DIR, STAMP_FILE, remote.fingerprint() + " " + localStamp())
         }
         return report
     }
@@ -478,6 +508,9 @@ class SyncReport {
     /** The base was thrown away because it belonged to a different folder. */
     var baseReset = false
 
+    /** Nothing on either side had changed since the last sync, so nothing was read. */
+    var skipped = false
+
     val isEmpty: Boolean
         get() = createdLocally.isEmpty() && updatedLocally.isEmpty() &&
             deletedLocally.isEmpty() && deletedRemotely.isEmpty() &&
@@ -490,6 +523,7 @@ class SyncReport {
  */
 const val META_DIR = ".meta"
 const val FOLDER_FILE = "folder"
+const val STAMP_FILE = "stamp"
 
 /**
  * `read-30-min__a3f19c02...`

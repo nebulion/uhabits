@@ -111,11 +111,52 @@ val SYNC_JSON = Json {
     ignoreUnknownKeys = true
 }
 
-fun formatSyncDate(unixTime: Long): String =
-    DateFormats.getCSVDateFormat().format(Date(unixTime))
+private const val MILLIS_PER_DAY = 86_400_000L
 
-fun parseSyncDate(date: String): Long =
-    DateFormats.getCSVDateFormat().parse(date).time
+/**
+ * `yyyy-MM-dd` in UTC, by arithmetic rather than through [java.text.SimpleDateFormat].
+ *
+ * These two run once per entry per sync -- about five thousand times each on a
+ * real database -- and the obvious implementation built a fresh
+ * `SimpleDateFormat` on every call, because the shared one is not thread-safe
+ * and cannot be cached without care. Parsing and formatting that way dominated
+ * the whole sync.
+ *
+ * [Timestamp] is UTC midnight, so no timezone or calendar is involved: this is
+ * the civil-from-days conversion, exact for every date the app can hold.
+ */
+fun formatSyncDate(unixTime: Long): String {
+    val days = Math.floorDiv(unixTime, MILLIS_PER_DAY)
+    val z = days + 719468
+    val era = (if (z >= 0) z else z - 146096) / 146097
+    val doe = z - era * 146097
+    val yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365
+    val doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+    val mp = (5 * doy + 2) / 153
+    val day = (doy - (153 * mp + 2) / 5 + 1).toInt()
+    val month = (if (mp < 10) mp + 3 else mp - 9).toInt()
+    val year = (yoe + era * 400 + if (month <= 2) 1 else 0).toInt()
+
+    val sb = StringBuilder(10)
+    sb.append(year / 1000).append(year / 100 % 10).append(year / 10 % 10).append(year % 10)
+    sb.append('-').append(month / 10).append(month % 10)
+    sb.append('-').append(day / 10).append(day % 10)
+    return sb.toString()
+}
+
+fun parseSyncDate(date: String): Long {
+    val year = date.substring(0, 4).toInt().toLong()
+    val month = date.substring(5, 7).toInt().toLong()
+    val day = date.substring(8, 10).toInt().toLong()
+
+    val y = if (month <= 2) year - 1 else year
+    val era = (if (y >= 0) y else y - 399) / 400
+    val yoe = y - era * 400
+    val mp = if (month > 2) month - 3 else month + 9
+    val doy = (153 * mp + 2) / 5 + day - 1
+    val doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+    return (era * 146097 + doe - 719468) * MILLIS_PER_DAY
+}
 
 fun HabitRecord.toSyncHabit(): SyncHabit = SyncHabit(
     uuid = uuid!!,

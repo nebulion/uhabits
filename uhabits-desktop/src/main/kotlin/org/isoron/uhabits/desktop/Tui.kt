@@ -388,6 +388,7 @@ class Tui(private val store: HabitStore, private val config: Config) {
                     FileSyncFolder(folder),
                     FileSyncFolder(store.baseDir),
                     folderId = folder.absolutePath,
+                    localStamp = store::stamp,
                 )
             store.recomputeAll()
             habitRow = habitRow.coerceIn(0, (habits.size - 1).coerceAtLeast(0))

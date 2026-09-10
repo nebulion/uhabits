@@ -25,6 +25,7 @@ import org.isoron.uhabits.core.database.MigrationHelper
 import org.isoron.uhabits.core.models.Habit
 import org.isoron.uhabits.core.models.HabitList
 import org.isoron.uhabits.core.models.sqlite.SQLModelFactory
+import org.isoron.uhabits.core.sync.databaseContentStamp
 import java.io.File
 import java.sql.DriverManager
 
@@ -53,6 +54,22 @@ class HabitStore(val file: File) : AutoCloseable {
      */
     val baseDir: File
         get() = File(file.absoluteFile.parentFile, file.nameWithoutExtension + ".sync-base")
+
+    /**
+     * A cheap value that changes whenever this database could have changed.
+     *
+     * The file's size and modification time, plus two aggregate queries. The
+     * file stamp alone catches everything a write touches, including a rename;
+     * the aggregates cover the case where two writes share one filesystem
+     * timestamp. Both together cost a few milliseconds and replace reading the
+     * whole database to find out that nothing moved.
+     *
+     * It errs towards "changed": SQLite touches the file for reasons that are
+     * not edits, and a spurious yes costs one full sync rather than a wrong
+     * answer.
+     */
+    fun stamp(): String =
+        "${file.length()}@${file.lastModified()}|" + databaseContentStamp(database)
 
     init {
         file.parentFile?.mkdirs()

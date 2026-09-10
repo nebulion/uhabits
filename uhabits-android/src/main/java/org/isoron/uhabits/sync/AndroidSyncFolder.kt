@@ -115,6 +115,26 @@ class AndroidSyncFolder(
         filesIn(dir).remove(file)?.delete()
     }
 
+    /**
+     * Sizes and modification times, from the listing already in hand.
+     *
+     * `DocumentFile.length()` and `lastModified()` each cost a query, so this is
+     * dozens of round trips -- but it is still far cheaper than opening and
+     * parsing every file, which is what it saves when nothing has changed.
+     */
+    override fun fingerprint(): String {
+        val sb = StringBuilder()
+        for (dir in dirs.keys.sorted()) {
+            for ((name, doc) in filesIn(dir).toSortedMap()) {
+                sb.append(dir).append('/').append(name)
+                    .append(':').append(doc.length())
+                    .append('@').append(doc.lastModified())
+                    .append('\n')
+            }
+        }
+        return sb.toString()
+    }
+
     override fun deleteDir(dir: String) {
         val doc = dirs.remove(dir) ?: return
         // Delete the contents first. DocumentsContract.deleteDocument is
