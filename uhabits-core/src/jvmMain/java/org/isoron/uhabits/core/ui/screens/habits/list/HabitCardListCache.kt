@@ -61,7 +61,9 @@ class HabitCardListCache @Inject constructor(
 
     private val logger = logging.getLogger("HabitCardListCache")
 
-    private var checkmarkCount = 0
+    /** How many days back each habit's check-marks are fetched for. */
+    var checkmarkCount = 0
+        private set
     private var currentFetchTask: Task? = null
     private var listener: Listener
     private val data: CacheData

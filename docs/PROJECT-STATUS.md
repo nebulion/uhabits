@@ -555,6 +555,32 @@ both are 6 now.
 - `isShortToggleEnabled` swaps *which gesture* toggles; it does not change the
   cycle. Numerical habits have no toggle path at all.
 
+## Install the release build, not the debug one
+
+**Cold start on the Kompakt: 3.9s debug, 0.87s release.** Same code, same
+device, four times faster, and none of it algorithmic — `debuggable=true`
+disables ART optimisations and the Compose composition of this screen is where
+the time goes. Everything else measured on the way to that number was small by
+comparison: sync 5.2s → 140ms, the habit cache 24ms, the score recompute moved
+off the startup path.
+
+```bash
+cd C:\Users\Antonio\loop-habit-tracker-fork && .\gradlew :uhabits-android:assembleRelease
+```
+
+```bash
+C:\Users\Antonio\android-sdk\platform-tools\adb.exe -s MK20250408317 install -r uhabits-android\build\outputs\apk\release\uhabits-android-release.apk
+```
+
+It is signed with the **Android debug keystore**, deliberately -- see the next
+section; that is what keeps the stores out, and it means release and debug
+builds install over each other without losing data.
+
+**The debug build is still what to install while working on the app**, because
+`run-as` needs `debuggable=true` and every diagnostic in this document goes
+through it: reading the database, reading `files/sync-status.txt`, editing
+preferences. A release build can do none of that.
+
 ## Keeping the stores off this build
 
 Both **F-Droid** (`org.fdroid.fdroid`) and **Aurora Store** (`com.aurora.store`)
@@ -568,12 +594,26 @@ three defences, and it is worth knowing which ones are real:
    reaches 999999. Both stores decide "update available" by comparing their
    index's versionCode against the installed one, so neither will ever offer
    one. **This is the change that was made.**
-2. **The signature already blocks it.** This is a debug build, signed with the
-   Android debug key; every store's APK is signed with a different one, so
-   Android would reject the install outright rather than overwrite the app.
-   This defence is free and was already in place -- but it fails silently as a
-   *failed install*, not as "no update offered", which is why defence 1 is
-   worth having.
+2. **The signature already blocks it.** Both builds are signed with the Android
+   debug key; every store's APK is signed with a different one, so Android
+   rejects the install outright rather than overwriting the app. This defence
+   is free and was already in place -- but it fails silently as a *failed
+   install*, not as "no update offered", which is why defence 1 is worth having.
+
+   **Switching to the release build did not weaken this**, which is the obvious
+   worry, so it was checked rather than assumed. `release` takes
+   `signingConfigs["release"]` when `LOOP_KEY_ALIAS` is set in the environment
+   and the debug keystore otherwise, and with no key set the release APK's
+   certificate is byte-identical to the debug one:
+
+   ```
+   release APK      f2243f9087a120c9cb563890692cb8a0b87951f66ea8466653ff2c02bf3e0d5e
+   debug APK        f2243f9087a120c9cb563890692cb8a0b87951f66ea8466653ff2c02bf3e0d5e
+   debug.keystore   F2:24:3F:90:87:A1:20:C9:CB:56:38:90:69:2C:B8:A0:B8:79:51:F6:6E:A8:46:66:53:FF:2C:02:BF:3E:0D:5E
+   ```
+
+   `versionCode` is still 1000000 on the installed release build, and the
+   `applicationId` is unchanged.
 3. **Not done, and it is the only complete one:** changing `applicationId` (to
    e.g. `org.isoron.uhabits.mmd`) makes the fork invisible to both stores
    rather than merely unattractive. It is not done because a new package id

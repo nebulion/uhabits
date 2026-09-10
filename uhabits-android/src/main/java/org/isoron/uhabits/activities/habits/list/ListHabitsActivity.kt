@@ -57,6 +57,9 @@ import org.isoron.uhabits.utils.dismissCurrentDialog
 class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
 
     lateinit var appComponent: HabitsApplicationComponent
+
+    /** Guards the one-off deferred work in [startDeferredWork]. */
+    private var hasRecomputed = false
     lateinit var component: HabitsActivityComponent
     lateinit var taskRunner: TaskRunner
     lateinit var model: HabitCardListModel
@@ -110,6 +113,7 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
         setContent {
             val habits by model.habits.collectAsState()
             val selectedIds by model.selectedIds.collectAsState()
+            val hasLoaded by model.hasLoaded.collectAsState()
 
             // Recomputed from the behavior whenever the selection changes: it
             // reads the selected habits back out of the model, so it has to be
@@ -142,6 +146,7 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
                 onScrolled = { screen.onScrolled() },
                 message = screen.message,
                 onMessageShown = { screen.onMessageShown() },
+                isLoading = !hasLoaded,
                 actions = HabitListActions(
                     onToggle = { habit, timestamp, index ->
                         val current = habit.checkmarks.getOrElse(index) { Entry.UNKNOWN }
@@ -236,9 +241,22 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
     }
 
     override fun onResume() {
-        model.refresh()
         screen.onAttached()
-        model.onAttached()
+        // Loading the habits is deliberately *not* started here on the first
+        // resume. Composition runs on the main thread, and so does every
+        // progress callback the load posts to it, so starting the load first
+        // means the screen composes behind it and nothing is drawn until both
+        // are done -- measured at 2.4s of loading followed by 1.5s of layout,
+        // with the loading indicator never once reaching the panel.
+        //
+        // Started after the first draw instead, the header, the sort row and
+        // the date row appear on their own, with a progress bar where the
+        // habits will be. Later resumes take the normal path: there is already
+        // a screen, and the list should refresh at once.
+        if (hasRecomputed) {
+            model.refresh()
+            model.onAttached()
+        }
         midnightTimer.onResume()
 
         if (appComponent.reminderScheduler.hasHabitsWithReminders()) {
@@ -355,17 +373,50 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
      * case waits on. A draw held too long looks like a hang, but so does a
      * screen that assembles itself in pieces.
      */
+    /**
+     * Finishes the half of the recompute that first paint does not need.
+     *
+     * [org.isoron.uhabits.HabitsApplication] fills only the check-marks on
+     * startup, because the serial task runner puts everything it does ahead of
+     * the habits list's own load, and the splash waits on that load. Scores and
+     * streaks walk every day from a habit's first entry to a month out, which
+     * is most of the work and none of the grid.
+     *
+     * So they are computed here instead, behind the backup and the sync, by
+     * which time there is something on screen. Once, per process: the commands
+     * keep habits up to date after this.
+     */
+    private fun startDeferredWork() {
+        if (hasRecomputed) return
+        hasRecomputed = true
+
+        // Start loading the habits now, with the screen already on the panel.
+        // This is what onResume skips on the first pass; see the note there.
+        model.onAttached()
+
+        taskRunner.run {
+            for (habit in appComponent.habitList) habit.recompute()
+            runOnUiThread { model.refresh() }
+        }
+    }
+
     private fun holdSplashUntilDrawn() {
         val content = findViewById<android.view.View>(android.R.id.content)
         val deadline = android.os.SystemClock.uptimeMillis() + SPLASH_HOLD_MS
         content.viewTreeObserver.addOnPreDrawListener(
             object : android.view.ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
-                    val laidOut = content.width > 0 && content.height > 0
-                    val ready = laidOut && model.hasLoaded.value
+                    val ready = content.width > 0 && content.height > 0
                     val expired = android.os.SystemClock.uptimeMillis() >= deadline
                     if (!ready && !expired) return false
                     content.viewTreeObserver.removeOnPreDrawListener(this)
+                    // Everything the first screen does not need is queued from
+                    // here, once, rather than from onResume. The task runner is
+                    // serial, so anything queued earlier runs *before* the
+                    // habits list's own load -- which is what the splash waits
+                    // on. Queued here it lands behind that load, which is the
+                    // whole point of deferring it.
+                    content.post { startDeferredWork() }
                     return true
                 }
             },

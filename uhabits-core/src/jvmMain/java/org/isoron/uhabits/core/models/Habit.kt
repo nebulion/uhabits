@@ -74,6 +74,27 @@ data class Habit(
         return value != Entry.UNKNOWN
     }
 
+    /**
+     * Fills [computedEntries], and nothing else.
+     *
+     * This is the half of [recompute] the habits list actually draws with: the
+     * check-marks. It costs one pass over the entries this habit has, where
+     * scores and streaks each walk every day from the first entry to a month
+     * out -- hundreds of days per habit whether or not anything was recorded on
+     * them, which on a database of years is most of the work and none of the
+     * first screen.
+     *
+     * Splitting it lets a cold start paint the grid and fill the scores in
+     * afterwards. Anything that needs a score must still call [recompute].
+     */
+    fun recomputeEntries() {
+        computedEntries.recomputeFrom(
+            originalEntries = originalEntries,
+            frequency = frequency,
+            isNumerical = isNumerical
+        )
+    }
+
     fun recompute() {
         computedEntries.recomputeFrom(
             originalEntries = originalEntries,

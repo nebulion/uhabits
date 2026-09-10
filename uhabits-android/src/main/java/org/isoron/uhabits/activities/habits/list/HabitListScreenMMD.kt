@@ -45,6 +45,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -181,6 +182,13 @@ private val CELL_HEIGHT = 56.dp
 private val SCROLLBAR_GUTTER = 40.dp
 
 /**
+ * The arrow inside that gutter, from `LazyDefaultsMMD.navigateIconSize`. Used
+ * only by the loading state, which draws its own inert copy of the scrollbar;
+ * `LazyColumnMMD` sizes the real one itself.
+ */
+private val SCROLLBAR_ARROW_SIZE = 24.dp
+
+/**
  * How many habits one drag moves.
  *
  * `LazyColumnMMD` does not scroll freely — it disables user scrolling and
@@ -218,6 +226,16 @@ fun HabitListScreenMMD(
      */
     message: String? = null,
     onMessageShown: () -> Unit = {},
+    /**
+     * True until the habits have finished loading.
+     *
+     * The header, the sort row and the date row are drawn regardless, so the
+     * app is on screen and legible while the list is still being read. Before
+     * this existed the splash held everything back until the habits were ready,
+     * which on a large database was several seconds of nothing at all --
+     * indistinguishable from a crash.
+     */
+    isLoading: Boolean = false,
 ) {
     val hasSelection = selectedIds.isNotEmpty()
     val listState = rememberLazyListState()
@@ -244,9 +262,27 @@ fun HabitListScreenMMD(
         snackbarHost.showSnackbar(text)
         onMessageShown()
     }
-    // Mirrors LazyColumnMMD's own condition for composing its scrollbar.
-    val isScrollable by remember {
-        derivedStateOf { listState.canScrollBackward || listState.canScrollForward }
+    /**
+     * Whether to leave room for `LazyColumnMMD`'s scrollbar.
+     *
+     * Mirrors the library's own condition -- `canScrollBackward ||
+     * canScrollForward` -- with one addition: **before the list has measured
+     * anything, assume the scrollbar will be there.**
+     *
+     * Both of those are false until the list has laid rows out, and they are
+     * false for two different reasons that look identical here: because there
+     * is nothing to scroll, and because nothing has been measured yet. Taking
+     * them at face value meant the headings laid out full width for the frame
+     * between the habits arriving and the list measuring them, then jumped
+     * 40dp left. Reserving the space while the answer is unknown costs a short
+     * list one gutter it does not need; not reserving it makes the dates move
+     * on every single launch.
+     */
+    val isScrollbarReserved by remember {
+        derivedStateOf {
+            listState.layoutInfo.totalItemsCount == 0 ||
+                listState.canScrollBackward || listState.canScrollForward
+        }
     }
 
     // Scrolling ghosts worse than anything else on this screen: the whole page
@@ -320,7 +356,7 @@ fun HabitListScreenMMD(
             Column(modifier = Modifier.fillMaxSize().padding(insets)) {
                 DayHeadingRow(
                     dayLabels = dayLabels,
-                    scrollbarGutter = if (isScrollable) SCROLLBAR_GUTTER else 0.dp,
+                    scrollbarGutter = if (isScrollbarReserved) SCROLLBAR_GUTTER else 0.dp,
                     canGoOlder = dataOffset < maxDataOffset,
                     canGoNewer = dataOffset > 0,
                     onOlder = actions.onOlder,
@@ -328,7 +364,9 @@ fun HabitListScreenMMD(
                 )
                 HorizontalDividerMMD()
 
-                if (habits.isEmpty()) {
+                if (isLoading) {
+                    LoadingState()
+                } else if (habits.isEmpty()) {
                     EmptyState()
                 } else {
                     Box(
@@ -879,6 +917,64 @@ private fun fontAwesome(): FontFamily {
     val assets = LocalContext.current.assets
     return remember(assets) {
         FontFamily(Font(path = "fontawesome-webfont.ttf", assetManager = assets))
+    }
+}
+
+/**
+ * Shown where the habits go, while they are being read.
+ *
+ * A word, not a progress bar and not a spinner. MMD's only indeterminate
+ * indicator is `CircularProgressIndicatorMMD`, and it animates -- which on this
+ * panel means continuous repainting and the ghosting this app turns animation
+ * off everywhere to avoid. Its determinate bar was tried and removed: with the
+ * load down to about twenty milliseconds it had nothing left to report, and sat
+ * empty for exactly as long as it took to disappear.
+ *
+ * This is the same shape as [EmptyState] on purpose. The two say the only
+ * things this area can otherwise say, and they should not look like different
+ * screens.
+ */
+@Composable
+private fun LoadingState() {
+    Row(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier.weight(1f).fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            TextMMD(
+                text = stringResource(R.string.loading_habits),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+        }
+        // The scrollbar's own column, drawn but inert.
+        //
+        // `LazyColumnMMD` puts its scrollbar in exactly this space once there
+        // are rows to scroll, so holding it open keeps the loading screen the
+        // same shape as the loaded one and nothing moves sideways when the
+        // habits arrive.
+        //
+        // Its arrows are the dotted chevrons, which is how this app and the
+        // Kompakt's own reader both say "not available" on a panel with no
+        // midtone -- the same pair the date pager uses when it cannot page any
+        // further. No thumb: a thumb is a position within a list, and there is
+        // no list yet to have a position in.
+        Column(
+            modifier = Modifier.width(SCROLLBAR_GUTTER).fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.mmd_chevron_dotted_up),
+                contentDescription = null,
+                modifier = Modifier.size(SCROLLBAR_ARROW_SIZE),
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                painter = painterResource(R.drawable.mmd_chevron_dotted_down),
+                contentDescription = null,
+                modifier = Modifier.size(SCROLLBAR_ARROW_SIZE),
+            )
+        }
     }
 }
 

@@ -76,9 +76,16 @@ android {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.txt")
-            if (signingConfigs.findByName("release") != null) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            // Falls back to the debug keystore, deliberately. This build is
+            // sideloaded and never goes near a store, and that signature is
+            // what keeps the stores out: F-Droid's and Aurora's copies of Loop
+            // are signed with a different key, so Android refuses to install
+            // one over this rather than silently replacing the owner's data.
+            // It also lets release and debug builds replace each other, which
+            // is what makes "release for daily use, debug for diagnostics"
+            // practical. Set LOOP_KEY_ALIAS and friends to sign properly.
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
 
         debug {

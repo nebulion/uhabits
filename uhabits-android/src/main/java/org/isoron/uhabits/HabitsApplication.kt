@@ -107,7 +107,19 @@ class HabitsApplication : Application() {
             // guard. The visible trade is that a cold start can now paint an
             // empty list for a moment on a large database, where before it
             // painted nothing at all for longer.
-            for (h in component.habitList) h.recompute()
+            // Only the check-marks here, because only the check-marks are on
+            // the way to first paint. AndroidTaskRunner runs on AsyncTask's
+            // serial executor, so whatever this task does, the habits list's
+            // own refresh waits behind it -- and the splash waits on that. A
+            // full recompute walks every day from each habit's first entry to a
+            // month out, which on years of history is seconds of work that the
+            // grid does not draw.
+            //
+            // ListHabitsActivity finishes the job once it has something on
+            // screen; see completeRecompute there. Scores read as zero until it
+            // does, which is a moment of an incomplete number rather than
+            // several seconds of no screen at all.
+            for (h in component.habitList) h.recomputeEntries()
             reminderScheduler.scheduleAll()
         }
     }

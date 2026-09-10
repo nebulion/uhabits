@@ -238,6 +238,7 @@
     <string name="pref_animations_title">Disable animations</string>
     <string name="pref_animations_description">Disable confetti animation after adding a checkmark.</string>
     <!-- Syncthing-based sync with the desktop client -->
+    <string name="loading_habits">Loading habits…</string>
     <string name="sync">Sync</string>
     <string name="sync_folder">Shared folder</string>
     <string name="sync_folder_summary_unset">Not set. Pick a folder inside Syncthing.</string>
