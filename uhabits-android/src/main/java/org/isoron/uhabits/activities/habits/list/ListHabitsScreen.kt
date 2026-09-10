@@ -92,7 +92,6 @@ const val RESULT_REPAIR_DB = 105
 const val RESULT_SYNC_NOW = 110
 const val RESULT_PICK_SYNC_FOLDER = 111
 const val RESULT_FORGET_SYNC_FOLDER = 112
-const val RESULT_USE_DEFAULT_SYNC_FOLDER = 113
 const val RESULT_GRANT_FILE_ACCESS = 114
 const val REQUEST_OPEN_DOCUMENT = 106
 const val REQUEST_CREATE_DOCUMENT = 107
@@ -221,14 +220,7 @@ class ListHabitsScreen
             RESULT_REPAIR_DB -> behavior.get().onRepairDB()
             RESULT_SYNC_NOW -> onSyncNow()
             RESULT_GRANT_FILE_ACCESS -> showAllFilesAccessScreen()
-            RESULT_USE_DEFAULT_SYNC_FOLDER -> {
-                if (AndroidSync.hasAllFilesAccess()) {
-                    AndroidSync.useDefaultFolder(activity)
-                    onSyncNow()
-                } else {
-                    showAllFilesAccessScreen()
-                }
-            }
+
             RESULT_PICK_SYNC_FOLDER -> showPickSyncFolderScreen()
             RESULT_FORGET_SYNC_FOLDER -> {
                 AndroidSync.clearFolder(activity)
@@ -263,7 +255,19 @@ class ListHabitsScreen
                     Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
             )
         }
-        activity.startActivityForResult(intent, REQUEST_PICK_SYNC_FOLDER)
+        try {
+            activity.startActivityForResult(intent, REQUEST_PICK_SYNC_FOLDER)
+        } catch (e: Exception) {
+            // No document picker on this device. Fall back to the folder the
+            // Syncthing install already uses, which is reachable as a path once
+            // shared-storage access is granted.
+            if (AndroidSync.hasAllFilesAccess()) {
+                AndroidSync.useDefaultFolder(activity)
+                onSyncNow()
+            } else {
+                showAllFilesAccessScreen()
+            }
+        }
     }
 
     private fun onPickSyncFolderResult(resultCode: Int, data: Intent?) {

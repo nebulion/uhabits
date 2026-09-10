@@ -248,6 +248,5 @@
     <string name="sync_folder_not_set">No sync folder chosen yet</string>
     <string name="sync_failed">Sync failed: %1$s</string>
     <string name="sync_grant_access">Allow access to shared storage</string>
-    <string name="sync_use_default">Use %1$s</string>
     <string name="sync_grant_failed">Could not open the file access settings</string>
 </resources>

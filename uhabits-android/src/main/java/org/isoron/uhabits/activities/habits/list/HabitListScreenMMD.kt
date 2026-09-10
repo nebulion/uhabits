@@ -259,7 +259,10 @@ fun HabitListScreenMMD(
     // rule and no elevation, straight from eInkColorScheme.
     LaunchedEffect(message) {
         val text = message ?: return@LaunchedEffect
-        snackbarHost.showSnackbar(text)
+        // withDismissAction, or there is no close button. It defaults to
+        // false, which is why the bar had nothing to tap and sat there until
+        // it timed out.
+        snackbarHost.showSnackbar(text, withDismissAction = true)
         onMessageShown()
     }
     /**
@@ -1018,9 +1021,16 @@ private fun EmptyState() {
  */
 @Composable
 private fun MessageBar(data: SnackbarDataMMD) {
-    val ink = MaterialTheme.colorScheme.onSurface
-    val paper = MaterialTheme.colorScheme.surface
-    Column(modifier = Modifier.fillMaxWidth()) {
+    // Literal black and white rather than colour-scheme roles. The bar was
+    // reading `surface` for its container and drawing see-through -- the habits
+    // showed through it -- which is the same class of fault as the unfilled
+    // text fields: a role that eInkColorScheme leaves unspecified renders as no
+    // fill at all, and a snackbar with no fill is not a surface, it is text
+    // lying on top of the list. This screen is pure black on white by design,
+    // so there is nothing a role can express here that the two colours cannot.
+    val ink = Color.Black
+    val paper = Color.White
+    Column(modifier = Modifier.fillMaxWidth().background(paper)) {
         HorizontalDividerMMD(color = ink)
         SnackbarMMD(
             snackbarData = data,

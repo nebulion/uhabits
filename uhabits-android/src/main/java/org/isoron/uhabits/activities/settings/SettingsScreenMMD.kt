@@ -95,6 +95,12 @@ sealed interface SettingsRow {
     data class Action(
         override val title: String,
         val onClick: () -> Unit,
+        /**
+         * What the row currently holds, shown under the title -- a chosen
+         * folder, say. The same shape [Choice] uses, so a row that opens
+         * something and a row that picks from a list read alike.
+         */
+        val value: String? = null,
     ) : SettingsRow
 
     /**
@@ -225,18 +231,25 @@ private fun ToggleRow(row: SettingsRow.Toggle) {
 @Composable
 private fun ActionRow(row: SettingsRow.Action) {
     Column {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 64.dp)
                 .clickable(onClick = row.onClick)
                 .padding(horizontal = 20.dp, vertical = 12.dp),
-            contentAlignment = Alignment.CenterStart,
+            verticalArrangement = Arrangement.Center,
         ) {
             TextMMD(
                 text = row.title,
                 style = MaterialTheme.typography.bodyMedium,
             )
+            row.value?.let { value ->
+                TextMMD(
+                    text = value,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
         }
         RowDivider()
     }

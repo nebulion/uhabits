@@ -37,7 +37,6 @@ import org.isoron.uhabits.activities.habits.list.RESULT_PICK_SYNC_FOLDER
 import org.isoron.uhabits.activities.habits.list.RESULT_REPAIR_DB
 import org.isoron.uhabits.activities.habits.list.RESULT_GRANT_FILE_ACCESS
 import org.isoron.uhabits.activities.habits.list.RESULT_SYNC_NOW
-import org.isoron.uhabits.activities.habits.list.RESULT_USE_DEFAULT_SYNC_FOLDER
 import org.isoron.uhabits.sync.AndroidSync
 import org.isoron.uhabits.notifications.AndroidNotificationTray.Companion.createAndroidNotificationChannel
 import org.isoron.uhabits.core.ui.NotificationTray
@@ -181,10 +180,8 @@ class SettingsActivity : AppCompatActivity() {
         add(SettingsRow.Header(getString(R.string.sync)))
         val folder = AndroidSync.folderLabel(this@SettingsActivity)
 
-        // The direct route comes first. Reaching /sdcard/Sync through the file
-        // picker means navigating DocumentsUI on a panel that repaints slowly;
-        // granting shared-storage access once is a single system toggle, after
-        // which the folder is opened as an ordinary path.
+        // Shared storage first, because without it a folder on /sdcard cannot
+        // be opened as a path at all and picking one would achieve nothing.
         if (!AndroidSync.hasAllFilesAccess()) {
             add(
                 SettingsRow.Action(
@@ -193,20 +190,12 @@ class SettingsActivity : AppCompatActivity() {
                 )
             )
         }
+        // One row, not two. Choosing the folder and seeing which one is chosen
+        // are the same question, and it was being asked twice.
         add(
             SettingsRow.Action(
-                title = getString(R.string.sync_use_default, AndroidSync.defaultFolder.path),
-                onClick = { setResultAndFinish(RESULT_USE_DEFAULT_SYNC_FOLDER) },
-            )
-        )
-        add(
-            SettingsRow.Action(
-                title = if (folder == null) {
-                    getString(R.string.sync_folder) + " — " +
-                        getString(R.string.sync_folder_summary_unset)
-                } else {
-                    getString(R.string.sync_folder) + " — " + folder
-                },
+                title = getString(R.string.sync_folder),
+                value = folder ?: getString(R.string.sync_folder_summary_unset),
                 onClick = { setResultAndFinish(RESULT_PICK_SYNC_FOLDER) },
             )
         )
