@@ -5,11 +5,22 @@ and their sources; this file covers what is done, what is half-done, and what
 is next.
 
 > **There is a second workstream now.** Two-way habit sync over Syncthing, plus
-> a terminal client in a new `:uhabits-desktop` module. It is working end to end
-> on the device and has its own document: **[sync.md](sync.md)**. It is
-> independent of the restyle — it touches no screen and no MMD component — but
-> it added two Settings rows and fixed a request-code collision that had
-> silently disabled Export, Import and Repair from Settings.
+> a window and a terminal client in a new `:uhabits-desktop` module. It is
+> working end to end on real hardware, both directions, deletions included, and
+> it has its own handoff: **[sync.md](sync.md)** — read that for anything about
+> sync, the desktop clients, or working on `uhabits-core` off Android.
+>
+> It is independent of the restyle: it adds no MMD component and changes no
+> layout. Three things it did touch here, all recorded in that document —
+> a Settings section, `SettingsRow.Action` gaining an optional `value` line, and
+> a fix for `REQUEST_SETTINGS` and `REQUEST_CREATE_DOCUMENT` both being `107`,
+> which had silently disabled Export, Import and Repair from Settings.
+>
+> One correction that belongs here rather than there: **`Log.i` does reach
+> logcat on this device.** `Log.d` and `Log.e` do not, which is what the
+> "Working notes" section below says and is what made the whole of logging look
+> dead. `Log.i` is how the startup timings in "Install the release build" were
+> measured.
 
 > **Start here:** read [MMD's own gaps](#mmds-own-gaps-verified-in-its-source)
 > first. Two of them are live bugs on screens that already look finished, and
