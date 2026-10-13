@@ -18,6 +18,7 @@
  */
 package org.isoron.uhabits.activities.habits.show
 
+import org.isoron.uhabits.mmd.DashedDividerMMD
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
@@ -35,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.text.TextMMD
 import org.isoron.uhabits.core.models.Streak
 import org.isoron.uhabits.core.ui.screens.habits.show.views.StreakCardState
@@ -49,7 +49,7 @@ import java.util.Locale
  * alpha ramp (255 / 192 / 96 / contrast20) and `Halftone` turned each into a
  * dot pattern, with the count drawn *inside* the bar in a matching grey. So a
  * short streak was a grey blob carrying a grey numeral, and on the device the
- * "8" and the "3" could not be read at all. `eink-design.md` says the opposite
+ * "8" and the "3" could not be read at all. `eink-design-habits.md` says the opposite
  * in as many words: emphasis is inversion, never a weight of grey.
  *
  * The number itself can carry magnitude instead, at a size worth reading,
@@ -78,10 +78,7 @@ fun HabitStreaksMMD(
         }
         sorted.forEachIndexed { index, streak ->
             if (index > 0) {
-                HorizontalDividerMMD(
-                    modifier = Modifier.padding(start = ROW_PADDING),
-                    thickness = 1.dp,
-                )
+                DashedDividerMMD(Modifier.padding(start = ROW_PADDING))
             }
             StreakRow(streak = streak, formatter = formatter)
         }

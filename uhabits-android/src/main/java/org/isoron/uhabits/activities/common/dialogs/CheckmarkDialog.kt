@@ -52,7 +52,7 @@ import org.isoron.uhabits.core.models.Entry.Companion.YES_MANUAL
  * middle of the screen with nothing dimmed behind it, and the states are told
  * apart the way MMD tells any state apart — by fill, not by tint. **Yes is the
  * solid button**, because it is the affirmative and the one this popup exists
- * to record; No, Skip and Unknown are outlined. That is `eink-design.md`'s
+ * to record; No, Skip and Unknown are outlined. That is `eink-design-habits.md`'s
  * button hierarchy applied literally.
  *
  * The two optional buttons keep their old gates: Skip only when
@@ -98,35 +98,28 @@ class CheckmarkDialog : MmdPanelDialogFragment() {
                 .padding(bottom = 8.dp),
         )
 
+        // Stacked, solid on top: written escape-first, the commit last.
         PanelActions {
-            PanelPrimaryAction(
-                label = stringResource(R.string.yes),
-                onClick = { commit(YES_MANUAL) },
-                modifier = Modifier.weight(1f),
-            )
+            if (prefs.areQuestionMarksEnabled) {
+                PanelSecondaryAction(
+                    label = stringResource(R.string.unknown_label),
+                    onClick = { commit(UNKNOWN) },
+                )
+            }
+            if (prefs.isSkipEnabled) {
+                PanelSecondaryAction(
+                    label = stringResource(R.string.skip_day),
+                    onClick = { commit(SKIP) },
+                )
+            }
             PanelSecondaryAction(
                 label = stringResource(R.string.no),
                 onClick = { commit(NO) },
-                modifier = Modifier.weight(1f),
             )
-        }
-        if (prefs.isSkipEnabled || prefs.areQuestionMarksEnabled) {
-            PanelActions {
-                if (prefs.isSkipEnabled) {
-                    PanelSecondaryAction(
-                        label = stringResource(R.string.skip_day),
-                        onClick = { commit(SKIP) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                if (prefs.areQuestionMarksEnabled) {
-                    PanelSecondaryAction(
-                        label = stringResource(R.string.unknown_label),
-                        onClick = { commit(UNKNOWN) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+            PanelPrimaryAction(
+                label = stringResource(R.string.yes),
+                onClick = { commit(YES_MANUAL) },
+            )
         }
     }
 

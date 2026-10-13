@@ -19,6 +19,7 @@
 
 package org.isoron.uhabits.activities.habits.edit
 
+import org.isoron.uhabits.mmd.DashedDividerMMD
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.text.TextMMD
 import org.isoron.uhabits.R
 import org.isoron.uhabits.activities.common.dialogs.MmdPanelDialogFragment
@@ -64,7 +64,7 @@ class HabitTypeDialog : MmdPanelDialogFragment() {
                 exampleRes = R.string.yes_or_no_example,
                 type = HabitType.YES_NO,
             )
-            HorizontalDividerMMD(thickness = 1.dp)
+            DashedDividerMMD()
             TypeOption(
                 titleRes = R.string.measurable,
                 exampleRes = R.string.measurable_example,

@@ -19,22 +19,19 @@
 
 package org.isoron.uhabits.activities.settings
 
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.ui.semantics.Role
-import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
-import com.mudita.mmd.components.bottom_sheet.rememberModalBottomSheetMMDState
-import com.mudita.mmd.components.radio_button.RadioButtonMMD
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,44 +44,47 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mudita.mmd.ThemeMMD
+import androidx.compose.ui.unit.sp
+import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
+import com.mudita.mmd.components.bottom_sheet.rememberModalBottomSheetMMDState
 import com.mudita.mmd.components.divider.HorizontalDividerMMD
-import com.mudita.mmd.components.lazy.LazyColumnMMD
+import com.mudita.mmd.components.radio_button.RadioButtonMMD
 import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import org.isoron.uhabits.R
+import org.isoron.uhabits.mmd.DashedDividerMMD
+import org.isoron.uhabits.mmd.MmdTheme
+import org.isoron.uhabits.mmd.PagedList
 
 /**
- * The settings screen, built from Mudita Mindful Design components.
+ * One page of settings, built from Mudita Mindful Design components.
  *
- * This is the first screen moved off Android Views and onto MMD proper, rather
- * than onto XML drawables imitating it. Everything visible here -- the header
- * and its rule, the rows, the dividers, the switches, the type -- is a real
- * MMD composable under [ThemeMMD], so it inherits `eInkColorScheme` (black and
- * white only), `eInkTypography` (Lato, nothing below 14sp) and MMD's global
- * disabling of ripples.
+ * Settings is grouped drill-down pages, as the Kompakt's own Settings and the
+ * owner's Anki and Tasks apps are (UI-PATTERNS A4): the first page lists the
+ * groups, each with what it currently holds written under its name, and each
+ * opens a page of its own. Every row reads and edits the same way -- bold
+ * title, current value under it, tap for the right editor: on/off is a switch
+ * on the row, a short choice is a sheet of radio rows, anything else opens a
+ * page.
+ *
+ * It used to be one long list with plain section headers.
  */
 
-/**
- * How many rows one drag moves, matching the habits list.
- *
- * `LazyColumnMMD` does not scroll freely -- it disables user scrolling and
- * calls `scrollToItem` in fixed steps -- so this is a page size, not a speed.
- * The default `LazyDefaultsMMD.SCROLL_STEP` is 4, which left this screen
- * noticeably slower to get through than the habits list next door. Six is what
- * that list uses, and a settings row is the taller of the two (64dp against
- * 56dp), so six here covers slightly more of the screen, not less.
- */
-private const val SCROLL_STEP = 6
-
-/** One row of the settings list. */
+/** One row of a settings page. */
 sealed interface SettingsRow {
     val title: String
 
-    data class Header(override val title: String) : SettingsRow
+    /** Opens another page. [value] says what that page currently holds. */
+    data class Page(
+        override val title: String,
+        val value: String? = null,
+        val onClick: () -> Unit,
+    ) : SettingsRow
 
     data class Toggle(
         override val title: String,
@@ -95,21 +95,17 @@ sealed interface SettingsRow {
     data class Action(
         override val title: String,
         val onClick: () -> Unit,
-        /**
-         * What the row currently holds, shown under the title -- a chosen
-         * folder, say. The same shape [Choice] uses, so a row that opens
-         * something and a row that picks from a list read alike.
-         */
+        /** What the row currently holds, shown under the title -- a chosen folder, say. */
         val value: String? = null,
     ) : SettingsRow
 
+    /** A line of text in the shape of a row; not a control. */
+    data class Info(override val title: String) : SettingsRow
+
     /**
      * One of several values, shown with the current one under the title and
-     * picked from a sheet.
-     *
-     * A sheet rather than a dialog because that is what MuditaOS raises for a
-     * choice -- Sound and Bluetooth both do -- and because MMD ships a bottom
-     * sheet and no dialog at all.
+     * picked from a sheet -- what MuditaOS raises for a choice (Sound,
+     * Bluetooth).
      */
     data class Choice(
         override val title: String,
@@ -121,26 +117,23 @@ sealed interface SettingsRow {
 
 @Composable
 fun SettingsScreenMMD(
+    title: String,
     rows: List<SettingsRow>,
     onNavigateBack: () -> Unit,
 ) {
-    ThemeMMD {
+    MmdTheme {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                // The rule is drawn here rather than by the bar's own
-                // showDivider, which does not produce the 3dp rule this design
-                // calls for: TopAppBarMMD passes its 3dp `dividerLineHeight` to
-                // a raw Material3 HorizontalDivider as a *width*, and never
-                // passes a thickness at all, so the line falls back to
-                // Material's 1dp. HorizontalDividerMMD defaults to the real
-                // DividerDefaultsMMD.Thickness of 3dp.
+                // The 3dp rule is drawn here rather than by the bar's own
+                // showDivider, which renders Material's 1dp (see
+                // PROJECT-STATUS, "MMD's own gaps").
                 Column {
                     TopAppBarMMD(
                         showDivider = false,
                         title = {
                             TextMMD(
-                                text = stringOrEmpty(R.string.settings),
+                                text = title,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -159,19 +152,19 @@ fun SettingsScreenMMD(
                 }
             },
         ) { insets ->
-            LazyColumnMMD(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(insets),
-                contentPadding = PaddingValues(bottom = 24.dp),
-                scrollStep = SCROLL_STEP,
+            PagedList(
+                modifier = Modifier.fillMaxSize().padding(insets),
             ) {
                 items(rows, key = { it.title }) { row ->
-                    when (row) {
-                        is SettingsRow.Header -> SectionHeader(row)
-                        is SettingsRow.Toggle -> ToggleRow(row)
-                        is SettingsRow.Action -> ActionRow(row)
-                        is SettingsRow.Choice -> ChoiceRow(row)
+                    Column {
+                        when (row) {
+                            is SettingsRow.Page -> LinkRow(row.title, row.value, row.onClick)
+                            is SettingsRow.Toggle -> ToggleRow(row)
+                            is SettingsRow.Action -> ValueRow(row.title, row.value, row.onClick)
+                            is SettingsRow.Info -> ValueRow(row.title, null, null)
+                            is SettingsRow.Choice -> ChoiceRow(row)
+                        }
+                        RowDivider()
                     }
                 }
             }
@@ -179,129 +172,107 @@ fun SettingsScreenMMD(
     }
 }
 
-@Composable
-private fun SectionHeader(row: SettingsRow.Header) {
-    Column {
-        TextMMD(
-            text = row.title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 8.dp),
-        )
-        // MMD's divider is 3dp solid black: the same weight that closes a
-        // header, used here to open a section.
-        HorizontalDividerMMD()
-    }
-}
-
-@Composable
-private fun ToggleRow(row: SettingsRow.Toggle) {
-    var checked by remember(row.title, row.checked) { mutableStateOf(row.checked) }
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 64.dp)
-                .clickable {
-                    checked = !checked
-                    row.onToggle(checked)
-                }
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            TextMMD(
-                text = row.title,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f).padding(end = 16.dp),
-            )
-            // The real thing: 52x32dp pill, 2dp outline, inverting on state.
-            SwitchMMD(
-                checked = checked,
-                onCheckedChange = {
-                    checked = it
-                    row.onToggle(it)
-                },
-            )
-        }
-        RowDivider()
-    }
-}
-
-@Composable
-private fun ActionRow(row: SettingsRow.Action) {
-    Column {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 64.dp)
-                .clickable(onClick = row.onClick)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            TextMMD(
-                text = row.title,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            row.value?.let { value ->
-                TextMMD(
-                    text = value,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-        }
-        RowDivider()
-    }
-}
-
 /**
- * The rule between rows, indented to line up with the text as it is in the
- * Kompakt's own Settings.
+ * The text of a row: MMD's list label and supporting text (zeroheight "List").
+ * The label is Black when a value sits under it and regular when alone, as in
+ * the drawing and the Kompakt's Settings; the value is regular-weight black,
+ * never small grey.
  */
 @Composable
-private fun RowDivider() {
-    HorizontalDividerMMD(
-        modifier = Modifier.padding(start = 20.dp),
-        thickness = 1.dp,
+private fun RowText(title: String, value: String?, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.Center) {
+        TextMMD(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 21.sp, lineHeight = 23.sp),
+            fontWeight = if (value != null) FontWeight.Black else FontWeight.Normal,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (value != null) {
+            TextMMD(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp, lineHeight = 18.sp),
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+    }
+}
+
+/** A row's frame: MMD list padding, 64dp minimum (Kompakt Settings). */
+@Composable
+private fun RowFrame(
+    modifier: Modifier,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = ROW_HEIGHT)
+            .padding(horizontal = EDGE, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content,
     )
 }
 
+/** A row that opens a page, marked with the thin line chevron Kompakt Settings uses. */
 @Composable
-private fun stringOrEmpty(resId: Int): String =
-    androidx.compose.ui.res.stringResource(resId)
+private fun LinkRow(title: String, value: String?, onClick: () -> Unit) {
+    RowFrame(Modifier.clickable(onClick = onClick)) {
+        RowText(title, value, Modifier.weight(1f).padding(end = 16.dp))
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_line_right),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.size(28.dp),
+        )
+    }
+}
+
+/** An action, or with no [onClick] a plain line of text in the shape of a row. */
+@Composable
+private fun ValueRow(title: String, value: String?, onClick: (() -> Unit)?) {
+    RowFrame(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier) {
+        RowText(title, value, Modifier.weight(1f))
+    }
+}
 
 /**
- * A one-of-N setting: the title, the value it currently holds beneath it, and
- * a sheet of radio rows to change it.
- *
- * The value is shown in regular-weight black rather than as a smaller grey
- * subtitle. `eInkColorScheme` has no grey in it, and MuditaOS writes its own
- * subtitles this way -- Bluetooth's "USB Preferences / File transfer" is the
- * same shape.
+ * On/off. The whole row toggles and the switch itself is inert, so there is
+ * one touch target (MMD-GUIDE 3.15). `SwitchMMD`: 52x32dp pill, 2dp outline,
+ * inverting on state.
  */
+@Composable
+private fun ToggleRow(row: SettingsRow.Toggle) {
+    var checked by remember(row.title, row.checked) { mutableStateOf(row.checked) }
+    RowFrame(
+        Modifier.toggleable(value = checked, role = Role.Switch) {
+            checked = it
+            row.onToggle(it)
+        },
+    ) {
+        RowText(row.title, null, Modifier.weight(1f).padding(end = 16.dp))
+        SwitchMMD(checked = checked, onCheckedChange = null)
+    }
+}
+
+/**
+ * MMD's row divider: dotted, starting where the label starts (zeroheight
+ * "List", Kompakt Settings).
+ */
+@Composable
+private fun RowDivider() {
+    DashedDividerMMD(Modifier.padding(start = EDGE))
+}
+
+/** A one-of-N setting: the value it holds under the title, a sheet of radio rows to change it. */
 @Composable
 private fun ChoiceRow(row: SettingsRow.Choice) {
     var open by remember { mutableStateOf(false) }
-    Column {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 64.dp)
-                .clickable { open = true }
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            TextMMD(text = row.title, style = MaterialTheme.typography.bodyMedium)
-            row.options.getOrNull(row.selectedIndex)?.let { current ->
-                TextMMD(
-                    text = current,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-        }
-        HorizontalDividerMMD(thickness = 1.dp)
+    RowFrame(Modifier.clickable { open = true }) {
+        RowText(row.title, row.options.getOrNull(row.selectedIndex), Modifier.weight(1f))
     }
     if (open) {
         ModalBottomSheetMMD(
@@ -312,13 +283,16 @@ private fun ChoiceRow(row: SettingsRow.Choice) {
             dragHandle = null,
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                TextMMD(
+                    text = row.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = EDGE, vertical = 12.dp),
+                )
                 row.options.forEachIndexed { index, option ->
                     // MMD's own row shape, from the usage sample in
                     // RadioButtonMMD.kt: the row carries the selection, so the
-                    // button itself takes no handler and the whole row stays a
-                    // single target. An inert RadioButtonMMD measures 24dp, not
-                    // Material's interactive 48dp, which is why the label is
-                    // held off it by a further 16dp.
+                    // button takes no handler and the whole row is one target.
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -331,18 +305,26 @@ private fun ChoiceRow(row: SettingsRow.Choice) {
                                 },
                                 role = Role.RadioButton,
                             )
-                            .padding(horizontal = 20.dp),
+                            .padding(horizontal = EDGE),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButtonMMD(selected = index == row.selectedIndex, onClick = null)
                         TextMMD(
                             text = option,
                             style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (index == row.selectedIndex) FontWeight.Bold else FontWeight.Normal,
                             modifier = Modifier.padding(start = 16.dp),
                         )
                     }
                 }
+                androidx.compose.foundation.layout.Spacer(Modifier.height(8.dp))
             }
         }
     }
 }
+
+/** MMD list padding, left and right. */
+private val EDGE = 16.dp
+
+/** Kompakt Settings rows measure 64dp. */
+private val ROW_HEIGHT = 64.dp

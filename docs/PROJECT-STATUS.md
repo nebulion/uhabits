@@ -1,8 +1,55 @@
 # Project status — Loop Habit Tracker on Mudita Mindful Design
 
-Handoff notes. Read [eink-design.md](eink-design.md) first for the design rules
-and their sources; this file covers what is done, what is half-done, and what
-is next.
+Handoff notes. Read [eink-design-habits.md](../../eink-design-habits.md) first
+for the design rules and their sources (the e-ink docs moved to the folder above
+this repo on 2026-10-07, beside [MMD-GUIDE.md](../../MMD-GUIDE.md)); this file
+covers what is done, what is half-done, and what is next.
+
+> **2026-10-07: the review pass.** [PROJECT-REVIEWS.md](../../PROJECT-REVIEWS.md)
+> found this app, the oldest port, behind the rules the owner set later in the
+> other four. All of its code items are done, built from the kit the other apps
+> already use (now in `org.isoron.uhabits.mmd`):
+>
+> - **System font, no Lato.** `MmdTheme` wraps `ThemeMMD` with MMD's type scale
+>   in `FontFamily.Default`; `res/font/` is deleted, the XML theme and
+>   `AndroidCanvas.setFont` use the platform face. Every screen uses `MmdTheme`.
+> - **Dotted row dividers.** `DashedDividerMMD` (1px, 2dp dots, pixel-snapped):
+>   habits list, Settings, streaks, sheets, the sort menu. Structural rules stay
+>   the 3dp solid `HorizontalDividerMMD`.
+> - **Popups are bottom panels** (pattern P5, zeroheight Dialog): full width at
+>   the bottom, 3dp rule, centred Black heading, buttons stacked full width with
+>   the solid one on top. Checkmark, Number, Confirm-delete and Habit type.
+> - **No `LazyColumnMMD` anywhere.** `PagedList` (from Fit): one paint, a page
+>   turn brings the last visible row to the top, back returns to the exact page,
+>   thumb sized by height, scrollbar only where a list overflows. The habits list
+>   always keeps the scrollbar's column (`canGrow`), so the conditional
+>   `SCROLLBAR_GUTTER` arithmetic that shifted the day columns is gone.
+> - **The flash is on by default**, every 12 lifted fingers in any activity
+>   (`EinkRefresh` from Fit/Macros), with an **E Ink** settings page for on/off and
+>   the interval.
+> - **Hold and let go selects; hold and drag moves** (P7). No more "select, then
+>   hold again". The list no longer scrolls on release.
+> - **Score and Bar charts are Compose**, stepped with ‹ › (`HabitChartsMMD.kt`).
+>   `ScoreChart`, `ScrollableChart`, the unused `FrequencyChart`, `StreakChart`,
+>   `RingView`, `AndroidDataView`, both card Views and the three ShowHabit layouts
+>   are deleted. ShowHabit is Compose only.
+> - **Tap a calendar day to change it**, with ‹ › through history twelve weeks at
+>   a time. Days older than the list's three columns can be edited again.
+> - **Settings is grouped pages** (Interface, E Ink, Reminder, Sync, Data), each
+>   row carrying its value under its title.
+> - **A data copy on background**: `uhabits.db` in the app's external files
+>   folder, pullable from a release build (`DataCopy`).
+> - **No sync button.** Sync runs by itself: after every change, every 30s while
+>   the app is open, and when it leaves the screen (`AutoSync`; see `sync.md`).
+> - **Sort/filter keeps its dropdown**; the "no overflow menu" rule now says why
+>   (see `eink-design-habits.md`).
+>
+> **Not done, because they are the owner's:** the device checks below (now
+> including all of the above); whether to keep Automation (the last user of
+> `viewBinding` and of the two remaining layouts); the launcher icon's stroke;
+> pushing `mmd-eink`/`sync-desktop` to the fork as an off-machine backup;
+> revoking the old token at the end of this file. Not done yet, and large:
+> one `ktlintFormat` pass and Compose UI tests.
 
 > **There is a second workstream now.** Two-way habit sync over Syncthing, plus
 > a window and a terminal client in a new `:uhabits-desktop` module. It is
@@ -114,11 +161,12 @@ this app was a hairline while the docs claimed it was the heavy rule.
 `HorizontalDividerMMD()` under them, whose default thickness really is
 `DividerDefaultsMMD.Thickness` = 3dp.
 
-**MMD ships no dotted divider.** `eink-design.md` calls for a dotted hairline
-between list rows. `HorizontalDividerMMD` can only draw solid, and the
+**MMD ships no dotted divider.** `eink-design-habits.md` calls for a dotted
+hairline between list rows. `HorizontalDividerMMD` can only draw solid, and the
 `DashedDivider()` that `MenuMMD.kt`'s own KDoc calls **is not defined anywhere
-in the library** — it is a dead reference in Mudita's docs. Every row divider
-here is therefore solid by necessity, not by choice.
+in the library** — it is a dead reference in Mudita's docs. **Fixed** the way the
+Anki kit did: `org.isoron.uhabits.mmd.DashedDividerMMD`, a 1px line of 2dp dots
+snapped to whole device pixels.
 
 **MMD has no dialog, and no dense text field.** There is no alert/confirm
 component at all, and `TextFieldMMD` has one shape: `MinWidth` 280dp,
@@ -129,12 +177,12 @@ to put inline inside a sentence.
 
 | | |
 | --- | --- |
-| Layout files | **5** (from 45) — target 0 |
-| viewBinding | still `true`, and only two cards keep it alive |
-| Screens on MMD | Settings, Habits list, EditHabit, ShowHabit, Snooze |
-| Popups on MMD | Checkmark, Number, Confirm-delete, Frequency, Reminder, Weekdays, Snackbar, HabitType |
-| Still on Views | the score and bar charts, and Automation |
-| The 5 layouts | `show_habit.xml` + `show_habit_score.xml` + `show_habit_bar.xml` (the last two charts), `automation.xml` + `toolbar.xml` (the Tasker plugin, and a toolbar nothing else inflates) |
+| Layout files | **2** (from 45) — target 0 |
+| viewBinding | still `true`, kept alive only by Automation (`AutomationBinding`) |
+| Screens on MMD | Settings, Habits list, EditHabit, ShowHabit (all Compose now), Snooze |
+| Popups on MMD | Checkmark, Number, Confirm-delete, HabitType (bottom panels); Frequency, Reminder, Weekdays (sheets); Snackbar |
+| Still on Views | Automation only |
+| The 2 layouts | `automation.xml` + `toolbar.xml` (the Tasker plugin, and a toolbar nothing else inflates) |
 
 ### Done
 
@@ -143,11 +191,11 @@ to put inline inside a sentence.
 `uhabits-android/build.gradle.kts`, not per-class — annotating classes leaked
 the annotation into unrelated callers.
 
-**Design tokens, all traced to MMD source.** Lato copied from
-`mmd-core/src/androidMain/res/font/`; the type scale in `dimens.xml` re-derived
-from `TypographyMMD.kt` (nothing below 14sp); `eInkColorScheme` is literally
-black and white for *every* token, which is where the zero-grey rule comes
-from.
+**Design tokens, all traced to MMD source.** The type scale in `dimens.xml`
+re-derived from `TypographyMMD.kt` (nothing below 14sp), set in **the phone's
+system font**, not the Lato MMD bundles (`MmdTheme`, 2026-10-07; Lato was copied
+in at first and is now deleted); `eInkColorScheme` is literally black and white
+for *every* token, which is where the zero-grey rule comes from.
 
 **Settings** — fully MMD. `TopAppBarMMD` (with `showDivider = false` and an
 explicit `HorizontalDividerMMD` under it — see MMD's own gaps above),
@@ -237,11 +285,14 @@ out once and never applied.
 `MmdPanelDialogFragment` in `activities/common/dialogs/`. MMD **ships no
 dialog** — all twenty-two component packages were read, there is
 `ModalBottomSheetMMD` and nothing else that floats over a screen — so the
-container is ours, but everything about it is MMD: white fill, 3dp black
-border (`DividerDefaultsMMD.Thickness`), 8dp corners
-(`ButtonDefaultsMMD.buttonCornerRadius`), zero elevation, no dim. Having
-exactly one of it is the point — the checkmark editor, the number editor and
-the delete confirmation are the same object with different contents.
+container is ours, built to zeroheight's Dialog and the Kompakt's Notes delete
+prompt (P5): **anchored to the bottom at full width**, a 3dp black rule and
+2dp of white across its top, a centred Black 25sp heading, buttons stacked
+full width at 56dp with the solid one on top, no border, no elevation, no dim,
+no window animation. (Until 2026-10-07 it was a bordered box in the middle of
+the screen, which is how no Mudita app draws a dialog.) Having exactly one of
+it is the point — the checkmark editor, the number editor and the delete
+confirmation are the same object with different contents.
 
 On it: **`CheckmarkDialog`**, **`NumberDialog`** and **`ConfirmDeleteDialog`**.
 The first two shared an XML layout whose border and button divider were
@@ -419,14 +470,14 @@ costs no layout at all. Export left the header to make room and **is currently
 unreachable** -- it needs a home.
 
 **Ghosting has a deliberate flash.** `EinkRefresh` puts an opaque black view
-over the window for 100ms, which is InkOS's exact mechanism and duration. It
-counts *commands and scrolls* -- one command is one thing the owner did, and
-`LazyColumnMMD` pages by item so a scroll is already discrete. Off by default,
-behind **Settings -> Flash screen to clear ghosting**, **interval 12**. Written
-but **not yet seen to fire**; see "Clearing ghosting" for why it is a heuristic
-and why the `meink` service was not used. The interval was 5, which interrupts
-a run of checkmark taps: the flash is itself a full repaint and the most
-intrusive thing the app does, so it is now spent about half as often.
+over the window for 100ms, which is InkOS's exact mechanism and duration. Since
+2026-10-07 it is the Fit/Macros version: it counts **every lifted finger in
+every activity** (a window callback installed from `HabitsApplication`), and it
+is **on by default, every 12**, behind **Settings -> E Ink**, where the interval
+can be 6, 8, 12, 16 or 24. It used to count commands and pages scrolled on the
+habits list only, was off by default, and was never once seen to fire. See
+"Clearing ghosting" for why it is a heuristic and why the `meink` service was
+not used.
 
 **Developer mode is gone**, and with it the last dropdown on ShowHabit. It was
 a Settings toggle gating a `DropdownMenuMMD` holding "randomize" -- which
@@ -443,21 +494,25 @@ This also settles one of the two conflicts the audits flagged (below): the
 overflow-menu rule now has exactly one exception left, the sort/filter menu on
 the habits list, not two.
 
-**Settings pages at the same speed as the habits list.** `LazyColumnMMD` does
-not scroll freely -- it steps `scrollStep` items per drag -- and Settings was
-using the default of 4 where the habits list passes 6. It was the slower screen
-to get through of the two despite having the taller rows (64dp against 56dp);
-both are 6 now.
+**Settings is grouped drill-down pages** (2026-10-07, UI-PATTERNS A4), like the
+Kompakt's own Settings and the owner's Anki and Tasks: the first page lists
+Interface, E Ink, Reminder, Sync and Data, with what each holds under its name,
+and the version as a line of text. Rows are MMD list rows -- Black 21sp label
+when a value sits under it, Medium 18sp value, 64dp, dotted dividers from the
+label -- and a toggle row is one target with an inert `SwitchMMD`. The open page
+is saved, so a recreate keeps it.
 
 **The stores cannot replace this build.** See below.
 
 ### Half-done — read before touching the habits screen
 
 - **Drag-to-reorder: built, rebuilt, and awaiting one human check.**
-  Long press a habit to select it, long press again to pick it up, drag,
-  release. The list holds still while you drag and the separator you would
-  drop into thickens; the reorder happens once, on release. Holding at the top
-  or bottom edge turns a page every second.
+  **Hold a habit's name and let go to select it; hold and drag, without
+  letting go, to move it** (MMD-GUIDE P7, the same in all the owner's apps;
+  until 2026-10-07 it was "long press to select, long press again to pick up").
+  The list holds still while you drag and the separator you would drop into
+  thickens; the reorder happens once, on release. Holding at the top or bottom
+  edge turns a page every second.
 
   **The gesture is owned by a container around the list, not by a row**, and
   four separate bugs are the reason. Anyone touching this should read them
@@ -467,41 +522,37 @@ both are 6 now.
      consumed. Consuming before reading silently zeroed every drag: the habit
      picked up and then never travelled. Read first, consume second — or use
      `positionChangeIgnoreConsumed`.
-  2. `LazyColumnMMD` claims drags for its own paging. `verticalDrag` and
+  2. The list claims swipes for its own paging (`PagedList.pageOnSwipe`, as
+     `LazyColumnMMD` did). `verticalDrag` and
      `detectDragGesturesAfterLongPress` both treat a claimed movement as a
      *cancelled* drag and give up, so neither works here. The gesture runs in
      the **`Initial` pointer pass**, where a parent sees events before its
-     children, and consumes only once a drag is actually running — so taps,
-     long presses and the list's own scrolling are untouched.
+     children, and consumes only once a hold is recognised — so taps, swipes
+     and the day cells' own long press are untouched.
   3. Reading the finger as `thatRow.offset + local y` broke the moment a page
      turned: the row left `visibleItemsInfo`, the lookup returned nothing, and
      no boundary could be computed again — you could scroll but not place.
      Worse, a `LazyColumn` may **dispose** a row it has scrolled past,
      destroying the node hosting the gesture. A container is never disposed and
      its coordinates are the list's own.
-  4. Folding tap, long press and drag into a single detector — tried, reverted.
-     It stopped the name column receiving any pointer events at all, taps
-     included. `combinedClickable` keeps tap and long-press-to-select; the drag
-     detector is simply not armed until a habit is selected, so at any moment
-     exactly one of them wants the long press.
+  4. Folding tap, long press and drag into a single detector *on the row* —
+     tried, reverted. It stopped the name column receiving any pointer events
+     at all, taps included. So the name keeps a plain `clickable` for the tap,
+     and the hold (select or drag) belongs to the container alone; the name
+     must not have a long click of its own.
 
   Still open:
 
-  - **The list scrolls when you release.** Not the page turn — that is
-    cancelled on release — but `LazyColumn` re-anchoring: it keeps the keyed
-    first-visible item in view, and dropping a habit moves that item. The fix
-    is to snapshot `firstVisibleItemIndex`/`firstVisibleItemScrollOffset`
-    before the drop and restore them once the list has rebuilt.
+  - ~~**The list scrolls when you release.**~~ **Fixed 2026-10-07.** It was
+    `LazyColumn` re-anchoring on the keyed first-visible item, which a drop
+    moves. The position is snapshotted before the drop and put back with
+    `requestScrollToItem` in the same frame the reordered list arrives.
   - **It only works in manual order** (`BY_POSITION`), silently. Sorted by name
     or score the habit picks up and the drop does nothing, with no explanation
     anywhere.
   - **The page-turn case has never been confirmed working by a human.** It
     cannot be driven over adb at all — see "Verified on the device".
 
-- **`ScrollableChart` cannot be deleted yet** — it is still the base class for
-  `ScoreChart` and `FrequencyChart` on the ShowHabit screen.
-- **Drag-to-reorder is gone.** `performReorder` survives on the model;
-  no UI calls it. Plan was long-press → move up / move down.
 - **There are no UI tests for the habits screen.** The whole Espresso suite
   drove the old View classes and the overflow menu that MuditaOS has no
   counterpart for, so it was deleted rather than half-fixed: the `acceptance/`
@@ -536,27 +587,19 @@ both are 6 now.
   The hollow *outline* variants (`circle_o`, `square_o`, `circle_thin`) are all
   absent; hollow shapes come from drawing a solid glyph with
   `drawStyle = Stroke`, which is what `GlyphText(hollow = true)` does.
-- **`SCROLLBAR_GUTTER = 40dp`, and it is conditional.** Read `LazyMMD.kt`
-  before touching this. The scrollbar is **not** content padding
-  (`LazyDefaultsMMD.contentPadding` is `PaddingValues(0.dp)`): the list sits in
-  a `Row` with `weight(1f)` next to a scrollbar composed **only while
-  `canScrollBackward || canScrollForward`**. It is 24dp of arrow
-  (`navigateIconSize`) inside 8dp of padding either side. So the rows are 40dp
-  narrower when the list scrolls and full width when it does not, and the day
-  heading — which is outside the list — has to follow, which is why it takes a
-  `scrollbarGutter` derived from a hoisted `LazyListState` rather than a
-  constant. Hard-coding it looks right only until the list is short enough not
-  to scroll.
-- **`LazyColumnMMD` pages, and it pages by item.** It sets
-  `userScrollEnabled = false` and handles drags itself by calling
-  `scrollToItem` in steps of `LazyDefaultsMMD.SCROLL_STEP` (4); the scrollbar
-  thumb is sized from `totalItemsCount`, not from pixels. Anything hosted as
-  one tall item therefore **cannot be scrolled at all** — every `scrollToItem`
-  clamps to index 0 — and a card hidden with `visibility = GONE` still counts
-  towards the thumb and the paging. Emit real items, and drop hidden ones from
-  the list rather than collapsing them. (This is also the answer to the
-  "lists still scroll continuously" gap the design notes used to list: they
-  don't.)
+- **The scrollbar's column is 40dp (`PagedListDefaults.ScrollbarGutter`), and
+  on the habits list it is always there.** 24dp of arrow inside 8dp of padding
+  either side, beside the list rather than inside it. `PagedList` drops it on a
+  list that fits, which would make the day heading (outside the list) need a
+  conditional inset; the habits list passes `canGrow = true` instead, so the
+  heading takes the constant and the columns never move.
+- **Lists are `PagedList`, never `LazyColumnMMD`** (`org.isoron.uhabits.mmd`).
+  `LazyColumnMMD` drew its rows at alpha 0 for the first frame (every screen
+  painted twice), paged a fixed number of *items* and sized its thumb by item
+  count. `PagedList` is Foundation's `LazyColumn` with scrolling off and its
+  own swipe-to-page: the last visible row becomes the first, back returns to
+  the exact page, the thumb is sized by height. Emit one item per row; a row
+  taller than the page is paged through by the page.
 - **3 day columns, sized by weight.** 140dp name column, then the remaining
   ~180dp of the 320dp content area split three ways. Four columns fit
   arithmetically but leave too little for a name, and the headings start to
@@ -576,7 +619,7 @@ comparison: sync 5.2s → 140ms, the habit cache 24ms, the score recompute moved
 off the startup path.
 
 ```bash
-cd C:\Users\Antonio\loop-habit-tracker-fork && .\gradlew :uhabits-android:assembleRelease
+cd C:\Users\Antonio\mmd\habits-mmd && .\gradlew :uhabits-android:assembleRelease
 ```
 
 ```bash
@@ -591,6 +634,80 @@ builds install over each other without losing data.
 `run-as` needs `debuggable=true` and every diagnostic in this document goes
 through it: reading the database, reading `files/sync-status.txt`, editing
 preferences. A release build can do none of that.
+
+## Startup, measured (2026-09-24)
+
+Release build, owner's 44 habits, `am start -W` after `am force-stop`, and
+"Fully drawn" from `reportFullyDrawn` once the habits themselves are on screen:
+
+| | first frame | habits visible |
+| --- | --- | --- |
+| debug build (what was installed) | 4,350-4,630ms | - |
+| release, plain `adb install` | ~1,000ms | - |
+| + installed with its `.dm` (profile compiled at install) | ~680ms | ~835ms |
+| + R8 optimising libraries (APK 15.6 -> 9.5MB) | ~615ms | - |
+| + an app baseline profile | ~548ms | ~600ms |
+| + fonts preloaded, reminders and sync off the startup path | **~465-505ms** | **~545-590ms** |
+| + no loading state: held until complete, one paint | **~600ms** (same frame) | **~600ms** |
+| + no starting window (`windowDisablePreview`) | **~575ms** (same frame) | **~575ms** |
+| relaunch while the process is alive (warm) | **~205-245ms** | |
+
+**No starting window.** Mudita's Meditation cold-starts in ~510ms and still
+feels instant, because Android draws no starting window for it: the launcher
+stays on the panel until the app's first real frame replaces it, one E Ink
+refresh. This app used to get a blank white splash in between, two full-screen
+refreshes, and that is what read as slow. `ListHabitsLaunchTheme` sets
+`windowDisablePreview`, so the launcher now gives way directly to the finished
+list; the held first draw in `ListHabitsActivity` makes that one paint. A
+system trace of a launch should show no `addStartingWindow` and no
+`Splash Screen` layer.
+
+For scale, Mudita's own Calculator and Meditation (preinstalled, fully AOT)
+cold-start in 510-560ms on the same device.
+
+**Install with the `.dm`, or the profile is not used.** A plain `adb install`
+leaves the app `status=verify` -- nothing compiled -- and this device's
+background dexopt is the only other thing that would compile it. AGP writes the
+dex metadata next to the APK:
+
+```bash
+adb -s MK20250408317 install-multiple -r uhabits-android/build/outputs/apk/release/uhabits-android-release.apk uhabits-android/build/outputs/apk/release/baselineProfiles/0/uhabits-android-release.dm
+```
+
+`adb shell dumpsys package dexopt | grep -A2 "org.isoron.uhabits]"` should then
+say `speed-profile` / `install-dm`.
+
+**"Don't keep activities" is on on this device** (`always_finish_activities=1`).
+Every HOME destroys the screen, so a relaunch is a 220ms warm start instead of
+a hot one. It is a developer option, not something the app can change.
+
+**Regenerating `src/main/baseline-prof.txt`.** This device waits 150 seconds
+before ART first saves a runtime profile (`dalvik.vm.ps-min-first-save-ms`), so
+short runs record nothing. Run the release build for three minutes, then
+`adb shell cmd package dump-profiles org.isoron.uhabits` and pull
+`/data/misc/profman/org.isoron.uhabits-primary.prof.txt`. That dump is in ART's
+Java-signature format and has to be converted to descriptor rules.
+
+**Measuring.** The release build is `profileable`, and startup is wrapped in
+`Trace` sections (`traced { }`, and every task-runner job by class name), so
+`adb shell atrace -a org.isoron.uhabits am wm view gfx dalvik sched` during a
+launch shows the whole of it, app code included. `simpleperf record --app` works
+too.
+
+**One paint, on purpose.** The first draw is held (`holdSplashUntilDrawn`) until
+the habits are loaded, the list has laid out its rows, and the frame after that
+has composed `LazyColumnMMD`'s scrollbar -- it only adds the scrollbar once it
+knows the list can scroll, so releasing on "loaded" painted it a frame late.
+Header, dates, rows and scrollbar reach the panel together. It costs ~30ms of
+"habits visible" against drawing the header first with a loading state, which
+is the trade the owner asked for. The load now starts in `onResume`.
+
+**Where the ~465ms first frame of the two-paint version went:** ~60ms of system before the process exists,
+~57ms process start, 72ms `bindApplication` (27ms of it loading the app image),
+51ms creating the activity, 29ms resuming it, then the first frame: ~180ms on
+the main thread (Compose's first composition and measure ~75ms, drawing ~35ms)
+and ~45ms on the render thread, 16ms of which is creating the GL context. The
+habits arrive in a second frame of ~70ms.
 
 ## Keeping the stores off this build
 
@@ -743,17 +860,14 @@ disbelieving working code because the log is silent.
 
 Ranked by what it costs the owner, not by what it costs to build.
 
-1. **Confirm drag-to-reorder survives a page turn.** Rebuilt so the gesture is
-   owned by a container around the list rather than by the dragged row, which
-   is what broke it: the row scrolled out of view mid-drag, took its layout
-   entry with it, and no drop boundary could be computed again. It cannot be
-   tested over adb (see "Verified on the device"), so this needs a finger.
-2. **See the ghosting flash fire.** Enabled, interval 12, never observed.
-3. **The two remaining charts** — `ScoreChart` and `BarChart`. These are the
-   only thing keeping `viewBinding` alive and the only Views left on ShowHabit.
-   They are also the hardest piece in the app, because both are interactive:
-   dragging them scrolls back through history via `ScrollableChart`, and that
-   has to be rebuilt in Compose without losing the ability to look back.
+1. **Try the 2026-10-07 review pass on the phone** (owner): the new hold
+   gesture (hold-release selects, hold-drag moves, across a page turn — it
+   cannot be driven over adb); the bottom panels; the system font; Settings'
+   pages; ‹ › on both charts and the calendar, and tapping a calendar day;
+   that the flash fires about every twelve taps; that `uhabits.db` appears in
+   `/sdcard/Android/data/org.isoron.uhabits/files/` after leaving the app.
+2. ~~See the ghosting flash fire.~~ Now on by default; see 1.
+3. ~~The two remaining charts.~~ **Done 2026-10-07**: Compose, stepped with ‹ ›.
 4. **Decide on Automation** (the Tasker/Locale plugin). It is registered and
    would work, but **no Tasker, Locale, Automate or MacroDroid is installed on
    the device**, so today it advertises a capability nothing can use. Deleting
@@ -771,7 +885,11 @@ Ranked by what it costs the owner, not by what it costs to build.
    files, so it wants its own pass when nothing else is in flight.
 7. **Rewrite the habits-screen tests** on `createAndroidComposeRule`.
 8. **Then** `buildFeatures.viewBinding = false`, which is the finish line the
-   whole restyle has been walking towards.
+   whole restyle has been walking towards. Since the charts went Compose,
+   Automation (4) is the only thing left in the way.
+9. **Sort by name or score silently disables dragging.** The habit picks up
+   and the drop does nothing. Either hide the drop line outside manual order or
+   say so.
 
 ### Done since this list was written
 
@@ -814,19 +932,23 @@ and because two of them contradict what this file used to recommend.
   duplicated heading, gained a control row and a y-axis gutter, and labels its
   months with single letters. See the three commits for what each fixed.
 
-### Two things the audits flagged that are decisions, not bugs
+### Two things the audits flagged, now decided (2026-10-07)
 
-- **The sort/filter `DropdownMenuMMD` on the habits list is an overflow menu**,
-  which `eink-design.md` says MuditaOS K does not have anywhere. It is now the
-  *only* one left — ShowHabit's went with developer mode — so either the rule
-  needs an explicit exception written into it, or the sort options need to
-  move. It is not a misuse of the component — its border, colours and zero
-  elevation are all correct — it is a conflict with our own stated rule.
-- **Row dividers are solid, not dotted.** `eink-design.md` asks for dotted.
-  MMD cannot draw it (see MMD's own gaps). Either hand-roll a dashed `Canvas`
-  line or amend the rule.
+- **The sort/filter `DropdownMenuMMD` stays, and the rule says why.** MMD
+  Menus is a real component (zeroheight 975be6: an in-screen menu opened from
+  a header icon, pattern P3, the Chess game menu), and the owner's other four
+  apps have since adopted one. What MuditaOS K does not have is the *Android
+  overflow* (⋮ hiding the screen's main actions). This menu holds six items
+  (MMD's maximum), its groups split by a dotted line.
+- **Row dividers are dotted.** `DashedDividerMMD`; see MMD's own gaps.
 
-### The charts problem, mostly solved
+### The charts problem, solved (2026-10-07)
+
+`ScoreChart` and `BarChart` are `ScoreChartMMD` and `BarChartMMD` in
+`HabitChartsMMD.kt`: drawn in Compose from the same `ScoreCardState` and
+`BarCardState`, a page of buckets at a time with ‹ › and the range between the
+arrows, dotted gridlines where the Views drew halftoned grey. Nothing below is
+current any more; it is kept for why.
 
 It used to be framed as one large porting job. Most of it turned out not to
 need porting at all: `StreakChart`, `FrequencyChart` and `TargetChart` were
@@ -857,10 +979,11 @@ changes when the time comes: Compose hands you the same
 Flagged so a future pass can judge them rather than assume they came from MMD:
 
 - **Halftone dithering**, `org.isoron.platform.gui.Halftone`. Non-pure colours
-  become 4×4 Bayer dot patterns. Used by `AndroidCanvas.setColor` and by what
-  is left of the View-drawn charts — `ScoreChart` and `BarChart`. It had five
-  users; three of them (`StreakChart`, `FrequencyChart`, `TargetChart`) are
-  deleted, and each was deleted **because** of what the dither did to it: a
+  become 4×4 Bayer dot patterns. Used by `AndroidCanvas.setColor`; every
+  View-drawn chart that also used it is deleted (the last two, `ScoreChart` and
+  the hosted `BarChart`, went Compose on 2026-10-07 with dotted gridlines
+  instead). Three of them were deleted **because** of what the dither did: a
+
   streak bar became a grey blob carrying a grey numeral, a frequency bubble
   became a smudge, a target bar put its own label on the boundary between
   filled and unfilled.
@@ -893,7 +1016,7 @@ Flagged so a future pass can judge them rather than assume they came from MMD:
 Build, install, screenshot:
 
 ```bash
-cd C:\Users\Antonio\loop-habit-tracker-fork && .\gradlew :uhabits-android:assembleDebug
+cd C:\Users\Antonio\mmd\habits-mmd && .\gradlew :uhabits-android:assembleDebug
 ```
 
 ```bash

@@ -120,28 +120,26 @@ class NumberDialog : MmdPanelDialogFragment() {
                 .padding(bottom = 8.dp),
         )
 
+        // Stacked, solid on top: written escape-first, the commit last.
         PanelActions {
+            if (prefs.areQuestionMarksEnabled) {
+                PanelSecondaryAction(
+                    label = stringResource(R.string.unknown_label),
+                    onClick = { commit(Entry.UNKNOWN.toDouble() / 1000) },
+                )
+            }
+            if (prefs.isSkipEnabled) {
+                PanelSecondaryAction(
+                    label = stringResource(R.string.skip_day),
+                    onClick = { commit(Entry.SKIP.toDouble() / 1000) },
+                )
+            }
             PanelPrimaryAction(
                 label = stringResource(R.string.save),
                 // An unparseable or empty value saves nothing rather than
                 // crashing or guessing.
                 onClick = { value.normalized().toDoubleOrNull()?.let(::commit) },
-                modifier = Modifier.weight(1f),
             )
-            if (prefs.isSkipEnabled) {
-                PanelSecondaryAction(
-                    label = stringResource(R.string.skip_day),
-                    onClick = { commit(Entry.SKIP.toDouble() / 1000) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            if (prefs.areQuestionMarksEnabled) {
-                PanelSecondaryAction(
-                    label = stringResource(R.string.unknown_label),
-                    onClick = { commit(Entry.UNKNOWN.toDouble() / 1000) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
         }
     }
 

@@ -21,17 +21,19 @@ package org.isoron.uhabits.activities.common.dialogs
 
 import android.app.Dialog
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatDialogFragment
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.ComposeView
-import com.mudita.mmd.ThemeMMD
+import org.isoron.uhabits.mmd.MmdTheme
 
 /**
- * A popup that floats in the middle of the screen, holds a [PanelMMD], and
- * casts no shadow over what is behind it.
+ * A popup anchored to the bottom of the screen at full width, holding a
+ * [PanelMMD], and casting no shadow over what is behind it.
  *
  * The window is stripped of both things Android gives a dialog by default:
  *
@@ -43,7 +45,10 @@ import com.mudita.mmd.ThemeMMD
  *   is exactly what `ModalBottomSheetMMD` refuses by defaulting its own
  *   `ScrimColor` to `Color.Transparent`.
  *
- * Content is Compose under [ThemeMMD], returned from `onCreateView` rather
+ * It also has **no window animation**: a dialog slides or fades in by
+ * default, a run of partial repaints on E Ink.
+ *
+ * Content is Compose under [MmdTheme], returned from `onCreateView` rather
  * than set in `onCreateDialog` so the fragment wires up the lifecycle and
  * saved-state owners a `ComposeView` needs.
  */
@@ -57,8 +62,21 @@ abstract class MmdPanelDialogFragment : AppCompatDialogFragment() {
             window?.apply {
                 setBackgroundDrawableResource(android.R.color.transparent)
                 setDimAmount(0f)
+                setWindowAnimations(0)
+                setGravity(Gravity.BOTTOM)
+                // Anchored to the bottom, the keyboard would cover the fields.
+                setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
             }
         }
+
+    /** Full width, as tall as its content. Only takes effect once the window exists. */
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -66,7 +84,7 @@ abstract class MmdPanelDialogFragment : AppCompatDialogFragment() {
         savedInstanceState: Bundle?,
     ): View = ComposeView(requireContext()).apply {
         setContent {
-            ThemeMMD {
+            MmdTheme {
                 PanelMMD { PanelContent() }
             }
         }

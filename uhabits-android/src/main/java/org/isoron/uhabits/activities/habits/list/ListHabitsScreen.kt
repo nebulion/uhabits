@@ -32,7 +32,6 @@ import nl.dionsegijn.konfetti.core.emitter.Emitter
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import org.isoron.platform.gui.EinkRefresh
 import org.isoron.platform.gui.toInt
 import org.isoron.uhabits.HabitsApplication
 import org.isoron.uhabits.R
@@ -89,7 +88,6 @@ const val RESULT_EXPORT_CSV = 102
 const val RESULT_EXPORT_DB = 103
 const val RESULT_BUG_REPORT = 104
 const val RESULT_REPAIR_DB = 105
-const val RESULT_SYNC_NOW = 110
 const val RESULT_PICK_SYNC_FOLDER = 111
 const val RESULT_FORGET_SYNC_FOLDER = 112
 const val RESULT_GRANT_FILE_ACCESS = 114
@@ -122,8 +120,6 @@ class ListHabitsScreen
 
     val activity = (context as AppCompatActivity)
 
-    private val einkRefresh = EinkRefresh(preferences)
-
     /**
      * The transient message the screen is currently showing, if any.
      *
@@ -136,6 +132,9 @@ class ListHabitsScreen
     var message by mutableStateOf<String?>(null)
         private set
 
+    /** True while [onSyncNow] is running, so a second request is dropped. */
+    private var isSyncing = false
+
     private fun postMessage(text: String) {
         message = text
     }
@@ -145,29 +144,6 @@ class ListHabitsScreen
         message = null
     }
 
-    /**
-     * One page of scrolling, counted towards the E Ink flash.
-     *
-     * Scrolling is where ghosting is worst — a command repaints a cell or two,
-     * where a scroll moves the whole page and leaves the old rows behind it —
-     * so it feeds the same counter rather than a separate one. `LazyColumnMMD`
-     * pages by item instead of scrolling freely, so "a scroll" is already a
-     * discrete jump and there is nothing to debounce.
-     */
-    fun onScrolled() = einkRefresh.onChange(activity)
-
-    /**
-     * A drag-to-reorder just finished.
-     *
-     * Counted like everything else rather than flashed outright. Flashing on
-     * every drop was tried and it is too much: reordering is something you do
-     * several times in a row, and a full-screen black frame after each one
-     * turns a minute of tidying into a strobe. A drop is one thing the owner
-     * did, so it takes its place alongside checkmarks and pages of scrolling
-     * and the panel clears on the twelfth.
-     */
-    fun onReorderFinished() = einkRefresh.onChange(activity)
-
     fun onAttached() {
         commandRunner.addListener(this)
     }
@@ -176,15 +152,9 @@ class ListHabitsScreen
         commandRunner.removeListener(this)
     }
 
-    /**
-     * Every habit change lands here, which makes it the one place worth
-     * counting for the E Ink flash: one command is one thing the owner did,
-     * as opposed to a redraw, of which there are many and which mean nothing.
-     */
     override fun onCommandFinished(command: Command) {
         val msg = getExecuteString(command)
         if (msg != null) postMessage(msg)
-        einkRefresh.onChange(activity)
     }
 
     fun onResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -218,7 +188,6 @@ class ListHabitsScreen
             RESULT_EXPORT_DB -> onExportDB()
             RESULT_BUG_REPORT -> behavior.get().onSendBugReport()
             RESULT_REPAIR_DB -> behavior.get().onRepairDB()
-            RESULT_SYNC_NOW -> onSyncNow()
             RESULT_GRANT_FILE_ACCESS -> showAllFilesAccessScreen()
 
             RESULT_PICK_SYNC_FOLDER -> showPickSyncFolderScreen()
@@ -278,6 +247,8 @@ class ListHabitsScreen
     }
 
     fun onSyncNow() {
+        if (isSyncing) return
+        isSyncing = true
         val component = (activity.application as HabitsApplication).component
         taskRunner.execute(
             object : Task {
@@ -293,7 +264,10 @@ class ListHabitsScreen
                         when {
                             report == null ->
                                 activity.resources.getString(R.string.sync_folder_not_set)
+                            // Asked for by hand, so it always answers -- a
+                            // sync with nothing to do is still news.
                             else -> AndroidSync.describe(report)
+                                ?: activity.resources.getString(R.string.sync_up_to_date)
                         }
                     } catch (e: Exception) {
                         activity.resources.getString(R.string.sync_failed, e.message ?: "")
@@ -301,6 +275,7 @@ class ListHabitsScreen
                 }
 
                 override fun onPostExecute() {
+                    isSyncing = false
                     model.refresh()
                     message?.let { postMessage(it) }
                 }

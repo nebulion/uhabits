@@ -189,18 +189,18 @@ open class Preferences(private val storage: Storage) {
     /**
      * Whether to flash the screen periodically to clear E Ink ghosting.
      *
-     * Off by default, which is what InkOS does with the same feature: the
-     * flash is itself a visible interruption, so it should be something the
-     * owner turns on because they can see ghosting, not something imposed.
+     * On by default, the same in all five of the owner's Kompakt apps
+     * (PROJECT-REVIEWS, 2026-10-07). It was off, following InkOS, and so was
+     * never once seen to fire.
      */
     var isEinkRefreshEnabled: Boolean
-        get() = storage.getBoolean("pref_eink_refresh_enabled", false)
+        get() = storage.getBoolean("pref_eink_refresh_enabled", true)
         set(value) {
             storage.putBoolean("pref_eink_refresh_enabled", value)
         }
 
     /**
-     * How many recorded changes between flashes.
+     * How many lifted fingers (taps, swipes, drops) between flashes.
      *
      * There is no established convention to copy here — InkOS fires on app
      * exit rather than on a counter — so this is ours. Twelve is a couple of

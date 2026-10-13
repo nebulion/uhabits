@@ -26,8 +26,6 @@ import android.graphics.Rect
 import android.graphics.Typeface
 import android.text.TextPaint
 import org.isoron.uhabits.utils.InterfaceUtils.getFontAwesome
-import org.isoron.uhabits.utils.InterfaceUtils.latoBold
-import org.isoron.uhabits.utils.InterfaceUtils.latoRegular
 
 class AndroidCanvas : Canvas {
 
@@ -149,12 +147,10 @@ class AndroidCanvas : Canvas {
     }
 
     override fun setFont(font: Font) {
-        // The charts are drawn straight onto a Canvas, so they never see the
-        // theme's fontFamily and were still rendering in the platform face
-        // while every other view had switched to Lato. Match them up.
+        // The system font, as everywhere else in the app (MmdTheme).
         textPaint.typeface = when (font) {
-            Font.REGULAR -> latoRegular(context)
-            Font.BOLD -> latoBold(context)
+            Font.REGULAR -> Typeface.DEFAULT
+            Font.BOLD -> Typeface.DEFAULT_BOLD
             Font.FONT_AWESOME -> getFontAwesome(context)
         }
         updateMHeight()

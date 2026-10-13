@@ -21,6 +21,7 @@ package org.isoron.uhabits.activities.habits.show
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import com.mudita.mmd.components.text.TextMMD
 import org.isoron.uhabits.core.ui.screens.habits.show.views.HistoryCardState
 import org.isoron.uhabits.core.ui.views.HistoryChart
 import org.isoron.platform.time.DayOfWeek
+import org.isoron.platform.time.LocalDate
 import java.util.Calendar
 import java.text.DateFormatSymbols
 
@@ -67,12 +69,19 @@ import java.text.DateFormatSymbols
  * `EntryList.getByInterval` produces. Getting that backwards mirrors a habit's
  * whole history and looks entirely plausible on screen, so the index maths is
  * written out once, here, and explained rather than inlined.
+ *
+ * **Tap a day to change it** (UI-PATTERNS B5): [onDayClick] opens that day's
+ * entry, which is how a day older than the habits list's three columns can be
+ * edited again since the old history editor went. [page] steps back through
+ * history [weeks] at a time; the caller draws the ‹ › for it.
  */
 @Composable
 fun HabitCalendarMMD(
     state: HistoryCardState,
     modifier: Modifier = Modifier,
-    weeks: Int = WEEKS,
+    weeks: Int = CALENDAR_WEEKS,
+    page: Int = 0,
+    onDayClick: ((LocalDate) -> Unit)? = null,
 ) {
     val ink = MaterialTheme.colorScheme.onBackground
 
@@ -111,15 +120,22 @@ fun HabitCalendarMMD(
                         // Days back from today. The rightmost column is the
                         // current week, so it is `weeks - 1 - column` whole
                         // weeks back, plus however far up the column today is.
-                        val daysAgo = (weeks - 1 - column) * DAYS_IN_WEEK + (todayRow - row)
+                        val daysAgo = (weeks - 1 - column) * DAYS_IN_WEEK + (todayRow - row) +
+                            page * weeks * DAYS_IN_WEEK
+                        val isDay = daysAgo >= 0 && daysAgo < state.series.size
                         DaySquare(
                             square = state.series.getOrNull(daysAgo),
                             // Negative is the future — the rest of this week —
                             // and past the end of the series is before this
                             // habit had any entries at all. Neither is a day
                             // that can be judged, so neither is drawn.
-                            isDay = daysAgo >= 0 && daysAgo < state.series.size,
+                            isDay = isDay,
                             ink = ink,
+                            onClick = if (isDay && onDayClick != null) {
+                                { onDayClick(state.today.minus(daysAgo)) }
+                            } else {
+                                null
+                            },
                         )
                     }
                 }
@@ -133,25 +149,29 @@ private fun DaySquare(
     square: HistoryChart.Square?,
     isDay: Boolean,
     ink: androidx.compose.ui.graphics.Color,
+    onClick: (() -> Unit)? = null,
 ) {
     if (!isDay) {
         Box(modifier = Modifier.size(CELL))
         return
     }
+    // The tap opens an editor rather than toggling, so a square this small is
+    // a safe target: a mistap costs a Cancel, not a wrong entry.
+    val tap = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     when (square) {
         HistoryChart.Square.ON, HistoryChart.Square.DIMMED ->
             Box(
-                modifier = Modifier
+                modifier = tap
                     .size(CELL)
                     .background(ink, CELL_SHAPE),
             )
 
-        HistoryChart.Square.HATCHED -> InnerMark(ink, SKIP_MARK)
-        HistoryChart.Square.GREY -> InnerMark(ink, PARTIAL_MARK)
+        HistoryChart.Square.HATCHED -> InnerMark(ink, SKIP_MARK, tap)
+        HistoryChart.Square.GREY -> InnerMark(ink, PARTIAL_MARK, tap)
 
         else ->
             Box(
-                modifier = Modifier
+                modifier = tap
                     .size(CELL)
                     .border(OUTLINE, ink, CELL_SHAPE),
             )
@@ -160,9 +180,13 @@ private fun DaySquare(
 
 /** An outlined day holding a smaller solid one. */
 @Composable
-private fun InnerMark(ink: androidx.compose.ui.graphics.Color, inner: androidx.compose.ui.unit.Dp) {
+private fun InnerMark(
+    ink: androidx.compose.ui.graphics.Color,
+    inner: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(CELL)
             .border(OUTLINE, ink, CELL_SHAPE),
         contentAlignment = Alignment.Center,
@@ -197,7 +221,8 @@ private const val DAYS_IN_WEEK = 7
  * inside the panel's 361dp with the weekday labels and still leaves the cells
  * big enough to count at a glance.
  */
-private const val WEEKS = 12
+const val CALENDAR_WEEKS = 12
+
 
 private val CELL = 20.dp
 private val CELL_GAP = 6.dp

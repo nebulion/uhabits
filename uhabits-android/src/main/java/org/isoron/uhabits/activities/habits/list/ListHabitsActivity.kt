@@ -19,15 +19,18 @@
 
 package org.isoron.uhabits.activities.habits.list
 
+import org.isoron.uhabits.sync.AutoSync
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Build
 import android.os.Bundle
+import android.os.Trace
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
+import androidx.activity.compose.ReportDrawnWhen
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.collectAsState
@@ -53,6 +56,7 @@ import org.isoron.uhabits.inject.DaggerHabitsActivityComponent
 import org.isoron.uhabits.inject.HabitsActivityComponent
 import org.isoron.uhabits.inject.HabitsApplicationComponent
 import org.isoron.uhabits.utils.dismissCurrentDialog
+import org.isoron.uhabits.utils.traced
 
 class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
 
@@ -60,6 +64,9 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
 
     /** Guards the one-off deferred work in [startDeferredWork]. */
     private var hasRecomputed = false
+
+    /** Set from composition; see [holdSplashUntilDrawn]. */
+    private var hasComposedHabits = false
     lateinit var component: HabitsActivityComponent
     lateinit var taskRunner: TaskRunner
     lateinit var model: HabitCardListModel
@@ -89,31 +96,39 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
         super.onCreate(savedInstanceState)
 
         appComponent = (applicationContext as HabitsApplication).component
-        component = DaggerHabitsActivityComponent
-            .builder()
-            .activityContextModule(ActivityContextModule(this))
-            .habitsApplicationComponent(appComponent)
-            .build()
-        component.themeSwitcher.apply()
+        component = traced("activity component") {
+            DaggerHabitsActivityComponent
+                .builder()
+                .activityContextModule(ActivityContextModule(this))
+                .habitsApplicationComponent(appComponent)
+                .build()
+        }
+        traced("themeSwitcher") { component.themeSwitcher.apply() }
 
         prefs = appComponent.preferences
         prefs.addListener(this)
         midnightTimer = appComponent.midnightTimer
-        screen = component.listHabitsScreen
-        model = component.habitCardListModel
+        screen = traced("listHabitsScreen") { component.listHabitsScreen }
+        model = traced("habitCardListModel") { component.habitCardListModel }
         taskRunner = appComponent.taskRunner
-        menu = component.listHabitsMenu
+        menu = traced("listHabitsMenu") { component.listHabitsMenu }
         Thread.setDefaultUncaughtExceptionHandler(BaseExceptionHandler(this))
-        component.listHabitsBehavior.onStartup()
+        traced("onStartup") { component.listHabitsBehavior.onStartup() }
 
         holdSplashUntilDrawn()
 
         val behavior = component.listHabitsBehavior
         val selectionBehavior = component.listHabitsSelectionMenuBehavior
+        Trace.beginSection("setContent")
         setContent {
             val habits by model.habits.collectAsState()
             val selectedIds by model.selectedIds.collectAsState()
             val hasLoaded by model.hasLoaded.collectAsState()
+            // "Fully drawn" in logcat, once the habits themselves are on
+            // screen. `am start -W` only times the first frame, which can be
+            // the loading state; this is the number that says when the app
+            // is actually usable.
+            ReportDrawnWhen { hasLoaded }
 
             // Recomputed from the behavior whenever the selection changes: it
             // reads the selected habits back out of the model, so it has to be
@@ -143,10 +158,10 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
                 areQuestionMarksEnabled = prefs.areQuestionMarksEnabled,
                 showArchived = prefs.showArchived,
                 showCompleted = prefs.showCompleted,
-                onScrolled = { screen.onScrolled() },
                 message = screen.message,
                 onMessageShown = { screen.onMessageShown() },
                 isLoading = !hasLoaded,
+                onReadyToShow = { hasComposedHabits = true },
                 actions = HabitListActions(
                     onToggle = { habit, timestamp, index ->
                         val current = habit.checkmarks.getOrElse(index) { Entry.UNKNOWN }
@@ -198,18 +213,17 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
                     // A drop is two writes: the model moves the row on screen
                     // and hands back the pair to persist, and the behavior
                     // writes the new order to the database. Without the second
-                    // the row springs back on the next refresh. The flash is
-                    // asked for only when something actually moved.
+                    // the row springs back on the next refresh.
                     onDropHabit = { habit, index ->
                         model.moveHabitTo(habit.id, index)?.let { (from, to) ->
                             behavior.onReorderHabit(from, to)
-                            screen.onReorderFinished()
                         }
                     },
                     onDeleteSelected = { selectionBehavior.onDeleteHabits() },
                 ),
             )
         }
+        Trace.endSection()
     }
 
 
@@ -232,6 +246,7 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
     }
 
     override fun onPause() {
+        AutoSync.onChanged = null
         midnightTimer.onPause()
         screen.onDetached()
         model.onDetached()
@@ -241,30 +256,33 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
     }
 
     override fun onResume() {
+        // What a background sync brings in is drawn at once.
+        AutoSync.onChanged = { model.refresh() }
         screen.onAttached()
-        // Loading the habits is deliberately *not* started here on the first
-        // resume. Composition runs on the main thread, and so does every
-        // progress callback the load posts to it, so starting the load first
-        // means the screen composes behind it and nothing is drawn until both
-        // are done -- measured at 2.4s of loading followed by 1.5s of layout,
-        // with the loading indicator never once reaching the panel.
+        // The habits start loading here, on every resume, first included: the
+        // screen is not drawn at all until they have (see
+        // holdSplashUntilDrawn), so the header, the dates, the rows and the
+        // scrollbar reach the panel in one paint.
         //
-        // Started after the first draw instead, the header, the sort row and
-        // the date row appear on their own, with a progress bar where the
-        // habits will be. Later resumes take the normal path: there is already
-        // a screen, and the list should refresh at once.
-        if (hasRecomputed) {
-            model.refresh()
-            model.onAttached()
-        }
+        // This once had to wait for the first draw, when the load reported
+        // progress one habit at a time and each report rebuilt the list on the
+        // main thread -- 2.4s of that, then 1.5s of layout. The rebuilds are
+        // coalesced now (HabitCardListModel), so the load costs the main
+        // thread one rebuild, and running it beside the first composition is
+        // what lets both finish sooner.
+        if (hasRecomputed) model.refresh()
+        model.onAttached()
         midnightTimer.onResume()
 
-        if (appComponent.reminderScheduler.hasHabitsWithReminders()) {
+        if (traced("hasHabitsWithReminders") { appComponent.reminderScheduler.hasHabitsWithReminders() }) {
+            // On the first resume HabitsApplication has only just scheduled
+            // every reminder, so doing it again here would only queue a
+            // second copy of that work in front of the habits list's load.
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                scheduleReminders()
+                if (hasRecomputed) scheduleReminders()
             } else {
                 if (checkSelfPermission(this, POST_NOTIFICATIONS) == PERMISSION_GRANTED) {
-                    scheduleReminders()
+                    if (hasRecomputed) scheduleReminders()
                 } else {
                     // If we have not requested the permission yet, request it. Otherwide do
                     // nothing. This check is necessary to avoid an infinite onResume loop in case
@@ -278,9 +296,22 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
             }
         }
 
-        taskRunner.run {
+        // On the first resume this waits for startDeferredWork, which queues
+        // it behind the habits list's load: the task runner is serial, so
+        // queued here it would run first and the list would wait on the sync.
+        if (hasRecomputed) backupAndSync()
+        parseIntents()
+        super.onResume()
+    }
+
+    private fun backupAndSync() {
+        // `execute`, not `run`: TaskRunner has no `run` of its own, so
+        // `taskRunner.run { }` is Kotlin's scope function and ran all of this
+        // on the main thread. A shared folder slow to answer then held
+        // onResume past five seconds, and Android killed the app for it.
+        taskRunner.execute {
             try {
-                AutoBackup(this@ListHabitsActivity).run()
+                traced("AutoBackup") { AutoBackup(this@ListHabitsActivity).run() }
             } catch (e: Exception) {
                 Log.e("ListHabitActivity", "TaskRunner failed", e)
             }
@@ -288,21 +319,28 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
             // moment the app is known to be in the foreground and idle. It
             // returns immediately when no folder has been chosen.
             try {
-                AndroidSync.run(
-                    this@ListHabitsActivity,
-                    appComponent.habitList,
-                    appComponent.modelFactory,
-                )
+                val report = traced("AndroidSync") {
+                    AndroidSync.run(
+                        this@ListHabitsActivity,
+                        appComponent.habitList,
+                        appComponent.modelFactory,
+                    )
+                }
+                // The list has already drawn by now, so it has to be told
+                // when the folder brought in something new.
+                if (report != null && !report.isEmpty) runOnUiThread { model.refresh() }
             } catch (e: Exception) {
                 Log.e("ListHabitActivity", "Sync failed", e)
             }
         }
-        parseIntents()
-        super.onResume()
     }
 
+    /**
+     * Off the main thread: one alarm-manager binder call per reminder, which
+     * made up most of `onResume` on a cold start.
+     */
     private fun scheduleReminders() {
-        appComponent.reminderScheduler.scheduleAll()
+        taskRunner.execute { traced("scheduleAll") { appComponent.reminderScheduler.scheduleAll() } }
     }
 
     override fun onCreateOptionsMenu(m: Menu): Boolean {
@@ -352,9 +390,10 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
      * the rows, each a separate partial repaint. On a panel this slow that is
      * not a loading animation, it is a sequence of visibly wrong screens.
      *
-     * Refusing the first draws holds the system's splash -- which the theme has
-     * already made an empty white page -- so the app appears in one piece,
-     * fully composed, on a background it already matched.
+     * Refusing the first draws keeps whatever was on the panel before -- the
+     * launcher, since `ListHabitsLaunchTheme` turns the starting window off --
+     * until the app can replace it in one piece, fully composed. One E Ink
+     * refresh from launcher to list, which is how Mudita's own apps open.
      *
      * It waits for the list to have *loaded*, which is not the same as
      * waiting for it to have habits in it. The model emits an empty list
@@ -390,14 +429,11 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
         if (hasRecomputed) return
         hasRecomputed = true
 
-        // Start loading the habits now, with the screen already on the panel.
-        // This is what onResume skips on the first pass; see the note there.
-        model.onAttached()
-
-        taskRunner.run {
-            for (habit in appComponent.habitList) habit.recompute()
+        taskRunner.execute {
+            traced("recompute") { for (habit in appComponent.habitList) habit.recompute() }
             runOnUiThread { model.refresh() }
         }
+        backupAndSync()
     }
 
     private fun holdSplashUntilDrawn() {
@@ -406,7 +442,8 @@ class ListHabitsActivity : AppCompatActivity(), Preferences.Listener {
         content.viewTreeObserver.addOnPreDrawListener(
             object : android.view.ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
-                    val ready = content.width > 0 && content.height > 0
+                    val ready = content.width > 0 && content.height > 0 &&
+                        hasComposedHabits
                     val expired = android.os.SystemClock.uptimeMillis() >= deadline
                     if (!ready && !expired) return false
                     content.viewTreeObserver.removeOnPreDrawListener(this)

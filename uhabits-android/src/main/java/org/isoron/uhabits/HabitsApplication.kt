@@ -19,6 +19,9 @@
 
 package org.isoron.uhabits
 
+import org.isoron.platform.gui.EinkRefresh
+import org.isoron.uhabits.utils.DataCopy
+import org.isoron.uhabits.sync.AutoSync
 import android.app.Application
 import android.content.Context
 import org.isoron.uhabits.core.database.UnsupportedDatabaseVersionException
@@ -30,6 +33,7 @@ import org.isoron.uhabits.inject.DaggerHabitsApplicationComponent
 import org.isoron.uhabits.inject.HabitsApplicationComponent
 import org.isoron.uhabits.inject.HabitsModule
 import org.isoron.uhabits.utils.DatabaseUtils
+import org.isoron.uhabits.utils.traced
 import java.io.File
 
 /**
@@ -44,18 +48,21 @@ class HabitsApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         context = this
+        StartupFonts.preload(this)
 
         if (isTestMode()) {
             val db = DatabaseUtils.getDatabaseFile(context)
             if (db.exists()) db.delete()
         }
 
-        try {
-            DatabaseUtils.initializeDatabase(context)
-        } catch (e: UnsupportedDatabaseVersionException) {
-            val db = DatabaseUtils.getDatabaseFile(context)
-            db.renameTo(File(db.absolutePath + ".invalid"))
-            DatabaseUtils.initializeDatabase(context)
+        traced("initializeDatabase") {
+            try {
+                DatabaseUtils.initializeDatabase(context)
+            } catch (e: UnsupportedDatabaseVersionException) {
+                val db = DatabaseUtils.getDatabaseFile(context)
+                db.renameTo(File(db.absolutePath + ".invalid"))
+                DatabaseUtils.initializeDatabase(context)
+            }
         }
 
         val db = DatabaseUtils.getDatabaseFile(this)
@@ -65,8 +72,17 @@ class HabitsApplication : Application() {
             .habitsModule(HabitsModule(db))
             .build()
 
-        val prefs = component.preferences
+        val prefs = traced("preferences") { component.preferences }
         prefs.lastAppVersion = BuildConfig.VERSION_CODE
+        EinkRefresh.install(this, prefs)
+        DataCopy.install(this)
+        AutoSync.install(
+            application = this,
+            habitList = { component.habitList },
+            modelFactory = { component.modelFactory },
+            taskRunner = component.taskRunner,
+            commandRunner = component.commandRunner,
+        )
 
         if (prefs.isMidnightDelayEnabled) {
             setStartDayOffset(3, 0)
@@ -83,11 +99,15 @@ class HabitsApplication : Application() {
         // the life of the install, whose entire job was to redraw widgets that
         // cannot exist. Listening to commands is dropped for the same reason:
         // it ran twelve binder round-trips per checkmark to find no widgets.
-        reminderScheduler = component.reminderScheduler
-        reminderScheduler.startListening()
+        traced("reminderScheduler") {
+            reminderScheduler = component.reminderScheduler
+            reminderScheduler.startListening()
+        }
 
-        notificationTray = component.notificationTray
-        notificationTray.startListening()
+        traced("notificationTray") {
+            notificationTray = component.notificationTray
+            notificationTray.startListening()
+        }
 
         val taskRunner = component.taskRunner
         taskRunner.execute {
@@ -119,8 +139,8 @@ class HabitsApplication : Application() {
             // screen; see completeRecompute there. Scores read as zero until it
             // does, which is a moment of an incomplete number rather than
             // several seconds of no screen at all.
-            for (h in component.habitList) h.recomputeEntries()
-            reminderScheduler.scheduleAll()
+            traced("recomputeEntries") { for (h in component.habitList) h.recomputeEntries() }
+            traced("scheduleAll") { reminderScheduler.scheduleAll() }
         }
     }
 

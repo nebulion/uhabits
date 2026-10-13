@@ -34,7 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mudita.mmd.ThemeMMD
+import org.isoron.uhabits.mmd.MmdTheme
 import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
@@ -67,7 +67,7 @@ data class ShowHabitActions(
  * screen, so every action this header offers is visible in it. The one
  * exception used to be a developer-only "randomize" behind `DropdownMenuMMD`;
  * developer mode is gone and so is the dropdown, which settles the conflict
- * this screen had with its own rule in eink-design.md.
+ * this screen had with its own rule in eink-design-habits.md (in the folder above this repo).
  */
 @Composable
 fun ShowHabitTopBarMMD(
@@ -76,7 +76,7 @@ fun ShowHabitTopBarMMD(
     canUnarchive: Boolean,
     actions: ShowHabitActions,
 ) {
-    ThemeMMD {
+    MmdTheme {
         // The rule is drawn here, not by the bar's own showDivider, which
         // cannot produce the 3dp rule: TopAppBarMMD hands its 3dp
         // `dividerLineHeight` to a raw Material3 HorizontalDivider as a

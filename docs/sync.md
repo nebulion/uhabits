@@ -1,7 +1,7 @@
 # Sync, and the desktop clients
 
 Two-way habit sync between the Kompakt and a computer, carried by **Syncthing**,
-plus two clients for the computer end: a window and a terminal UI.
+plus a terminal client for the computer end.
 
 This is the second workstream in this repo. The first is the MMD restyle, and it
 has its own handoff in [PROJECT-STATUS.md](PROJECT-STATUS.md); read that one for
@@ -19,8 +19,8 @@ runs.
 | --- | --- |
 | Sync | working end to end on real hardware, both directions, deletions included |
 | Desktop database | `%APPDATA%\uhabits\uhabits.db`, holding the owner's 42 habits |
-| Clients | `uhabits gui` (Swing, gruvbox dark) and `uhabits` (JLine terminal UI) |
-| Tests | 13 engine + 4 date in core, 10 round-trip + 3 store on the desktop |
+| Client | `uhabits`, a JLine terminal UI (the Swing window was removed 2026-09-23) |
+| Tests | 13 engine + 4 date in core, 10 round-trip + 3 store + 6 terminal UI on the desktop |
 | Branch | `sync-desktop`, branched from `mmd-eink`, nothing pushed |
 
 Merge it with `git checkout mmd-eink && git merge sync-desktop`.
@@ -38,8 +38,20 @@ Merge it with `git checkout mmd-eink && git merge sync-desktop`.
    the picker. If the device has no document picker at all, it falls back to
    `/sdcard/Sync/loop`, which is where Syncthing already keeps its folder here.
 
-Then **Sync now** and **Stop syncing** appear. Sync otherwise runs whenever the
-app comes to the foreground, next to the automatic backup.
+Then **Stop syncing** appears. **There is no sync button** (owner, 2026-10-07:
+"it should auto-sync constantly"; the same rule as the Tasks app). Sync runs by
+itself and silently (`sync/AutoSync.kt`):
+
+- whenever the habits list comes to the foreground, next to the automatic backup;
+- 2 seconds after any change made in the app (a run of taps is one sync);
+- every 30 seconds while the app is on screen, which brings in what the
+  desktop wrote (a sync with nothing to do is a ~140ms stamp check);
+- once as the app leaves the screen, so the last edits go out.
+
+What a sync brings in is drawn at once on the habits list and ShowHabit.
+Failures are silent on screen and written to `files/sync-status.txt`. Picking
+a folder still syncs at once and says what it did.
+
 
 ### On the computer
 
@@ -60,8 +72,7 @@ Point it at the same folder once — it is remembered afterwards:
 uhabits --sync-folder ~/Sync/loop sync
 ```
 
-From then on, bare `uhabits` opens the terminal client and `uhabits gui` opens
-the window.
+From then on, bare `uhabits` opens the terminal client.
 
 **On Windows, never use `setx PATH "%PATH%;..."`.** In `cmd`, `%PATH%` expands
 to the system and user variables joined, and `setx` writes the whole thing back
@@ -88,6 +99,23 @@ mounted `noexec`, point it somewhere else:
 JAVA_OPTS=-Dorg.sqlite.tmpdir=$HOME/.cache/uhabits uhabits
 ```
 
+### WSL
+
+WSL is a Linux machine, so the Arch notes above apply inside it — plus one
+thing worth knowing: **the Windows drives are mounted inside it**, `C:` at
+`/mnt/c`. So a WSL copy of the client can sync with the same Syncthing folder
+Windows uses, no copying needed:
+
+```bash
+uhabits --sync-folder /mnt/c/Users/Antonio/Sync/loop sync
+```
+
+It keeps its *own* database (`~/.local/share/uhabits` inside WSL), and syncs
+like a third device: the folder carries changes between it, Windows and the
+phone. The other direction works too — Windows sees WSL's files at
+`\wsl$rchlinux\`. Files on `/mnt/c` are slower to read from Linux than
+native ones, which only shows as a slightly longer sync.
+
 Paths follow XDG: the database is `$XDG_DATA_HOME/uhabits/uhabits.db` (falling
 back to `~/.local/share`), settings are in `$XDG_CONFIG_HOME/uhabits/`. On
 Windows both live under `%APPDATA%\uhabits`. `uhabits where` prints them, and
@@ -97,7 +125,6 @@ says how many habits are actually in the folder it is pointed at.
 
 | | |
 | --- | --- |
-| `uhabits gui` | the window |
 | `uhabits` | the terminal client |
 | `uhabits list [--days N]` | the grid, printed once |
 | `uhabits show <habit>` | one habit, with streaks |
@@ -106,7 +133,7 @@ says how many habits are actually in the folder it is pointed at.
 | `uhabits delete <name> --yes` | delete a habit **and its history, everywhere** |
 | `uhabits sync` | reconcile with the shared folder |
 | `uhabits where` | the paths in use, and whether the folder has anything in it |
-| `uhabits dump [rows cols]` | print one frame of the terminal client, for debugging |
+| `uhabits dump [rows cols] [keys]` | one frame of the terminal client after typing `keys` into it (`\e` is escape, `\r` enter); never syncs |
 
 `--db`, `--sync-folder` and `--config` override the paths. A leading `~` is
 expanded by the program, because PowerShell does not expand it for a native
@@ -119,45 +146,65 @@ substring match. Deleting the wrong habit takes its whole history with it.
 ### The marks
 
 ```
-●  done                      ○  credited by frequency
+✓  done                      ✓  credited by frequency (faded, not bold)
 ×  missed                    –  skipped
 ·  nothing recorded          42 a numerical habit's value
 ```
 
-One shape family, and shape carries the whole meaning — the grid reads with no
-colour at all. `○` is deliberately not a tick: a non-daily habit credits the
-days around one you did perform, and drawing those identically hides what you
-actually did.
-
-### The window
-
-`uhabits gui`. Habits down the side, days across, click a cell to cycle it.
-Toolbar: ◀ / Today / ▶, Sync now, Add habit, Delete habit. Status line at the
-bottom reports what each action did. It syncs when it opens, the way the phone
-does when it comes to the foreground.
-
-**Swing, not Compose Desktop or JavaFX**, and the reason is dependencies: Swing
-is part of the JDK, so the window adds nothing to resolve, no Gradle plugin to
-pin against the Kotlin version, and nothing that can fail to download. Compose
-Multiplatform would extend more pleasantly and could eventually share
-composables with the Android side, but it needs a plugin matched to Kotlin
-2.1.10 and the cost of getting that wrong is a client that will not build. What
-the screen is — a table of habits by days — is the exact shape `JTable` exists
-for, so the whole window is one table model and one cell renderer.
-
-Gruvbox dark, from the same hex values the terminal uses (`GruvboxPalette`), so
-the two cannot drift. Two details worth keeping: `show()` blocks until the
-window closes, because Swing builds on its own thread and `main` would otherwise
-return and close the database underneath it; and sync runs on a `SwingWorker`,
-because it touches dozens of files and doing that on the event thread freezes
-the window. The **cross-platform** look and feel is used rather than the system
-one — Windows and GTK draw many components natively and ignore colour keys,
-which yields a dark table with white buttons.
+The check is the plain U+2713, not the heavy U+2714: many fonts draw the heavy
+one as a rounded brush stroke, and some as a colour emoji two cells wide, which
+pushes the rest of the row out of its columns. A credited day is the same check,
+faded and not bold, so it still reads apart with colour off — a non-daily habit
+credits the days around one you did perform, and drawing those identically
+would hide what you actually did.
 
 ### The terminal client
 
-`uhabits`. `j`/`k` habit, `h`/`l` day, `space` toggle (numeric habits prompt for
-a value), `Enter` detail, `t` today, `s` sync, `q` quit.
+`uhabits`. Keyboard-first, in the manner of a calendar app like Cron: one key
+per action, `ctrl-k` (or `:`) opens a command menu that fuzzy-finds any action
+*and* any habit, and `?` lists every key. It syncs once when it opens, after
+the first frame is on screen.
+
+| | |
+| --- | --- |
+| `j k` `h l` (or arrows) | habit, day |
+| `H L` or `[ ]` | a week back, forward |
+| `t` / `g` | today / go to a date (`sep 1`, `12`, `mon`, `yesterday`, `-3`, `2026-09-01`) |
+| `space` or `x` | cycle the day; a numeric habit asks for its value |
+| `y` `n` `-` `bksp` | done, missed, skip, clear |
+| `e` | type a numeric habit's value |
+| `u` / `U` | undo / redo, up to 200 changes |
+| `w` / `m` | week view (wide cells, Sun–Sat) / month view (as many days as fit) |
+| `enter` | the habit page (below); `J`/`K` or `tab` step to the next / previous habit |
+| `/` | filter habits as you type; `esc` clears |
+| `a` `r` `A` `D` | new, rename, archive (again to restore), delete (type `yes`) |
+| `.` | show archived habits |
+| `s` / `q` | sync / quit |
+
+**The habit page** (`enter`) is full-screen and reaches back to the first
+entry ever recorded: score, change over 30 days and a year, days done, last 30,
+current and best streak (total and average for numeric habits); a weekly score
+chart and a monthly history chart, stretched to the width when the history is
+short; a calendar of as many weeks as fit, which follows the cursor back through
+`H`/`g`; the six best streaks; and done-days by weekday. It is recomputed from
+the whole record on every frame — no window, no cache — which costs well under
+a millisecond. `j`/`k` scroll it; checking a day there works as on the grid.
+
+**Drawing.** Three things used to put rows in the wrong place, most visibly
+under tmux on Linux, and each is now ruled out. The screen is cleared before
+the first frame, because entering the alternate screen leaves the cursor where
+the shell prompt was. No row reaches the last column, because writing there
+leaves the cursor in a pending-wrap state terminals resolve differently. And
+rows are repainted whole at absolute positions instead of through JLine's
+`Display`, whose in-row insert/delete patching left the top bar reading
+"mmonth 29abits" after a label changed length. Line-drawing characters from the
+VT100 set (`─ │ ┌`) are avoided too: JLine maps them to the alternate character
+set, which came out as `qqqq` under tmux. Panels are filled with a background
+colour instead of bordered.
+
+`--enable-native-access=ALL-UNNAMED` is in the launcher's JVM options: JLine
+uses the foreign-function API, and from JDK 22 on it otherwise prints a warning
+onto the screen it is about to draw on.
 
 **JLine**, chosen over Lanterna because Linux had to be first-class without that
 being a Windows compromise: Lanterna substitutes a **Swing window** on any
@@ -228,6 +275,18 @@ modification times, plus the database file's size and modification time and two
 aggregate queries over it. If nothing on either side has moved, it stops there.
 That is **140ms**, and a real change on either side still takes the full path.
 
+**The 140ms was not what the phone was doing.** Measured again on 2026-09-24,
+a sync on launch took over two seconds: the fingerprint itself went through
+`DocumentFile`, which asks the provider one binder question per attribute per
+file -- about 450 round trips for 42 habits. Two fixes. With all-files access
+granted, a tree on primary storage is opened as the plain directory it is
+(`AndroidSync.directPath`), which is 135ms end to end; the folder's identity in
+the base is still the tree URI, so nothing resets. Without it,
+`AndroidSyncFolder` lists each directory with one `DocumentsContract` query that
+returns name, type, size and time together. On the first launch of a process,
+backup and sync are also queued *after* the habits list's load: the task runner
+is serial, and queued first they made the list wait on them.
+
 The stamp errs towards "changed" on purpose — SQLite touches its file for
 reasons that are not edits, and a spurious yes costs one ordinary sync rather
 than a missed change. The aggregate queries are there because filesystem
@@ -264,7 +323,7 @@ Both exist because the failure they prevent costs every habit you have.
 - **Nothing detects a stalled Syncthing.** The clients show what they last did;
   they cannot tell you the transport is down.
 - **Desktop sync is not automatic.** It runs on `uhabits sync`, on `s` in the
-  terminal client, and when the window opens. The phone syncs by itself.
+  terminal client, and when the terminal client opens. The phone syncs by itself.
 
 ## Two bugs in uhabits-core, found from off-Android
 

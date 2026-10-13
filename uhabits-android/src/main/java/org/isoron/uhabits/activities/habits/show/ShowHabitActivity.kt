@@ -18,6 +18,7 @@
  */
 package org.isoron.uhabits.activities.habits.show
 
+import org.isoron.uhabits.sync.AutoSync
 import kotlinx.coroutines.withContext
 import android.content.ContentUris
 import android.os.Bundle
@@ -40,7 +41,6 @@ import org.isoron.uhabits.core.commands.Command
 import org.isoron.uhabits.core.commands.CommandRunner
 import org.isoron.uhabits.core.models.Habit
 import org.isoron.uhabits.core.models.PaletteColor
-import org.isoron.platform.gui.EinkRefresh
 import org.isoron.uhabits.core.preferences.Preferences
 import org.isoron.uhabits.core.ui.callbacks.OnConfirmedCallback
 import org.isoron.uhabits.core.ui.screens.habits.list.ListHabitsBehavior
@@ -60,7 +60,6 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
     private lateinit var view: ShowHabitView
     private lateinit var habit: Habit
     private lateinit var preferences: Preferences
-    private val einkRefresh by lazy { EinkRefresh(preferences) }
     private lateinit var themeSwitcher: AndroidThemeSwitcher
 
     private val scope = CoroutineScope(Dispatchers.Main)
@@ -120,7 +119,6 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
                 onUnarchive = { menuPresenter.onUnarchiveHabits() },
                 onDelete = { menuPresenter.onDeleteHabit() },
             ),
-            onScrolled = { einkRefresh.onChange(this) },
         )
         this.menuPresenter = menuPresenter
 
@@ -163,10 +161,13 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
     override fun onResume() {
         super.onResume()
         commandRunner.addListener(this)
+        // What a background sync brings in is drawn at once.
+        AutoSync.onChanged = { screen.refresh() }
         screen.refresh()
     }
 
     override fun onPause() {
+        AutoSync.onChanged = null
         dismissCurrentDialog()
         commandRunner.removeListener(this)
         super.onPause()
@@ -174,7 +175,6 @@ class ShowHabitActivity : AppCompatActivity(), CommandRunner.Listener {
 
     override fun onCommandFinished(command: Command) {
         screen.refresh()
-        einkRefresh.onChange(this)
     }
 
     inner class Screen : ShowHabitMenuPresenter.Screen, ShowHabitPresenter.Screen {

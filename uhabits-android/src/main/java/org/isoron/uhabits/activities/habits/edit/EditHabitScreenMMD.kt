@@ -19,6 +19,7 @@
 
 package org.isoron.uhabits.activities.habits.edit
 
+import org.isoron.uhabits.mmd.DashedDividerMMD
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,7 +60,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.mudita.mmd.ThemeMMD
+import org.isoron.uhabits.mmd.MmdTheme
 import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
 import com.mudita.mmd.components.bottom_sheet.rememberModalBottomSheetMMDState
 import com.mudita.mmd.components.buttons.ButtonMMD
@@ -148,7 +149,7 @@ fun EditHabitScreenMMD(
     // answers a form with a page -- Settings drills down into one rather than
     // raising anything over itself.
     if (sheet == Sheet.FREQUENCY) {
-        ThemeMMD {
+        MmdTheme {
             FrequencyPage(
                 initialNum = state.freqNum,
                 initialDen = state.freqDen,
@@ -162,7 +163,7 @@ fun EditHabitScreenMMD(
         return
     }
 
-    ThemeMMD {
+    MmdTheme {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
@@ -353,7 +354,7 @@ private fun ChoiceSheet(
                 ) {
                     TextMMD(text = option, style = MaterialTheme.typography.bodyMedium)
                 }
-                if (index < options.lastIndex) HorizontalDividerMMD(thickness = 1.dp)
+                if (index < options.lastIndex) DashedDividerMMD()
             }
         }
     }
@@ -425,7 +426,7 @@ private fun PickerRow(label: String, value: String, onClick: () -> Unit) {
                 modifier = Modifier.size(24.dp),
             )
         }
-        HorizontalDividerMMD(thickness = 1.dp)
+        DashedDividerMMD()
     }
 }
 

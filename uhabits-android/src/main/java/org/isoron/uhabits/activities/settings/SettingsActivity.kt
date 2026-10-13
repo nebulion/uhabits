@@ -22,8 +22,15 @@ package org.isoron.uhabits.activities.settings
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import org.isoron.platform.gui.EinkRefresh
 import org.isoron.uhabits.BuildConfig
 import org.isoron.uhabits.HabitsApplication
 import org.isoron.uhabits.R
@@ -36,7 +43,6 @@ import org.isoron.uhabits.activities.habits.list.RESULT_FORGET_SYNC_FOLDER
 import org.isoron.uhabits.activities.habits.list.RESULT_PICK_SYNC_FOLDER
 import org.isoron.uhabits.activities.habits.list.RESULT_REPAIR_DB
 import org.isoron.uhabits.activities.habits.list.RESULT_GRANT_FILE_ACCESS
-import org.isoron.uhabits.activities.habits.list.RESULT_SYNC_NOW
 import org.isoron.uhabits.sync.AndroidSync
 import org.isoron.uhabits.notifications.AndroidNotificationTray.Companion.createAndroidNotificationChannel
 import org.isoron.uhabits.core.ui.NotificationTray
@@ -55,6 +61,9 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var prefs: Preferences
 
+    /** Bumped by every change a page shows elsewhere, so its rows are read again. */
+    private var version by mutableIntStateOf(0)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val component = (application as HabitsApplication).component
@@ -62,11 +71,41 @@ class SettingsActivity : AppCompatActivity() {
         prefs = component.preferences
 
         setContent {
+            // Which page is open; the first page when null. Saved, so it
+            // survives the recreate a first-weekday change does, and "Don't
+            // keep activities".
+            var page by rememberSaveable { mutableStateOf<Page?>(null) }
+            BackHandler(enabled = page != null) { page = null }
+            // Read here so a change recomposes the page.
+            val rows = version.let {
+                when (page) {
+                    null -> homeRows { page = it }
+                    Page.INTERFACE -> interfaceRows()
+                    Page.EINK -> einkRows()
+                    Page.REMINDERS -> reminderRows()
+                    Page.SYNC -> syncRows()
+                    Page.DATA -> dataRows()
+                }
+            }
             SettingsScreenMMD(
-                rows = buildRows(),
-                onNavigateBack = { finish() },
+                title = getString(page?.titleRes ?: R.string.settings),
+                rows = rows,
+                onNavigateBack = { if (page != null) page = null else finish() },
             )
         }
+    }
+
+    /** The pages Settings opens onto, in the order the first page lists them. */
+    enum class Page(val titleRes: Int) {
+        INTERFACE(R.string.interface_preferences),
+        EINK(R.string.eink_settings),
+        REMINDERS(R.string.reminder),
+        SYNC(R.string.sync),
+        DATA(R.string.data_settings),
+    }
+
+    private fun changed() {
+        version++
     }
 
     /**
@@ -82,8 +121,42 @@ class SettingsActivity : AppCompatActivity() {
             return (1..7).map { symbols[it] }
         }
 
-    private fun buildRows(): List<SettingsRow> = buildList {
-        add(SettingsRow.Header(getString(R.string.interface_preferences)))
+    /**
+     * The first page: one row per group, each with what it currently holds
+     * under its name where that can be said in a few words.
+     */
+    private fun homeRows(open: (Page) -> Unit): List<SettingsRow> = buildList {
+        add(SettingsRow.Page(getString(R.string.interface_preferences), onClick = { open(Page.INTERFACE) }))
+        add(
+            SettingsRow.Page(
+                title = getString(R.string.eink_settings),
+                value = einkSummary(),
+                onClick = { open(Page.EINK) },
+            )
+        )
+        add(SettingsRow.Page(getString(R.string.reminder), onClick = { open(Page.REMINDERS) }))
+        add(
+            SettingsRow.Page(
+                title = getString(R.string.sync),
+                value = AndroidSync.folderLabel(this@SettingsActivity)
+                    ?: getString(R.string.sync_folder_summary_unset),
+                onClick = { open(Page.SYNC) },
+            )
+        )
+        add(SettingsRow.Page(getString(R.string.data_settings), onClick = { open(Page.DATA) }))
+        // All that is left of the About screen: the version, as a line of text
+        // in the shape of the rows around it.
+        add(SettingsRow.Info(getString(R.string.version_n, BuildConfig.VERSION_NAME)))
+    }
+
+    private fun einkSummary(): String =
+        if (prefs.isEinkRefreshEnabled) {
+            getString(R.string.eink_refresh_every_n, prefs.einkRefreshInterval)
+        } else {
+            getString(R.string.eink_refresh_off)
+        }
+
+    private fun interfaceRows(): List<SettingsRow> = buildList {
         add(
             SettingsRow.Toggle(
                 title = getString(R.string.pref_toggle_title),
@@ -106,18 +179,6 @@ class SettingsActivity : AppCompatActivity() {
             )
         )
         add(
-            SettingsRow.Toggle(
-                title = getString(R.string.pref_eink_refresh_title),
-                checked = prefs.isEinkRefreshEnabled,
-                onToggle = { prefs.isEinkRefreshEnabled = it },
-            )
-        )
-        // Restored below: these were lost when the preference XML was gutted,
-        // not removed on purpose. Both preferences survived and are still
-        // read -- `isMidnightDelayEnabled` at every launch, and
-        // `shouldMakeNotificationsSticky` on every reminder -- so each was in
-        // force with no way left to change it.
-        add(
             SettingsRow.Choice(
                 title = getString(R.string.first_weekday),
                 options = weekdayNames,
@@ -138,7 +199,41 @@ class SettingsActivity : AppCompatActivity() {
                 onToggle = { prefs.isMidnightDelayEnabled = it },
             )
         )
-        add(SettingsRow.Header(getString(R.string.reminder)))
+    }
+
+    /**
+     * The flash that clears ghosting: on or off, and how many taps apart. The
+     * same page, with the same defaults (on, every 12), in all five of the
+     * owner's Kompakt apps.
+     */
+    private fun einkRows(): List<SettingsRow> = buildList {
+        add(
+            SettingsRow.Toggle(
+                title = getString(R.string.pref_eink_refresh_title),
+                checked = prefs.isEinkRefreshEnabled,
+                onToggle = {
+                    prefs.isEinkRefreshEnabled = it
+                    changed()
+                },
+            )
+        )
+        if (prefs.isEinkRefreshEnabled) {
+            val choices = EinkRefresh.INTERVAL_CHOICES
+            add(
+                SettingsRow.Choice(
+                    title = getString(R.string.pref_eink_refresh_interval_title),
+                    options = choices.map { getString(R.string.eink_refresh_every_n, it) },
+                    selectedIndex = choices.indexOf(prefs.einkRefreshInterval),
+                    onSelect = { index ->
+                        prefs.einkRefreshInterval = choices[index]
+                        changed()
+                    },
+                )
+            )
+        }
+    }
+
+    private fun reminderRows(): List<SettingsRow> = buildList {
         add(
             SettingsRow.Toggle(
                 title = getString(R.string.sticky_notifications),
@@ -159,25 +254,9 @@ class SettingsActivity : AppCompatActivity() {
                 },
             )
         )
+    }
 
-        add(SettingsRow.Header(getString(R.string.about)))
-        // All that is left of the About screen. It held a version number and a
-        // contributor list behind an activity nothing linked to -- the habits
-        // list lost its menu, and `onViewAbout` had no caller anywhere -- so
-        // the screen is deleted and the one fact worth keeping moved here.
-        // A row with no `onClick` is not a control; it is a line of text in the
-        // shape of the rows around it.
-        add(
-            SettingsRow.Action(
-                title = getString(R.string.version_n, BuildConfig.VERSION_NAME),
-                onClick = {},
-            )
-        )
-
-        // Sync sits above Database because it is the thing that runs by
-        // itself; the export and import rows below it are the manual escape
-        // hatches for when it is not set up.
-        add(SettingsRow.Header(getString(R.string.sync)))
+    private fun syncRows(): List<SettingsRow> = buildList {
         val folder = AndroidSync.folderLabel(this@SettingsActivity)
 
         // Shared storage first, because without it a folder on /sdcard cannot
@@ -191,7 +270,7 @@ class SettingsActivity : AppCompatActivity() {
             )
         }
         // One row, not two. Choosing the folder and seeing which one is chosen
-        // are the same question, and it was being asked twice.
+        // are the same question.
         add(
             SettingsRow.Action(
                 title = getString(R.string.sync_folder),
@@ -202,19 +281,20 @@ class SettingsActivity : AppCompatActivity() {
         if (folder != null) {
             add(
                 SettingsRow.Action(
-                    title = getString(R.string.sync_now),
-                    onClick = { setResultAndFinish(RESULT_SYNC_NOW) },
-                )
-            )
-            add(
-                SettingsRow.Action(
                     title = getString(R.string.sync_forget_folder),
                     onClick = { setResultAndFinish(RESULT_FORGET_SYNC_FOLDER) },
                 )
             )
         }
+    }
 
-        add(SettingsRow.Header(getString(R.string.database)))
+    /**
+     * Backups, imports and the repair, which used to be two sections
+     * (Database, Troubleshooting). No "Generate bug report": it is only useful
+     * if it can be mailed or filed, and this device has no mail client or
+     * browser.
+     */
+    private fun dataRows(): List<SettingsRow> = buildList {
         add(
             SettingsRow.Action(
                 title = getString(R.string.export_full_backup),
@@ -233,12 +313,6 @@ class SettingsActivity : AppCompatActivity() {
                 onClick = { setResultAndFinish(RESULT_IMPORT_DATA) },
             )
         )
-
-        // No "Generate bug report" and no About section. The bug report is only
-        // useful if it can be mailed or filed somewhere, and neither the About
-        // screen's contents nor its links have anywhere to go on a device with
-        // no browser, store or mail client.
-        add(SettingsRow.Header(getString(R.string.troubleshooting)))
         add(
             SettingsRow.Action(
                 title = getString(R.string.repair_database),

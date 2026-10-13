@@ -37,6 +37,26 @@
       ~ nothing and costs a full repaint. forceDark stays off so the OS cannot
       ~ invert it either.
       -->
+    <!--
+      The habits list's own theme, for one reason: no startup screen at all.
+
+      With a startup screen, a launch on E Ink is two full-screen refreshes:
+      the launcher to a blank white page, then the page to the app. And the
+      blank page is what makes the app feel slow, whatever the clock says.
+      Mudita's Meditation shows none. The launcher stays on the panel until
+      the app's first real frame replaces it, one refresh, and it reads as
+      instant. `windowDisablePreview` asks for the same. ListHabitsActivity
+      still holds its first draw until the whole screen is ready, so the
+      launcher gives way straight to the finished list.
+
+      AppBaseTheme is untouched, so every other screen keeps its behaviour.
+      ThemeSwitcher's setTheme replaces this at runtime; the flag only matters
+      to the system, before the process has drawn anything.
+    -->
+    <style name="ListHabitsLaunchTheme" parent="AppBaseTheme">
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+
     <style name="AppBaseTheme" parent="@style/Theme.MaterialComponents.Light.NoActionBar">
         <!--
           The startup screen, made to look like nothing at all.
@@ -68,9 +88,8 @@
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
         <item name="android:itemBackground">?attr/contrast0</item>
 
-        <!-- Lato, the family MMD's TypographyMMD declares. -->
-        <item name="android:fontFamily">@font/lato</item>
-        <item name="fontFamily">@font/lato</item>
+        <!-- The phone's system font, as in every Compose screen (MmdTheme):
+             the owner's rule across the Kompakt apps. Lato is not bundled. -->
 
         <item name="android:navigationBarColor">@color/white</item>
         <item name="android:textColor">@color/black</item>
@@ -196,7 +215,6 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/black</item>
         <item name="android:textSize">20sp</item>
-        <item name="android:fontFamily">@font/lato_bold</item>
     </style>
 
     <style name="DialogButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">

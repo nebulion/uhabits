@@ -19,66 +19,62 @@
 
 package org.isoron.uhabits.activities.habits.show
 
-import org.isoron.uhabits.core.ui.screens.habits.show.views.TargetCardState
-import org.isoron.uhabits.core.ui.screens.habits.show.views.FrequencyCardState
-import org.isoron.uhabits.core.ui.screens.habits.show.views.StreakCardState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.runtime.remember
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.ui.res.stringResource
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.Icon
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
-import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
-import com.mudita.mmd.components.bottom_sheet.rememberModalBottomSheetMMDState
-import com.mudita.mmd.components.radio_button.RadioButtonMMD
-import org.isoron.uhabits.core.ui.screens.habits.show.views.BarCardPresenter
-import org.isoron.uhabits.core.ui.screens.habits.show.views.ScoreCardPresenter
 import android.content.Context
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.drop
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.mudita.mmd.ThemeMMD
+import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
+import com.mudita.mmd.components.bottom_sheet.rememberModalBottomSheetMMDState
 import com.mudita.mmd.components.divider.HorizontalDividerMMD
-import com.mudita.mmd.components.lazy.LazyColumnMMD
+import com.mudita.mmd.components.radio_button.RadioButtonMMD
 import com.mudita.mmd.components.tabs.SecondaryTabRowMMD
 import com.mudita.mmd.components.tabs.TabMMD
 import com.mudita.mmd.components.text.TextMMD
+import org.isoron.platform.time.LocalDate
 import org.isoron.uhabits.R
 import org.isoron.uhabits.core.ui.screens.habits.show.ShowHabitPresenter
 import org.isoron.uhabits.core.ui.screens.habits.show.ShowHabitState
+import org.isoron.uhabits.core.ui.screens.habits.show.views.BarCardPresenter
+import org.isoron.uhabits.core.ui.screens.habits.show.views.BarCardState
+import org.isoron.uhabits.core.ui.screens.habits.show.views.FrequencyCardState
+import org.isoron.uhabits.core.ui.screens.habits.show.views.HistoryCardPresenter
 import org.isoron.uhabits.core.ui.screens.habits.show.views.HistoryCardState
-import org.isoron.uhabits.databinding.ShowHabitBinding
+import org.isoron.uhabits.core.ui.screens.habits.show.views.ScoreCardPresenter
+import org.isoron.uhabits.core.ui.screens.habits.show.views.ScoreCardState
+import org.isoron.uhabits.core.ui.screens.habits.show.views.StreakCardState
+import org.isoron.uhabits.core.ui.screens.habits.show.views.TargetCardState
+import org.isoron.uhabits.mmd.DashedDividerMMD
+import org.isoron.uhabits.mmd.MmdTheme
+import org.isoron.uhabits.mmd.PagedList
+import org.isoron.uhabits.utils.toSimpleDataFormat
+import kotlin.math.ceil
 
 /**
  * The habit screen: a fixed summary over a tabbed detail.
@@ -86,134 +82,62 @@ import org.isoron.uhabits.databinding.ShowHabitBinding
  * It used to be nine cards stacked in one `LazyColumnMMD`, which was wrong in
  * two ways that only showed up on the device. Nothing read at a glance -- the
  * numbers you actually check daily were the third card down -- and the
- * scrollbar visibly changed size as you dragged. That second one is not a bug
- * in this app: `LazyColumnMMD` sizes its thumb as `visibleCount /
- * totalItemsCount`, which is correct for a list of like-sized rows and
- * meaningless for nine cards ranging from a two-line subtitle to a full-height
- * chart. It was a list component doing a document's job.
+ * scrollbar visibly changed size as you dragged, because `LazyColumnMMD`
+ * sizes its thumb by item count.
  *
  * So the summary is hoisted out and pinned: four figures, always visible,
  * never scrolled past. Everything else is grouped behind `SecondaryTabRowMMD`
  * -- MMD's own documentation describes the secondary row as "used within a
- * content area to further separate related content", which is exactly this,
- * and its 3dp indicator is already the weight of every rule in the app.
- * Nothing was dropped; it was redistributed so that no single view has to be
- * tall enough to need scrolling.
+ * content area to further separate related content".
  *
- * `TabsMMD` is also one of the few MMD components whose defaults touch none of
- * the six roles `eInkColorScheme` leaves `Color.Unspecified`, so unlike
- * `TextFieldMMD` and `TimeInputMMD` it needs no colour override to render a
- * fill at all. Its own default `divider` is a raw Material3 `HorizontalDivider`
- * though -- the same shortcut behind `TopAppBarMMD.showDivider` -- so it is
- * suppressed and the rule drawn explicitly.
- *
- * The card *contents* are still Views, hosted through `AndroidView`, because
- * the charts inside them draw through their own `onDraw` and have to be ported
- * onto the core `Canvas` interface first. Each panel therefore still uses
- * `LazyColumnMMD` for the cards it holds -- but with `isScrollbarVisible =
- * false`, since a panel holding one or two cards has nothing a thumb could
- * usefully describe. As each chart is ported, its panel becomes plain Compose
- * and the `AndroidView` goes.
+ * **All of it is Compose now.** The Score and Bar charts were the last Views
+ * on this screen, hosted through `AndroidView` and scrolled by dragging; they
+ * are [ScoreChartMMD] and [BarChartMMD], stepped with ‹ ›. The panels page
+ * with [PagedList] instead of `LazyColumnMMD`, which painted every panel
+ * twice and paged by item count; its scrollbar is shown only where a panel
+ * overflows, and sized by height.
  */
 class ShowHabitView(context: Context) : FrameLayout(context) {
-    private val binding = ShowHabitBinding.inflate(LayoutInflater.from(context))
 
     // Header inputs, held as Compose state so a refresh recomposes the bar
     // rather than re-setting the ComposeView's content.
     private var title by mutableStateOf("")
     private var canArchive by mutableStateOf(false)
     private var canUnarchive by mutableStateOf(false)
-    /**
-     * Keys of cards that are not currently shown.
-     *
-     * `SubtitleCardView`, `NotesCardView` and `BarCardView` hide themselves
-     * with `visibility = GONE` when they have nothing to show, and overview
-     * and target are mutually exclusive. A GONE view inside a lazy item is
-     * still an item: it still counts towards `totalItemsCount`, which sizes
-     * the scrollbar thumb and drives the paging, and it still gets a divider
-     * drawn after it -- which is where the doubled rules came from. So the
-     * views' own visibility is read back after `setState` and used to drop
-     * them from the list entirely.
-     */
-    private var hiddenKeys by mutableStateOf(emptySet<String>())
 
-    // The pinned summary. These are read straight off the state the cards are
-    // already given, so nothing new is computed for them.
+    // The pinned summary, read straight off the state the cards are given.
     private var statScore by mutableStateOf(0)
     private var statBest by mutableStateOf(0)
     private var statMonth by mutableStateOf(0)
     private var statTotal by mutableStateOf(0L)
 
     /** Which detail panel is showing. */
-    private var tab by mutableStateOf(0)
+    private var tab by mutableIntStateOf(0)
 
-    /**
-     * The calendar's data, held for Compose rather than pushed into a View.
-     * This is the one card that never needed the chart port to stop being a
-     * View -- its state is already a plain list of squares.
-     */
+    /** How many [CALENDAR_WEEKS]-week pages back the calendar shows. */
+    private var calendarPage by mutableIntStateOf(0)
+
     private var history by mutableStateOf<HistoryCardState?>(null)
-
-    /**
-     * The streaks and the weekday grid, held for Compose rather than pushed
-     * into a View.
-     *
-     * Both cards are drawn by [HabitStreaksMMD] and [HabitFrequencyMMD] now.
-     * Their old `StreakChart` and `FrequencyChart` are still in the tree --
-     * they are `android.view.View` subclasses with their own `onDraw`, and the
-     * habits list's checkmark drawing still shares their halftone -- but
-     * nothing on this screen hosts them any more.
-     */
     private var streaks by mutableStateOf<StreakCardState?>(null)
     private var frequency by mutableStateOf<FrequencyCardState?>(null)
     private var target by mutableStateOf<TargetCardState?>(null)
+    private var scores by mutableStateOf<ScoreCardState?>(null)
+    private var bars by mutableStateOf<BarCardState?>(null)
     private var isNumerical by mutableStateOf(false)
-
-    /**
-     * Which span the score and bar charts are drawn over, and whether the bar
-     * chart is showing a numerical habit.
-     *
-     * Held here because the picker for them is Compose now. It was an
-     * `AppCompatSpinner` inside each card's own layout -- the most obviously
-     * un-Mudita thing left on a screen that otherwise looks finished, and one
-     * that dragged a grey `?android:attr/listDivider` and a shadowed
-     * `ListPopupWindow` into its popup that no Compose theme could reach.
-     */
-    private var scoreSpan by mutableStateOf(0)
-    private var barSpan by mutableStateOf(0)
-    private var barIsNumerical by mutableStateOf(false)
 
     private var scorePresenter: ScoreCardPresenter? = null
     private var barPresenter: BarCardPresenter? = null
+    private var historyPresenter: HistoryCardPresenter? = null
 
     private val composeView = ComposeView(context)
 
-    /** One card body, keyed so the lazy list can identify it across scrolls. */
-    private class Card(val key: String, val view: View)
-
-    private val cards: List<Card>
-
     init {
-        cards = listOf(
-            Card("score", binding.scoreCard),
-            Card("bar", binding.barCard),
-        )
-        // The inflated LinearLayout was only ever a holder: the cards are laid
-        // out by the lazy list now. Their own backgrounds go with it -- the
-        // page is white paper, and `card_eink_background` was this fork's
-        // hand-drawn approximation of a card surface.
-        binding.linearLayout.removeAllViews()
-        cards.forEach { it.view.background = null }
         addView(composeView)
     }
 
-    fun setTopBar(
-        actions: ShowHabitActions,
-        /** Called once per page of scrolling, for the E Ink flash counter. */
-        onScrolled: () -> Unit = {},
-    ) {
+    fun setTopBar(actions: ShowHabitActions) {
         composeView.setContent {
-            ThemeMMD {
+            MmdTheme {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -228,8 +152,12 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
 
                     StatBand()
 
-                    val panels = panels()
-                    val selected = tab.coerceIn(0, panels.lastIndex)
+                    val titles = listOf(
+                        stringResource(R.string.calendar),
+                        stringResource(R.string.score),
+                        stringResource(R.string.streaks),
+                    )
+                    val selected = tab.coerceIn(0, titles.lastIndex)
 
                     SecondaryTabRowMMD(
                         selectedTabIndex = selected,
@@ -239,13 +167,13 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
                         // drawing the 3dp rule. The real one is drawn below.
                         divider = {},
                     ) {
-                        panels.forEachIndexed { index, panel ->
+                        titles.forEachIndexed { index, text ->
                             TabMMD(
                                 selected = index == selected,
                                 onClick = { tab = index },
                                 text = {
                                     TextMMD(
-                                        text = panel.title,
+                                        text = text,
                                         style = MaterialTheme.typography.bodyMedium,
                                         maxLines = 1,
                                         textAlign = TextAlign.Center,
@@ -256,45 +184,10 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
                     }
                     HorizontalDividerMMD()
 
-                    if (selected == CALENDAR_TAB) {
-                        val state = history
-                        if (state != null) {
-                            HabitCalendarMMD(
-                                state = state,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                            )
-                        } else {
-                            Box(Modifier.weight(1f))
-                        }
-                    } else {
-                        Panel(
-                            cards = panels[selected].cards,
-                            onScrolled = onScrolled,
-                            modifier = Modifier.weight(1f),
-                            leading = when (selected) {
-                                STREAKS_TAB -> {
-                                    {
-                                        // Only a numerical habit has a target.
-                                        // The overview card that used to be
-                                        // its boolean counterpart is gone: the
-                                        // pinned summary says all of it.
-                                        if (isNumerical) {
-                                            target?.let { HabitTargetMMD(state = it) }
-                                        }
-                                        streaks?.let { HabitStreaksMMD(state = it) }
-                                    }
-                                }
-                                else -> null
-                            },
-                            trailing = when (selected) {
-                                SCORE_TAB -> {
-                                    { frequency?.let { HabitFrequencyMMD(state = it) } }
-                                }
-                                else -> null
-                            },
-                        )
+                    when (selected) {
+                        CALENDAR_TAB -> CalendarPanel(Modifier.weight(1f))
+                        SCORE_TAB -> ScorePanel(Modifier.weight(1f))
+                        else -> StreaksPanel(Modifier.weight(1f))
                     }
                 }
             }
@@ -302,13 +195,8 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
     }
 
     /**
-     * The four figures, pinned above the tabs.
-     *
-     * These are what someone opens this screen to read, so they are the one
-     * thing that never scrolls and never hides behind a tab. `headlineLarge`
-     * is MMD's largest role at 28sp; the captions are `labelSmall` at 14sp,
-     * which is the floor and deliberately at it -- they are labels for the
-     * numbers, not text anyone reads twice.
+     * The four figures, pinned above the tabs. `headlineLarge` is MMD's
+     * largest role at 28sp; the captions are `labelSmall` at 14sp, the floor.
      */
     @Composable
     private fun StatBand() {
@@ -317,10 +205,10 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
                 .fillMaxWidth()
                 .padding(vertical = 12.dp),
         ) {
-            Stat(statScore.toString() + "%", stringOrEmpty(R.string.score))
-            Stat(statBest.toString(), stringOrEmpty(R.string.best_streak_short))
-            Stat(formatDelta(statMonth), stringOrEmpty(R.string.month))
-            Stat(statTotal.toString(), stringOrEmpty(R.string.total))
+            Stat(statScore.toString() + "%", stringResource(R.string.score))
+            Stat(statBest.toString(), stringResource(R.string.best_streak_short))
+            Stat(formatDelta(statMonth), stringResource(R.string.month))
+            Stat(statTotal.toString(), stringResource(R.string.total))
         }
         HorizontalDividerMMD(thickness = 1.dp)
     }
@@ -349,100 +237,87 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
     private fun formatDelta(value: Int) = if (value >= 0) "+$value" else "$value"
 
     /**
-     * One tab's worth of cards.
-     *
-     * Cards that hid themselves are already gone from [hiddenKeys], so a panel
-     * can end up empty -- Notes on a habit with no notes -- and an empty panel
-     * simply shows nothing rather than an empty scroller.
+     * Twelve weeks of days, stepped back through history with ‹ ›, and a tap
+     * on a day opens that day's entry.
      */
-    private class PanelSpec(val title: String, val cards: List<Card>)
-
     @Composable
-    private fun panels(): List<PanelSpec> {
-        fun cardsFor(vararg keys: String): List<Card> =
-            keys.filter { it !in hiddenKeys }
-                .mapNotNull { key -> cards.firstOrNull { it.key == key } }
-
-        // Three tabs. Four was one too many for the width: the row divides
-        // evenly and MMD's own tab padding takes 16dp off each side, leaving
-        // 58dp for a label, and "Calendar" rendered as "Calend". Three give
-        // 120dp each, which every label clears.
-        //
-        // The one that went was Notes, and not for space -- it held the
-        // question, the frequency, the reminder and the description, every one
-        // of which is a field on the edit screen, one tap away, where they can
-        // also be changed. A tab that only repeats another page is not worth
-        // its width.
-        //
-        // Frequency sits under Score, not Streaks. It is a question about
-        // pattern over time -- which days does this actually happen on -- and
-        // it belongs beside the score line and the bar chart rather than
-        // beside a table of longest runs. Moving it also leaves Streaks as one
-        // clean list.
-        return listOf(
-            PanelSpec(stringOrEmpty(R.string.calendar), emptyList()),
-            PanelSpec(stringOrEmpty(R.string.score), cardsFor("score", "bar")),
-            PanelSpec(stringOrEmpty(R.string.streaks), emptyList()),
-        )
+    private fun CalendarPanel(modifier: Modifier) {
+        val state = history ?: return
+        // Every day the series holds, plus the rest of this week, in pages.
+        val pages = ceil((state.series.size + 7) / (CALENDAR_WEEKS * 7.0)).toInt().coerceAtLeast(1)
+        val page = calendarPage.coerceIn(0, pages - 1)
+        Column(modifier = modifier.fillMaxWidth()) {
+            ChartStepper(
+                range = calendarRange(state, page),
+                canGoOlder = page < pages - 1,
+                canGoNewer = page > 0,
+                onOlder = { calendarPage = page + 1 },
+                onNewer = { calendarPage = page - 1 },
+            )
+            HabitCalendarMMD(
+                state = state,
+                page = page,
+                onDayClick = ::onDayClick,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
     }
 
     /**
-     * A panel's cards.
-     *
-     * Still `LazyColumnMMD`, because these are still Views and one of them can
-     * be taller than the panel -- but with no scrollbar. A thumb sized by
-     * `visibleCount / totalItemsCount` says nothing useful about one or two
-     * cards of wildly different heights, and watching it resize as you drag is
-     * what made the old screen feel broken.
+     * Opens the day's editor -- never a direct toggle, because these squares
+     * are small and a mistap should cost a Cancel, not a wrong entry. The
+     * core presenter toggles on whichever press the short-toggle setting
+     * gives the toggle to, so the other one is used here.
      */
-    @Composable
-    private fun Panel(
-        cards: List<Card>,
-        onScrolled: () -> Unit,
-        modifier: Modifier = Modifier,
-        /** Compose content above the hosted cards, if this panel has any. */
-        leading: (@Composable () -> Unit)? = null,
-        /** Compose content below them. */
-        trailing: (@Composable () -> Unit)? = null,
-    ) {
-        val listState = rememberLazyListState()
-
-        LaunchedEffect(listState, cards) {
-            snapshotFlow { listState.firstVisibleItemIndex }
-                .drop(1)
-                .collect { onScrolled() }
+    private fun onDayClick(date: LocalDate) {
+        val presenter = historyPresenter ?: return
+        if (presenter.preferences.isShortToggleEnabled) {
+            presenter.onDateLongPress(date)
+        } else {
+            presenter.onDateShortPress(date)
         }
+    }
 
-        LazyColumnMMD(
-            modifier = modifier.fillMaxSize(),
-            state = listState,
-            isScrollbarVisible = false,
-            contentPadding = PaddingValues(bottom = 24.dp),
-        ) {
-            if (leading != null) {
-                item(key = "leading") { leading() }
-            }
-            itemsIndexed(cards, key = { _, c -> System.identityHashCode(c.view) }) { index, card ->
-                // The span picker sits above its chart rather than inside the
-                // card, because the card is still an Android View and this is
-                // not.
-                when (card.key) {
-                    "score" -> SpanPicker(
+    private fun calendarRange(state: HistoryCardState, page: Int): String {
+        val format = "dMMM".toSimpleDataFormat()
+        val newest = state.today.minus(page * CALENDAR_WEEKS * 7)
+        val oldest = newest.minus(CALENDAR_WEEKS * 7 - 1)
+        fun LocalDate.text() = format.format(
+            org.isoron.uhabits.core.models.Timestamp.fromLocalDate(this).toJavaDate(),
+        )
+        return oldest.text() + " – " + newest.text()
+    }
+
+    /** The score line, the bar chart, and which weekdays the habit happens on. */
+    @Composable
+    private fun ScorePanel(modifier: Modifier) {
+        val score = scores
+        val bar = bars
+        PagedList(modifier = modifier.fillMaxWidth()) {
+            if (score != null) {
+                item(key = "score-span") {
+                    SpanPicker(
                         options = SPAN_NAMES,
-                        selected = scoreSpan,
+                        selected = score.spinnerPosition,
                         onSelect = { scorePresenter?.onSpinnerPosition(it) },
                     )
-                    "bar" -> SpanPicker(
+                }
+                item(key = "score") {
+                    ScoreChartMMD(score, Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                    HorizontalDividerMMD(thickness = 1.dp)
+                }
+            }
+            if (bar != null) {
+                item(key = "bar-span") {
+                    SpanPicker(
                         // A boolean habit's bar chart cannot be drawn a day at
-                        // a time -- there is nothing to average -- so its list
+                        // a time -- there is nothing to count -- so its list
                         // starts at Week and its indices are shifted by one
-                        // against the numerical one. That offset lived in two
-                        // `android:entries` arrays before, where nothing said
-                        // they were different.
-                        options = if (barIsNumerical) SPAN_NAMES else SPAN_NAMES.drop(1),
-                        selected = barSpan,
+                        // against the numerical one.
+                        options = if (bar.isNumerical) SPAN_NAMES else SPAN_NAMES.drop(1),
+                        selected = if (bar.isNumerical) bar.numericalSpinnerPosition else bar.boolSpinnerPosition,
                         onSelect = {
-                            if (barIsNumerical) {
+                            if (bar.isNumerical) {
                                 barPresenter?.onNumericalSpinnerPosition(it)
                             } else {
                                 barPresenter?.onBoolSpinnerPosition(it)
@@ -450,50 +325,35 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
                         },
                     )
                 }
-                AndroidView(
-                    factory = { card.view.detached() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                )
-                if (index < cards.lastIndex) HorizontalDividerMMD(thickness = 1.dp)
-            }
-            if (trailing != null) {
-                item(key = "trailing") {
-                    if (cards.isNotEmpty()) HorizontalDividerMMD(thickness = 1.dp)
-                    trailing()
+                item(key = "bar") {
+                    BarChartMMD(bar, Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                    HorizontalDividerMMD(thickness = 1.dp)
                 }
             }
+            frequency?.let { item(key = "frequency") { HabitFrequencyMMD(state = it) } }
         }
     }
 
-    /** A string, or empty if the context has gone. */
-    private fun stringOrEmpty(resId: Int): String = context.getString(resId)
-
-    /**
-     * A lazy item that scrolls out of range is disposed and its `AndroidView`
-     * detaches the child; scrolling back calls the factory again with the same
-     * instance. Handing back a view that still has a parent throws, so make
-     * sure it has none.
-     */
-    private fun View.detached(): View = apply { (parent as? ViewGroup)?.removeView(this) }
+    @Composable
+    private fun StreaksPanel(modifier: Modifier) {
+        PagedList(modifier = modifier.fillMaxWidth()) {
+            // Only a numerical habit has a target. The overview card that used
+            // to be its boolean counterpart is gone: the pinned summary says
+            // all of it.
+            if (isNumerical) target?.let { item(key = "target") { HabitTargetMMD(state = it) } }
+            streaks?.let { item(key = "streaks") { HabitStreaksMMD(state = it) } }
+        }
+    }
 
     fun setState(data: ShowHabitState) {
         title = data.title
-        binding.scoreCard.setState(data.scores)
         target = data.target
         isNumerical = data.isNumerical
         history = data.history
         streaks = data.streaks
         frequency = data.frequency
-        binding.barCard.setState(data.bar)
-        scoreSpan = data.scores.spinnerPosition
-        barIsNumerical = data.bar.isNumerical
-        barSpan = if (data.bar.isNumerical) {
-            data.bar.numericalSpinnerPosition
-        } else {
-            data.bar.boolSpinnerPosition
-        }
+        scores = data.scores
+        bars = data.bar
 
         // The summary figures. Score is a fraction, and the month delta is a
         // fraction of a fraction -- both are percentages by the time anyone
@@ -503,12 +363,6 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
         statMonth = (data.overview.scoreMonthDiff * 100).toInt()
         statTotal = data.overview.totalCount
         statBest = data.streaks.bestStreaks.maxOfOrNull { it.length } ?: 0
-
-        // Read back after every card has had its say, including the three that
-        // hide themselves.
-        hiddenKeys = cards.filter { it.view.visibility != VISIBLE }
-            .map { it.key }
-            .toSet()
     }
 
     fun setMenuState(canArchive: Boolean, canUnarchive: Boolean) {
@@ -519,24 +373,19 @@ class ShowHabitView(context: Context) : FrameLayout(context) {
     fun setListener(presenter: ShowHabitPresenter) {
         scorePresenter = presenter.scoreCardPresenter
         barPresenter = presenter.barCardPresenter
-        binding.scoreCard.setListener(presenter.scoreCardPresenter)
-        binding.barCard.setListener(presenter.barCardPresenter)
+        historyPresenter = presenter.historyCardPresenter
     }
 }
 
-/** The Calendar tab, which is drawn rather than hosted. */
+/** Index of each tab. */
 private const val CALENDAR_TAB = 0
+private const val SCORE_TAB = 1
 
 /**
  * The five spans a chart can be drawn over: day, week, month, quarter, year.
- *
- * Read from the same strings the two `android:entries` arrays used, so nothing
- * has to be translated twice.
+ * Read from the same strings the old `android:entries` arrays used, so
+ * nothing has to be translated twice.
  */
-/** Index of each tab in [ShowHabitView.panels]. */
-private const val SCORE_TAB = 1
-private const val STREAKS_TAB = 2
-
 private val SPAN_NAMES = listOf(
     R.string.day,
     R.string.week,
@@ -614,7 +463,7 @@ private fun SpanPicker(
             )
         }
     }
-    HorizontalDividerMMD(thickness = 1.dp)
+    DashedDividerMMD()
     if (open) {
         ModalBottomSheetMMD(
             onDismissRequest = { open = false },

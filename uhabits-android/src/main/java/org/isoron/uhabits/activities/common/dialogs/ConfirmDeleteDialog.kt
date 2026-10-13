@@ -21,7 +21,6 @@ package org.isoron.uhabits.activities.common.dialogs
 
 import android.os.Bundle
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentManager
 import org.isoron.uhabits.R
@@ -52,19 +51,18 @@ class ConfirmDeleteDialog : MmdPanelDialogFragment() {
         val quantity = requireArguments().getInt(ARG_QUANTITY)
         PanelTitle(resources.getQuantityString(R.plurals.delete_habits_title, quantity))
         PanelBody(resources.getQuantityString(R.plurals.delete_habits_message, quantity))
+        // Stacked, solid on top: written escape-first, the commit last.
         PanelActions {
+            PanelSecondaryAction(
+                label = stringResource(android.R.string.cancel),
+                onClick = { dismiss() },
+            )
             PanelPrimaryAction(
-                label = stringResource(R.string.yes),
+                label = stringResource(R.string.delete),
                 onClick = {
                     callback?.onConfirmed()
                     dismiss()
                 },
-                modifier = Modifier.weight(1f),
-            )
-            PanelSecondaryAction(
-                label = stringResource(R.string.no),
-                onClick = { dismiss() },
-                modifier = Modifier.weight(1f),
             )
         }
     }

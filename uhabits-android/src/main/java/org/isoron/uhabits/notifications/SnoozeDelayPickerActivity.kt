@@ -41,7 +41,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
-import com.mudita.mmd.ThemeMMD
+import org.isoron.uhabits.mmd.MmdTheme
 import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
 import com.mudita.mmd.components.bottom_sheet.rememberModalBottomSheetMMDState
 import com.mudita.mmd.components.buttons.ButtonMMD
@@ -101,7 +101,7 @@ class SnoozeDelayPickerActivity : FragmentActivity() {
         reminderController = component.reminderController
 
         setContent {
-            ThemeMMD {
+            MmdTheme {
                 SnoozeSheet(
                     onDelayPicked = {
                         reminderController.onSnoozeDelayPicked(habit, it)

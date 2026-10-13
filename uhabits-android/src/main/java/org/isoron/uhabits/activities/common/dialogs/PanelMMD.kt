@@ -20,130 +20,142 @@
 package org.isoron.uhabits.activities.common.dialogs
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mudita.mmd.components.buttons.ButtonMMD
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
+import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.text.TextMMD
-import com.mudita.mmd.components.text_field.TextFieldDefaultsMMD
 import com.mudita.mmd.components.text_field.TextFieldColorsMMD
+import com.mudita.mmd.components.text_field.TextFieldDefaultsMMD
 
 /**
- * The floating panel every popup in this app sits in.
+ * The panel every popup in this app sits in: MMD's dialog (zeroheight
+ * "Dialog", and the Kompakt's own Notes delete prompt, pattern P5 in
+ * MMD-GUIDE).
  *
- * **MMD ships no dialog.** All twenty-two component packages were read: there
- * is `ModalBottomSheetMMD` and nothing else that puts content over a screen —
- * no alert, no confirm, no centred panel. So this container is ours, and the
- * point of having exactly one of it is that every popup then looks the same:
- * the checkmark editor, the number editor and the delete confirmation are all
- * this, differing only in what is poured into it.
+ * **MMD ships no dialog component**, so the container is ours, built from MMD
+ * parts to zeroheight's measurements: anchored to the **bottom** of the screen
+ * at full width, a 3dp black rule and 2dp of white across its top, then 24dp
+ * above the content, 12dp at the sides and below. The heading and body are
+ * centred; the buttons are stacked full width with the solid one on top. No
+ * border, no corners, no elevation, no dim.
  *
- * Everything about how it looks is taken from MMD rather than invented:
- *
- * - **White fill, black border, no elevation.** `eInkColorScheme` has no grey,
- *   and MMD never uses elevation — a shadow dithers into a smear. The border
- *   is what makes the panel read as a surface at all, which is the same
- *   reasoning `DropdownMenuMMD` gives for its own.
- * - **3dp border**, matching `DividerDefaultsMMD.Thickness`: MMD's structural
- *   weight, the same rule that sits under every screen header.
- * - **8dp corners**, matching `ButtonDefaultsMMD.buttonCornerRadius`.
- *
- * What it deliberately does *not* have is the grey dim behind it. Every dialog
- * in this app used to raise Android's default window scrim — a flat mid-grey
- * over the whole screen, and the most visible violation left in the app.
- * `ModalBottomSheetMMD` sets `ScrimColor = Color.Transparent` for the same
- * reason; [MmdPanelDialogFragment] clears `dimAmount` to match.
+ * It used to be a bordered box floating in the middle of the screen, which is
+ * how no Mudita app draws a dialog. Ported from the Macros/Fit kit
+ * (`ui/kit/Panel.kt`), which had itself started as a port of the old version
+ * of this file.
  */
 @Composable
 fun PanelMMD(content: @Composable () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(PANEL_MARGIN)
-            .background(MaterialTheme.colorScheme.surface, PANEL_SHAPE)
-            .border(PANEL_BORDER, MaterialTheme.colorScheme.onSurface, PANEL_SHAPE)
-            .padding(PANEL_PADDING),
-    ) {
-        content()
+    Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
+        HorizontalDividerMMD(thickness = RULE_THICKNESS, color = MaterialTheme.colorScheme.onSurface)
+        Spacer(Modifier.height(RULE_GAP))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            content()
+        }
     }
 }
 
-/** A panel's heading, in MMD's own title role. */
+/** A dialog's heading: Black 25sp on 28sp lines, centred (zeroheight). */
 @Composable
 fun PanelTitle(text: String) {
     TextMMD(
         text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(bottom = 8.dp),
+        style = MaterialTheme.typography.titleLarge.copy(fontSize = 25.sp, lineHeight = 28.sp),
+        fontWeight = FontWeight.Black,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
     )
 }
 
-/** A panel's body copy, regular weight. MuditaOS has no small grey text. */
+/** A dialog's body: Medium 21sp on 25sp lines, centred. Never small grey text. */
 @Composable
 fun PanelBody(text: String) {
     TextMMD(
         text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(bottom = 8.dp),
+        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 21.sp, lineHeight = 25.sp),
+        fontWeight = FontWeight.Medium,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
     )
 }
 
 /**
- * A panel's actions, along its bottom edge.
- *
- * MMD's button tiers, from `eink-design.md`: the committing action is
- * `ButtonMMD` — solid black, label knocked out in white — and everything
- * beside it is `OutlinedButtonMMD`, a 2dp black outline on nothing.
+ * A dialog's buttons, stacked full width 12dp apart below 24dp of space.
+ * Callers write the escape first and the committing action last; the last is
+ * placed on top, as MMD puts the solid button above the outlined one.
  */
 @Composable
-fun PanelActions(content: @Composable RowScope.() -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+fun PanelActions(content: @Composable () -> Unit) {
+    val gap = with(LocalDensity.current) { 12.dp.roundToPx() }
+    Layout(
         content = content,
-    )
-}
-
-/** The one action that commits. Solid black. */
-@Composable
-fun PanelPrimaryAction(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    ButtonMMD(onClick = onClick, modifier = modifier) {
-        TextMMD(text = label, style = MaterialTheme.typography.bodyMedium)
+        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val placeables = measurables.map { it.measure(Constraints.fixedWidth(width)) }.reversed()
+        val height = placeables.sumOf { it.height } + gap * (placeables.size - 1).coerceAtLeast(0)
+        layout(width, height) {
+            var y = 0
+            placeables.forEach {
+                it.placeRelative(0, y)
+                y += it.height + gap
+            }
+        }
     }
 }
 
-/** Everything beside it. Black outline, no fill. */
+/** The one action that commits: solid black, bold label knocked out in white. */
+@Composable
+fun PanelPrimaryAction(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    ButtonMMD(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = BUTTON_HEIGHT),
+        shape = BUTTON_SHAPE,
+    ) {
+        TextMMD(text = label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+    }
+}
+
+/** Everything beside it: black outline, no fill. */
 @Composable
 fun PanelSecondaryAction(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    OutlinedButtonMMD(onClick = onClick, modifier = modifier) {
-        TextMMD(text = label, style = MaterialTheme.typography.bodyMedium)
+    OutlinedButtonMMD(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = BUTTON_HEIGHT),
+        shape = BUTTON_SHAPE,
+    ) {
+        TextMMD(text = label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
     }
 }
 
 /**
  * `TextFieldMMD`'s own colours, with the container stated rather than left to
- * chance.
- *
- * Its default container resolves to `surfaceContainerHighest`, which MMD's
- * `eInkColorScheme` leaves as `Color.Unspecified` in every one of the field's
- * four states — so the field renders with no fill at all. On a white panel
- * that happens to look right, but it is an accident of what is behind it, not
- * a token, and it would stop looking right the moment a field sat on anything
- * else.
+ * chance: its default resolves to `surfaceContainerHighest`, which MMD's
+ * `eInkColorScheme` leaves unspecified. `MmdTheme` fills that role too; this
+ * stays so a field is right even outside it.
  */
 @Composable
 fun panelTextFieldColors(): TextFieldColorsMMD {
@@ -156,11 +168,17 @@ fun panelTextFieldColors(): TextFieldColorsMMD {
     )
 }
 
-private val PANEL_MARGIN = 16.dp
-private val PANEL_PADDING = 16.dp
+/** `DividerDefaultsMMD.Thickness`: the rule across a dialog's top. */
+private val RULE_THICKNESS = 3.dp
 
-/** `DividerDefaultsMMD.Thickness` — MMD's structural weight. */
-private val PANEL_BORDER = 3.dp
+/** The white gap zeroheight puts under that rule. */
+private val RULE_GAP = 2.dp
+
+/**
+ * Measured off the Kompakt's Notes delete prompt: buttons 75px (56dp) tall.
+ * Taller than MMD's 32dp minimum because a mistap on E Ink costs a repaint.
+ */
+private val BUTTON_HEIGHT = 56.dp
 
 /** `ButtonDefaultsMMD.buttonCornerRadius`. */
-private val PANEL_SHAPE = RoundedCornerShape(8.dp)
+private val BUTTON_SHAPE = RoundedCornerShape(8.dp)

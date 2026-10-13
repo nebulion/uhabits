@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,13 +63,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -84,18 +86,24 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mudita.mmd.ThemeMMD
 import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.snackbar.SnackbarDataMMD
 import com.mudita.mmd.components.snackbar.SnackbarHostMMD
 import com.mudita.mmd.components.snackbar.SnackbarHostStateMMD
 import com.mudita.mmd.components.snackbar.SnackbarMMD
-import com.mudita.mmd.components.lazy.LazyColumnMMD
 import com.mudita.mmd.components.menus.DropdownMenuItemMMD
 import com.mudita.mmd.components.menus.DropdownMenuMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import org.isoron.uhabits.R
+import org.isoron.uhabits.StartupFonts
+import org.isoron.uhabits.mmd.DashedDividerMMD
+import org.isoron.uhabits.mmd.MmdTheme
+import org.isoron.uhabits.mmd.PagedList
+import org.isoron.uhabits.mmd.PagedListDefaults
+import org.isoron.uhabits.mmd.pageBack
+import org.isoron.uhabits.mmd.pageForward
+import org.isoron.uhabits.core.models.NumericalHabitType
 import org.isoron.uhabits.core.models.Timestamp
 
 /**
@@ -104,10 +112,11 @@ import org.isoron.uhabits.core.models.Timestamp
  * Everything on screen shares one grid: the heading row and the habit rows both
  * open with a [HABIT_NAME_WIDTH] name column and then give every day column an
  * equal `weight`, so a heading, its cell and that cell's touch target always
- * line up. Both are inset from the right by [SCROLLBAR_GUTTER] — the heading
- * row explicitly, the habit rows because `LazyColumnMMD` reserves it for them.
+ * line up. Both are inset from the right by the scrollbar's column, which this
+ * list always keeps (see [PagedList]'s `canGrow`): the heading row explicitly,
+ * the habit rows because the list sits beside it.
  *
- * `LazyColumnMMD` supplies the paged scrolling and the permanent scrollbar.
+ * [PagedList] supplies the paging and the scrollbar.
  */
 
 /** What the screen needs from the outside, so the composable stays testable. */
@@ -165,45 +174,6 @@ private val HABIT_NAME_WIDTH = 140.dp
  */
 private val CELL_HEIGHT = 56.dp
 
-/**
- * Width of `LazyColumnMMD`'s scrollbar: a 24dp arrow
- * (`LazyDefaultsMMD.navigateIconSize`) inside 8dp of horizontal padding either
- * side.
- *
- * It is **not** content padding. The scrollbar is a sibling of the list inside
- * a `Row`, where the list itself takes `weight(1f)`, and it is composed only
- * when `canScrollBackward || canScrollForward`. So the rows lose this width
- * when the list scrolls and get it back when it does not, and the day-heading
- * row — which sits outside the list — has to be inset to match *conditionally*.
- * A fixed inset here is right only for as long as there are enough habits to
- * scroll; filter the list down to three and every heading sits 40dp left of
- * its column.
- */
-private val SCROLLBAR_GUTTER = 40.dp
-
-/**
- * The arrow inside that gutter, from `LazyDefaultsMMD.navigateIconSize`. Used
- * only by the loading state, which draws its own inert copy of the scrollbar;
- * `LazyColumnMMD` sizes the real one itself.
- */
-private val SCROLLBAR_ARROW_SIZE = 24.dp
-
-/**
- * How many habits one drag moves.
- *
- * `LazyColumnMMD` does not scroll freely — it disables user scrolling and
- * calls `scrollToItem` in fixed steps — so this is not a speed, it is the size
- * of a page. `LazyDefaultsMMD.SCROLL_STEP` is 4, which was written for a list
- * of MMD's own row heights; at this screen's [CELL_HEIGHT] about eight rows
- * are on screen at once, so four moved the list half a screen and left most of
- * what you had just read still showing.
- *
- * Six moves most of a page while leaving a row or two of overlap, which is
- * enough to keep your place without paying for two repaints to cover the
- * distance one would.
- */
-private const val SCROLL_STEP = 6
-
 @Composable
 fun HabitListScreenMMD(
     habits: List<HabitCardUiState>,
@@ -218,8 +188,6 @@ fun HabitListScreenMMD(
     showArchived: Boolean,
     showCompleted: Boolean,
     actions: HabitListActions,
-    /** Called once per page of scrolling, for the E Ink flash counter. */
-    onScrolled: () -> Unit = {},
     /**
      * Transient messages -- a finished CSV export, an import that could not
      * be read. Set to null once shown.
@@ -229,16 +197,48 @@ fun HabitListScreenMMD(
     /**
      * True until the habits have finished loading.
      *
-     * The header, the sort row and the date row are drawn regardless, so the
-     * app is on screen and legible while the list is still being read. Before
-     * this existed the splash held everything back until the habits were ready,
-     * which on a large database was several seconds of nothing at all --
-     * indistinguishable from a crash.
+     * The content area is left empty meanwhile, and the activity holds the
+     * first draw until this is false, so the whole screen -- header, dates,
+     * rows and scrollbar -- reaches the panel in one paint. That hold was
+     * once seconds long; with the load now about as quick as composing the
+     * screen, it costs next to nothing.
      */
     isLoading: Boolean = false,
+    /**
+     * Called once, when the loaded screen is complete: rows laid out and the
+     * scrollbar composed. The activity holds the first draw until then, so the
+     * whole screen reaches the panel in one paint.
+     */
+    onReadyToShow: () -> Unit = {},
 ) {
     val hasSelection = selectedIds.isNotEmpty()
     val listState = rememberLazyListState()
+
+    // Released once rows are on screen (or there are none to show). The
+    // scrollbar is laid out in the same pass as the rows -- [PagedList] keeps
+    // its column on this list whether or not it scrolls -- so, unlike
+    // `LazyColumnMMD`, there is no second frame to wait for.
+    LaunchedEffect(isLoading) {
+        if (isLoading) return@LaunchedEffect
+        snapshotFlow { habits.isEmpty() || listState.layoutInfo.totalItemsCount > 0 }
+            .first { it }
+        onReadyToShow()
+    }
+
+    // Where the list stood when a habit was dropped, put back as soon as the
+    // reordered list arrives. Without it the list scrolled on release: a lazy
+    // list keeps its first visible item *by key* in view, and a drop moves
+    // that item. `requestScrollToItem` overrides the key for exactly that one
+    // measure, so the restore lands in the same frame as the new order.
+    var restoreAfterDrop by remember { mutableStateOf<DropRestore?>(null) }
+    restoreAfterDrop?.let { restore ->
+        if (restore.before !== habits) {
+            SideEffect {
+                listState.requestScrollToItem(restore.index, restore.offset)
+                restoreAfterDrop = null
+            }
+        }
+    }
 
     // The drag in progress, if any. Both are hoisted here rather than kept
     // inside a row because the indicator belongs to a *boundary between* rows,
@@ -265,45 +265,11 @@ fun HabitListScreenMMD(
         snackbarHost.showSnackbar(text, withDismissAction = true)
         onMessageShown()
     }
-    /**
-     * Whether to leave room for `LazyColumnMMD`'s scrollbar.
-     *
-     * Mirrors the library's own condition -- `canScrollBackward ||
-     * canScrollForward` -- with one addition: **before the list has measured
-     * anything, assume the scrollbar will be there.**
-     *
-     * Both of those are false until the list has laid rows out, and they are
-     * false for two different reasons that look identical here: because there
-     * is nothing to scroll, and because nothing has been measured yet. Taking
-     * them at face value meant the headings laid out full width for the frame
-     * between the habits arriving and the list measuring them, then jumped
-     * 40dp left. Reserving the space while the answer is unknown costs a short
-     * list one gutter it does not need; not reserving it makes the dates move
-     * on every single launch.
-     */
-    val isScrollbarReserved by remember {
-        derivedStateOf {
-            listState.layoutInfo.totalItemsCount == 0 ||
-                listState.canScrollBackward || listState.canScrollForward
-        }
-    }
-
-    // Scrolling ghosts worse than anything else on this screen: the whole page
-    // of rows moves and leaves its previous position behind. LazyColumnMMD
-    // pages by item rather than scrolling freely, so watching the first
-    // visible index counts whole pages and never fires mid-drag. The first
-    // emission is the initial composition, not a scroll, so it is dropped.
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.firstVisibleItemIndex }
-            .drop(1)
-            .collect { onScrolled() }
-    }
-
     // Back leaves the selection before it leaves the screen, which is what the
     // ActionMode bar used to do for free.
     BackHandler(enabled = hasSelection, onBack = actions.onClearSelection)
 
-    ThemeMMD {
+    MmdTheme {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHostMMD(snackbarHost) { MessageBar(it) } },
@@ -343,6 +309,9 @@ fun HabitListScreenMMD(
                                     showCompleted = showCompleted,
                                     actions = actions,
                                 )
+                                // No sync button: sync runs by itself
+                                // (AutoSync), after every change and while
+                                // the app is open.
                                 IconButton(onClick = actions.onOpenSettings) {
                                     GlyphText(
                                         glyph = stringResource(R.string.fa_cog),
@@ -359,7 +328,7 @@ fun HabitListScreenMMD(
             Column(modifier = Modifier.fillMaxSize().padding(insets)) {
                 DayHeadingRow(
                     dayLabels = dayLabels,
-                    scrollbarGutter = if (isScrollbarReserved) SCROLLBAR_GUTTER else 0.dp,
+                    scrollbarGutter = PagedListDefaults.ScrollbarGutter,
                     canGoOlder = dataOffset < maxDataOffset,
                     canGoNewer = dataOffset > 0,
                     onOlder = actions.onOlder,
@@ -368,7 +337,9 @@ fun HabitListScreenMMD(
                 HorizontalDividerMMD()
 
                 if (isLoading) {
-                    LoadingState()
+                    // Nothing. The activity holds the first draw until the
+                    // habits are in, so this is never on the panel; it only
+                    // keeps "still loading" from being drawn as "no habits".
                 } else if (habits.isEmpty()) {
                     EmptyState()
                 } else {
@@ -378,51 +349,69 @@ fun HabitListScreenMMD(
                             .reorderGesture(
                                 listState = listState,
                                 habits = habits,
-                                selectedIds = selectedIds,
                                 onDragChange = { id, boundary ->
                                     draggingId = id
                                     dropBoundary = boundary
                                 },
+                                onBeforeDrop = {
+                                    restoreAfterDrop = DropRestore(
+                                        before = habits,
+                                        index = listState.firstVisibleItemIndex,
+                                        offset = listState.firstVisibleItemScrollOffset,
+                                    )
+                                },
                                 actions = actions,
                             ),
                     ) {
-                    LazyColumnMMD(
-                        modifier = Modifier.fillMaxSize(),
-                        state = listState,
-                        scrollStep = SCROLL_STEP,
-                    ) {
-                        itemsIndexed(habits, key = { _, it -> it.id }) { index, habit ->
-                            // The boundary above the very first row has no
-                            // separator of its own -- the header's rule sits
-                            // there -- so the list carries an empty one, which
-                            // exists only to be bolded when a habit is being
-                            // dropped at the top.
-                            if (index == 0) RowSeparator(bold = dropBoundary == 0, drawn = false)
-                            HabitRow(
-                                habit = habit,
-                                // The held row bolds its own border only while
-                                // the drop would leave it where it is. Once
-                                // the finger reaches a boundary that would
-                                // move it, the line takes over and says so
-                                // instead, so the two never claim at once.
-                                isDragging = habit.id == draggingId &&
-                                    dropBoundary == null,
-                                isSelected = habit.id in selectedIds,
-                                dayLabels = dayLabels,
-                                dataOffset = dataOffset,
-                                isShortToggleEnabled = isShortToggleEnabled,
-                                areQuestionMarksEnabled = areQuestionMarksEnabled,
-                                actions = actions,
-                            )
-                            RowSeparator(bold = dropBoundary == index + 1)
+                        PagedList(
+                            modifier = Modifier.fillMaxSize(),
+                            state = listState,
+                            // Habits come and go while the screen is open
+                            // (filters, archive, a sync), so the scrollbar's
+                            // column is always kept and the day columns never
+                            // shift sideways to make room for it. Every row is
+                            // one height, so nothing is laid out off-screen.
+                            canGrow = true,
+                            uniformRows = true,
+                        ) {
+                            itemsIndexed(habits, key = { _, it -> it.id }) { index, habit ->
+                                // The boundary above the very first row has no
+                                // separator of its own -- the header's rule
+                                // sits there -- so the list carries an empty
+                                // one, which exists only to be bolded when a
+                                // habit is being dropped at the top.
+                                if (index == 0) RowSeparator(bold = dropBoundary == 0, drawn = false)
+                                HabitRow(
+                                    habit = habit,
+                                    // The held row bolds its own border only
+                                    // while the drop would leave it where it
+                                    // is. Once the finger reaches a boundary
+                                    // that would move it, the line takes over.
+                                    isDragging = habit.id == draggingId &&
+                                        dropBoundary == null,
+                                    isSelected = habit.id in selectedIds,
+                                    dayLabels = dayLabels,
+                                    dataOffset = dataOffset,
+                                    isShortToggleEnabled = isShortToggleEnabled,
+                                    areQuestionMarksEnabled = areQuestionMarksEnabled,
+                                    actions = actions,
+                                )
+                                RowSeparator(bold = dropBoundary == index + 1)
+                            }
                         }
-                    }
                     }
                 }
             }
         }
     }
 }
+
+/** The list's position when a habit was dropped, and the list it was taken from. */
+private class DropRestore(
+    val before: List<HabitCardUiState>,
+    val index: Int,
+    val offset: Int,
+)
 
 /**
  * The header while habits are selected: a count, a way out, and the batch
@@ -541,7 +530,8 @@ private fun SortMenuButton(
                 },
             )
         }
-        HorizontalDividerMMD(thickness = 1.dp)
+        // MMD's own Menus KDoc separates groups with `DashedDivider()`.
+        DashedDividerMMD()
         DropdownMenuItemMMD(
             text = { TextMMD(stringResource(R.string.hide_archived)) },
             trailingIcon = { if (!showArchived) CheckGlyph() },
@@ -756,16 +746,10 @@ private fun HabitRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .width(HABIT_NAME_WIDTH)
-                .combinedClickable(
-                    onClick = { actions.onClickHabit(habit) },
-                    // A long press on an *unselected* habit selects it. On a
-                    // selected one it must do nothing: the second long press
-                    // is the one that picks the habit up, and it is caught by
-                    // the list's own container, not here.
-                    onLongClick = if (isSelected) null else {
-                        { actions.onLongClickHabit(habit) }
-                    },
-                )
+                // A tap only. Holding the name -- to select it, or to drag it
+                // -- is read by the list's container ([reorderGesture]), so
+                // the row must not have a long click of its own.
+                .clickable { actions.onClickHabit(habit) }
                 .padding(start = 16.dp, end = 8.dp),
         )
 
@@ -776,7 +760,7 @@ private fun HabitRow(
             val dataIndex = (dayLabels.size - 1 - index) + dataOffset
             CheckmarkCell(
                 modifier = Modifier.weight(1f),
-                value = habit.checkmarks.getOrElse(dataIndex) { UNKNOWN },
+                value = cellState(habit, habit.checkmarks.getOrElse(dataIndex) { UNKNOWN }),
                 hasNotes = habit.notes.getOrElse(dataIndex) { "" }.isNotBlank(),
                 areQuestionMarksEnabled = areQuestionMarksEnabled,
                 onClick = {
@@ -795,8 +779,8 @@ private fun HabitRow(
                 },
             )
         }
-        // No gutter Spacer here: LazyColumnMMD's own contentPadding already
-        // holds the scrollbar's width back from this row.
+        // No gutter Spacer here: the row sits beside the scrollbar's column,
+        // not under it.
     }
 }
 
@@ -805,6 +789,24 @@ private const val YES_MANUAL = 2
 private const val YES_AUTO = 1
 private const val NO = 0
 private const val UNKNOWN = -1
+
+/**
+ * The state a cell draws for [value], one entry of [habit]'s checkmarks.
+ *
+ * A yes/no habit's entries already are states. A numerical habit's are the
+ * amount recorded, times 1000, and have to be judged against the per-period
+ * target first — otherwise every non-zero amount reads as a yes, and going
+ * over an "at most" habit's limit still earns a check.
+ */
+private fun cellState(habit: HabitCardUiState, value: Int): Int {
+    if (!habit.isNumerical || value == UNKNOWN || value == SKIP) return value
+    val amount = value / 1000.0
+    val met = when (habit.targetType) {
+        NumericalHabitType.AT_LEAST -> amount >= habit.threshold
+        NumericalHabitType.AT_MOST -> amount <= habit.threshold
+    }
+    return if (met) YES_MANUAL else NO
+}
 
 /**
  * Line weight of every outlined glyph, in pixels.
@@ -917,67 +919,9 @@ private fun GlyphText(
  */
 @Composable
 private fun fontAwesome(): FontFamily {
-    val assets = LocalContext.current.assets
-    return remember(assets) {
-        FontFamily(Font(path = "fontawesome-webfont.ttf", assetManager = assets))
-    }
-}
-
-/**
- * Shown where the habits go, while they are being read.
- *
- * A word, not a progress bar and not a spinner. MMD's only indeterminate
- * indicator is `CircularProgressIndicatorMMD`, and it animates -- which on this
- * panel means continuous repainting and the ghosting this app turns animation
- * off everywhere to avoid. Its determinate bar was tried and removed: with the
- * load down to about twenty milliseconds it had nothing left to report, and sat
- * empty for exactly as long as it took to disappear.
- *
- * This is the same shape as [EmptyState] on purpose. The two say the only
- * things this area can otherwise say, and they should not look like different
- * screens.
- */
-@Composable
-private fun LoadingState() {
-    Row(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier.weight(1f).fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            TextMMD(
-                text = stringResource(R.string.loading_habits),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-            )
-        }
-        // The scrollbar's own column, drawn but inert.
-        //
-        // `LazyColumnMMD` puts its scrollbar in exactly this space once there
-        // are rows to scroll, so holding it open keeps the loading screen the
-        // same shape as the loaded one and nothing moves sideways when the
-        // habits arrive.
-        //
-        // Its arrows are the dotted chevrons, which is how this app and the
-        // Kompakt's own reader both say "not available" on a panel with no
-        // midtone -- the same pair the date pager uses when it cannot page any
-        // further. No thumb: a thumb is a position within a list, and there is
-        // no list yet to have a position in.
-        Column(
-            modifier = Modifier.width(SCROLLBAR_GUTTER).fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.mmd_chevron_dotted_up),
-                contentDescription = null,
-                modifier = Modifier.size(SCROLLBAR_ARROW_SIZE),
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(
-                painter = painterResource(R.drawable.mmd_chevron_dotted_down),
-                contentDescription = null,
-                modifier = Modifier.size(SCROLLBAR_ARROW_SIZE),
-            )
-        }
+    val context = LocalContext.current
+    return remember(context) {
+        FontFamily(androidx.compose.ui.text.font.Typeface(StartupFonts.fontAwesome(context)))
     }
 }
 
@@ -1046,42 +990,47 @@ private fun MessageBar(data: SnackbarDataMMD) {
 }
 
 /**
- * Owns picking a habit up and moving it. Lives on the list, not on a row.
+ * Owns holding a habit: let go to select it, or keep holding and drag it to a
+ * new place (pattern P7 in MMD-GUIDE, the same in all of the owner's apps).
+ * Lives on the list, not on a row.
  *
- * **This is the fix for the bug that made the feature unusable**, and it is
- * structural rather than a patch. The gesture used to be a `pointerInput` on
- * the dragged row's own name column, which failed in two ways once the list
- * scrolled: the finger's position was read as `thatRow.offset + local y`, so
- * turning a page put the row out of `visibleItemsInfo` and no drop boundary
- * could be computed again -- you could scroll but not place -- and a
+ * - **Hold, then let go:** the habit's selection toggles, as the long press on
+ *   its name used to.
+ * - **Hold, then move without letting go:** the habit is picked up. The list
+ *   stays still; the separator the habit would drop into thickens; release
+ *   puts it there. Holding at the top or bottom edge turns one page a second.
+ *
+ * There is no "select first, then hold again": that was this screen's old
+ * gesture, which the docs described and the other apps dropped.
+ *
+ * **It is owned by a container around the list, not by a row.** The gesture
+ * used to be a `pointerInput` on the dragged row's own name column, which
+ * failed once the list scrolled: the finger's position was read as
+ * `thatRow.offset + local y`, so turning a page put the row out of
+ * `visibleItemsInfo` and no drop boundary could be computed again, and a
  * `LazyColumn` may dispose a row it has scrolled past, destroying the very
- * node hosting the gesture. A container around the list is never disposed and
- * its coordinates are the list's own, so neither can happen.
+ * node hosting the gesture. A container is never disposed and its coordinates
+ * are the list's own.
  *
- * **It works in the `Initial` pass.** A parent sees events before its
- * children there, which is the only way to get in front of `LazyColumnMMD` --
- * the list claims drags for its own paging, and anything reading them
- * afterwards sees either a cancelled drag or a movement reported as zero.
- * Nothing is consumed until a drag is actually running, so taps, long presses
- * on unselected rows and the list's own scrolling all behave exactly as
- * before.
- *
- * The gesture: press a habit that is already the only selected one, hold, and
- * drag. The list stays still; the separator the habit would drop into
- * thickens; release puts it there. Holding at the top or bottom edge turns a
- * page.
+ * **It works in the `Initial` pass**, ahead of the list's own swipe-to-page,
+ * and consumes nothing until a hold is recognised, so taps, swipes and the
+ * day cells' own long press behave as before. Only a hold on a habit's
+ * *name* counts; the day cells keep theirs (it opens the entry editor).
  */
 private fun Modifier.reorderGesture(
     listState: LazyListState,
     habits: List<HabitCardUiState>,
-    selectedIds: Set<Long>,
     onDragChange: (Long?, Int?) -> Unit,
+    onBeforeDrop: () -> Unit,
     actions: HabitListActions,
 ): Modifier = composed {
     val scope = rememberCoroutineScope()
-    val edgeMarginPx = with(LocalDensity.current) { EDGE_MARGIN.toPx() }
+    val density = LocalDensity.current
+    val edgeMarginPx = with(density) { EDGE_MARGIN.toPx() }
+    val nameWidthPx = with(density) { HABIT_NAME_WIDTH.toPx() }
     val current = rememberUpdatedState(habits)
-    val selection = rememberUpdatedState(selectedIds)
+    val act = rememberUpdatedState(actions)
+    val beforeDrop = rememberUpdatedState(onBeforeDrop)
 
     pointerInput(Unit) {
         awaitEachGesture {
@@ -1089,33 +1038,43 @@ private fun Modifier.reorderGesture(
                 requireUnconsumed = false,
                 pass = PointerEventPass.Initial,
             )
-            // Only the single selected habit is draggable, and only from the
-            // row the finger actually went down on.
-            val ids = selection.value
-            if (ids.size != 1) return@awaitEachGesture
+            if (down.position.x > nameWidthPx) return@awaitEachGesture
             val start = listState.layoutInfo.indexAt(down.position.y)
                 ?: return@awaitEachGesture
             val habit = current.value.getOrNull(start) ?: return@awaitEachGesture
-            if (habit.id !in ids) return@awaitEachGesture
 
             // A long press is "still down, and still roughly here, when the
             // timeout expires". Watching for it without consuming leaves the
-            // row's own tap handling untouched.
+            // row's own tap and the list's swipe untouched.
             val slop = viewConfiguration.touchSlop
-            val heldStill = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+            val moved = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                 while (true) {
                     val event = awaitPointerEvent(PointerEventPass.Initial)
                     val change = event.changes.firstOrNull { it.id == down.id }
-                        ?: return@withTimeoutOrNull false
-                    if (!change.pressed) return@withTimeoutOrNull false
+                        ?: return@withTimeoutOrNull true
+                    if (!change.pressed) return@withTimeoutOrNull true
                     if ((change.position.y - down.position.y).absoluteValue > slop) {
-                        return@withTimeoutOrNull false
+                        return@withTimeoutOrNull true
                     }
                 }
-                @Suppress("UNREACHABLE_CODE") false
+                @Suppress("UNREACHABLE_CODE") true
             }
-            // Null means the timeout won, which is exactly the long press.
-            if (heldStill != null) return@awaitEachGesture
+            // Null means the timeout won, which is exactly the hold.
+            if (moved != null) return@awaitEachGesture
+
+            // Held: letting go here selects; moving past the slop picks it up.
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                val change = event.changes.firstOrNull { it.id == down.id }
+                    ?: return@awaitEachGesture
+                // The row must not take this as a tap, nor the list page.
+                change.consume()
+                if (!change.pressed) {
+                    act.value.onLongClickHabit(habit)
+                    return@awaitEachGesture
+                }
+                if ((change.position.y - down.position.y).absoluteValue > slop) break
+            }
 
             var boundary: Int? = null
             var lastPageTurn = 0L
@@ -1138,18 +1097,13 @@ private fun Modifier.reorderGesture(
 
                 val now = System.currentTimeMillis()
                 if (now - lastPageTurn >= PAGE_TURN_INTERVAL_MS) {
-                    val target = when {
-                        change.position.y <= info.viewportStartOffset + edgeMarginPx ->
-                            listState.firstVisibleItemIndex - SCROLL_STEP
-                        change.position.y >= info.viewportEndOffset - edgeMarginPx ->
-                            listState.firstVisibleItemIndex + SCROLL_STEP
-                        else -> null
-                    }
-                    if (target != null) {
+                    val forward = change.position.y >= info.viewportEndOffset - edgeMarginPx
+                    val back = change.position.y <= info.viewportStartOffset + edgeMarginPx
+                    if (forward || back) {
                         lastPageTurn = now
                         pageTurn?.cancel()
                         pageTurn = scope.launch {
-                            listState.scrollToItem(target.coerceAtLeast(0))
+                            if (forward) listState.pageForward() else listState.pageBack()
                         }
                     }
                 }
@@ -1158,10 +1112,11 @@ private fun Modifier.reorderGesture(
             val landed = boundary
             onDragChange(null, null)
             if (landed != null) {
+                beforeDrop.value()
                 // A boundary below the habit's own place absorbs the row it
                 // vacates, so the index it lands on is one less than the
                 // boundary; above, the boundary is the index itself.
-                actions.onDropHabit(habit, if (landed > start) landed - 1 else landed)
+                act.value.onDropHabit(habit, if (landed > start) landed - 1 else landed)
             }
         }
     }
@@ -1235,7 +1190,7 @@ private const val PAGE_TURN_INTERVAL_MS = 1000L
  * than as this gap being the one.
  *
  * The slot is always [DividerDefaultsMMD.Thickness] tall whether it is bolded
- * or not, and the hairline is centred inside it. Growing a 1dp rule into a 3dp
+ * or not, and the dotted hairline is centred inside it. Growing a 1px line into a 3dp
  * one would otherwise push every row below it down by 2dp the moment a drag
  * passed over -- a whole-screen repaint to say where one habit would land.
  *
@@ -1255,13 +1210,16 @@ private fun RowSeparator(bold: Boolean, drawn: Boolean = true) {
             .padding(start = HABIT_NAME_WIDTH),
         contentAlignment = Alignment.Center,
     ) {
-        if (bold || drawn) {
-            Box(
+        when {
+            bold -> Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (bold) DividerDefaultsMMD.Thickness else 1.dp)
+                    .height(DividerDefaultsMMD.Thickness)
                     .background(MaterialTheme.colorScheme.onBackground),
             )
+            // MMD's row divider is dotted; a solid hairline is the structural
+            // weight, for headers.
+            drawn -> DashedDividerMMD()
         }
     }
 }
