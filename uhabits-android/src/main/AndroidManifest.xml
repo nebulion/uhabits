@@ -44,6 +44,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppBaseTheme">
 
+        <!-- Lets `atrace` and simpleperf see into a release build, which is
+             the only build worth measuring startup on. See PROJECT-STATUS.md,
+             "Startup". Costs nothing at runtime. -->
+        <profileable android:shell="true" />
+
         <activity
             android:name=".activities.habits.edit.EditHabitActivity"
             android:exported="true">
@@ -59,6 +64,7 @@
         <activity
             android:name=".activities.habits.list.ListHabitsActivity"
             android:exported="true"
+            android:theme="@style/ListHabitsLaunchTheme"
             android:label="@string/main_activity_title"
             android:launchMode="singleTop" />
 

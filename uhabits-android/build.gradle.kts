@@ -75,7 +75,13 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.txt")
+            // The `-optimize` variant: plain `proguard-android.txt` carries
+            // `-dontoptimize`, so R8 was only shrinking. Letting it inline and
+            // merge Compose, MMD and Kotlin means fewer classes to load and
+            // fewer calls to make on a cold start, which is where that start
+            // spends most of its time. The app's own code is still kept whole
+            // by proguard-rules.txt; see the note there.
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.txt")
             // Falls back to the debug keystore, deliberately. This build is
             // sideloaded and never goes near a store, and that signature is
             // what keeps the stores out: F-Droid's and Aurora's copies of Loop

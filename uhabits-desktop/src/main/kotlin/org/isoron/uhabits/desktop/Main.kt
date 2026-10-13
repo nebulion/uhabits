@@ -45,10 +45,10 @@ uhabits - Loop Habit Tracker on the desktop
                                  create a habit
   uhabits delete <name> --yes    delete a habit and its history
   uhabits sync                   reconcile with the shared folder
-  uhabits gui                    the window
   uhabits tui                    the full-screen terminal client
   uhabits where                  paths this client is using
-  uhabits dump [rows cols]       print one frame of the terminal client
+  uhabits dump [rows cols] [keys] print one frame of the terminal client,
+                                 after typing keys into it (never syncs)
 
 Options:
   --db <file>                    use this database instead of the default
@@ -101,7 +101,9 @@ fun main(args: Array<String>) {
     }
 
     HabitStore(dbOverride ?: DesktopEnv.defaultDatabase).use { store ->
-        store.recomputeAll()
+        // The terminal client computes scores itself, after its first frame is
+        // on screen, so that opening it never looks like a hang.
+        if (command != "tui" && command != "dump") store.recomputeAll()
         when (command) {
             "list" -> list(store, rest)
             "show" -> show(store, rest)
@@ -109,11 +111,6 @@ fun main(args: Array<String>) {
             "add" -> add(store, rest)
             "delete" -> delete(store, rest)
             "sync" -> sync(store, config)
-            "gui" -> if (!Gui(store, config).show()) {
-                System.err.println("No display available, so here is the list instead.")
-                System.err.println()
-                list(store, emptyList())
-            }
             "tui" -> if (!Tui(store, config).run()) {
                 System.err.println("This terminal can't run the full-screen client, so here is the list.")
                 System.err.println("Try Windows Terminal, or use `uhabits list` directly.")
@@ -123,7 +120,8 @@ fun main(args: Array<String>) {
             "dump" -> {
                 val rows = rest.getOrNull(0)?.toIntOrNull() ?: 24
                 val cols = rest.getOrNull(1)?.toIntOrNull() ?: 100
-                Tui(store, config).dump(rows, cols).forEach(::println)
+                val keys = unescape(rest.getOrNull(2) ?: "")
+                Tui(store, config).dump(rows, cols, keys).forEach(::println)
             }
             else -> {
                 System.err.println("unknown command: $command")
@@ -131,6 +129,17 @@ fun main(args: Array<String>) {
                 exitProcess(2)
             }
         }
+    }
+}
+
+/** `\e`, `\r`, `\t` and `\xNN` in a `dump` key string, so special keys can be typed. */
+private fun unescape(s: String): String = Regex("""\\(e|r|n|t|x[0-9a-fA-F]{2})""").replace(s) {
+    when (val c = it.groupValues[1]) {
+        "e" -> "\u001b"
+        "r" -> "\r"
+        "n" -> "\n"
+        "t" -> "\t"
+        else -> c.drop(1).toInt(16).toChar().toString()
     }
 }
 
@@ -191,7 +200,7 @@ private fun list(store: HabitStore, args: List<String>) {
     for (line in Grid.headerLines(end, days)) println(line)
     for (habit in habits) println(Grid.row(habit, end, days))
     println()
-    println("  ● done   ○ credited by frequency   × missed   – skipped   · nothing recorded")
+    println("  ✓ done   ✓ (faded) credited by frequency   × missed   – skipped   · nothing recorded")
 }
 
 private fun show(store: HabitStore, args: List<String>) {

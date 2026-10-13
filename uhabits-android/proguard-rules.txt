@@ -20,12 +20,14 @@
 -keep class io.socket.** { *; }
 -keep class okhttp3.** { *; }
 -keep class okio.** { *; }
+# Kept whole, and not optimised: Repository maps database rows onto record
+# classes by reflecting over their annotated fields, and the only copy of the
+# owner's habits is behind it. Libraries are optimised freely.
 -keep class org.isoron.** { *; }
 -keep class sun.misc.Unsafe { *; }
 -keep class android.support.test.** { *; }
 -keep class org.mockito.** { *; }
 -keep class org.junit.** { *; }
--keep class kotlin.** { *; }
 
 
 -dontskipnonpubliclibraryclassmembers

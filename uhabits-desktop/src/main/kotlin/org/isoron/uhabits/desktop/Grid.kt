@@ -48,13 +48,13 @@ object Grid {
             value < 0 -> "·"
             else -> formatNumber(value / 1000.0)
         }
-        // One shape family rather than a tick, a cross and an arrow borrowed
-        // from three different places. Filled means you did it; the same circle
-        // hollow means the frequency credited it; everything else is a mark of
-        // its own. Shape carries the meaning on its own, so the grid still
-        // reads with no colour at all.
-        value == Entry.YES_MANUAL -> "●"
-        value == Entry.YES_AUTO -> "○"
+        // A plain U+2713 check, not the heavy U+2714: many fonts draw the heavy
+        // one as a rounded, brush-stroke glyph and some as a colour emoji two
+        // cells wide, which pushes the rest of the row out of its columns.
+        // A day the frequency credited is the same check, faded and not bold
+        // (see Gruvbox.forValue), so it still reads apart with colour off.
+        value == Entry.YES_MANUAL -> "✓"
+        value == Entry.YES_AUTO -> "✓"
         value == Entry.NO -> "×"
         value == Entry.SKIP -> "–"
         else -> "·"

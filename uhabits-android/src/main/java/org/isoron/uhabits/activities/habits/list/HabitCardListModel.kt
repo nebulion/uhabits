@@ -331,7 +331,7 @@ class HabitCardListModel @Inject constructor(
         }
     }
 
-    private fun rebuild() {
+    private fun rebuild() = org.isoron.uhabits.utils.traced("model rebuild") {
         isRebuildScheduled = false
         val selected = _selectedIds.value
         _habits.value = (0 until cache.habitCount).mapNotNull { position ->

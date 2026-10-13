@@ -19,6 +19,7 @@
 package org.isoron.uhabits.tasks
 
 import android.os.AsyncTask
+import android.os.Trace
 import dagger.Module
 import dagger.Provides
 import org.isoron.uhabits.core.AppScope
@@ -63,14 +64,14 @@ class AndroidTaskRunner : TaskRunner {
         @Deprecated("Deprecated in Java")
         override fun doInBackground(vararg params: Void?): Void? {
             if (isCancelled) return null
-            task.doInBackground()
+            traced(task, "run") { task.doInBackground() }
             return null
         }
 
         @Deprecated("Deprecated in Java")
         override fun onPostExecute(aVoid: Void?) {
             if (isCancelled) return
-            task.onPostExecute()
+            traced(task, "done") { task.onPostExecute() }
             activeTasks.remove(this)
             taskToAsyncTask.remove(task)
             for (l in listeners) l.onTaskFinished(task)
@@ -87,12 +88,22 @@ class AndroidTaskRunner : TaskRunner {
 
         @Deprecated("Deprecated in Java")
         override fun onProgressUpdate(vararg values: Int?) {
-            values[0]?.let { task.onProgressUpdate(it) }
+            values[0]?.let { traced(task, "progress") { task.onProgressUpdate(it) } }
         }
     }
 
     @Module
     companion object {
+        /**
+         * Names each task in a system trace, so a startup trace shows which
+         * job the serial executor is running rather than an anonymous thread.
+         * Free when nothing is tracing.
+         */
+        private inline fun traced(task: Task, phase: String, block: () -> Unit) {
+            Trace.beginSection("task ${task.javaClass.name.substringAfterLast('.')} $phase")
+            try { block() } finally { Trace.endSection() }
+        }
+
         @JvmStatic
         @Provides
         @AppScope

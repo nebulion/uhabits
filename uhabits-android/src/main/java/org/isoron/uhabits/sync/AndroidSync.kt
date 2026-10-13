@@ -23,6 +23,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.Settings
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
@@ -214,10 +215,38 @@ object AndroidSync {
             if (!dir.isDirectory && !dir.mkdirs()) return null
             return FileSyncFolder(dir)
         }
+        directPath(uri)?.let { return FileSyncFolder(it) }
         val root = DocumentFile.fromTreeUri(context, uri) ?: return null
         if (!root.isDirectory || !root.canWrite()) return null
         return AndroidSyncFolder(context, root)
     }
+
+    /**
+     * The picked tree as a plain directory, when the app is allowed to use it
+     * as one.
+     *
+     * The picker hands back a `content://` tree, and going through the Storage
+     * Access Framework costs a binder round trip per question asked of every
+     * file -- the fingerprint alone measured over two seconds on the Kompakt,
+     * on every launch, holding the serial task runner the whole time. With
+     * all-files access granted, a tree on primary storage is simply a
+     * directory under `/sdcard`, and plain file I/O answers the same questions
+     * in milliseconds.
+     *
+     * The folder's identity for the base cache is still the tree URI (see
+     * [run]), so switching between the two paths does not reset anything.
+     */
+    private fun directPath(uri: Uri): File? {
+        if (!hasAllFilesAccess()) return null
+        if (uri.authority != EXTERNAL_STORAGE_AUTHORITY) return null
+        val id = runCatching { DocumentsContract.getTreeDocumentId(uri) }.getOrNull() ?: return null
+        if (!id.startsWith("primary:")) return null
+        @Suppress("DEPRECATION")
+        val dir = File(Environment.getExternalStorageDirectory(), id.removePrefix("primary:"))
+        return dir.takeIf { it.isDirectory && it.canWrite() }
+    }
+
+    private const val EXTERNAL_STORAGE_AUTHORITY = "com.android.externalstorage.documents"
 
     /** A one-line summary for the snackbar, or null when there was nothing to say. */
     fun describe(report: SyncReport): String? {

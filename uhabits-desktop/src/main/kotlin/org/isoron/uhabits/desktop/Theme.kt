@@ -35,34 +35,13 @@ import org.jline.utils.AttributedStyle
  * has the right background, and painting our own would fight anyone whose
  * scheme differs.
  */
-/**
- * Gruvbox dark as plain hex, with no toolkit attached.
- *
- * The terminal client reaches its colours as 256-colour indices and the window
- * as AWT colours; these are the numbers both of them are approximating, kept
- * in one place so the two clients cannot drift apart on what "done" looks like.
- */
-object GruvboxPalette {
-    const val BG0 = 0x282828 // page
-    const val BG1 = 0x3C3836 // toolbar, header
-    const val BG2 = 0x504945 // rules, selection
-    const val FG = 0xEBDBB2 // primary text
-    const val GRAY = 0x928374 // secondary text
-    const val RED = 0xFB4934
-    const val GREEN = 0xB8BB26
-    const val YELLOW = 0xFABD2F
-    const val BLUE = 0x83A598
-    const val PURPLE = 0xD3869B
-    const val AQUA = 0x8EC07C
-    const val ORANGE = 0xFE8019
-}
-
 object Gruvbox {
     private fun fg(index: Int) = AttributedStyle.DEFAULT.foreground(index)
 
     val fg0 = fg(223) // #ebdbb2 foreground
     val gray = fg(245) // #928374 comment grey
-    val darkGray = fg(239) // #504945 faint rules
+    val darkGray = fg(239) // #504945 faint text
+    val rule = fg(237) // #3c3836 dividers, one step above the background
     val red = fg(167) // #fb4934
     val green = fg(142) // #b8bb26
     val yellow = fg(214) // #fabd2f
@@ -70,6 +49,7 @@ object Gruvbox {
     val purple = fg(175) // #d3869b
     val aqua = fg(108) // #8ec07c
     val orange = fg(208) // #fe8019
+    val fadedAqua = fg(66) // #689d6a, a credited day: done, but not by you
 
     /**
      * Colour carries the same distinction the glyphs do, so the grid still
@@ -78,8 +58,8 @@ object Gruvbox {
      */
     fun forValue(habit: Habit, value: Int): AttributedStyle = when {
         habit.isNumerical && value >= 0 -> yellow
-        value == Entry.YES_MANUAL -> green
-        value == Entry.YES_AUTO -> aqua
+        value == Entry.YES_MANUAL -> green.bold()
+        value == Entry.YES_AUTO -> fadedAqua
         value == Entry.NO -> red
         value == Entry.SKIP -> blue
         else -> darkGray

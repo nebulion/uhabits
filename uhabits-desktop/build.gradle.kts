@@ -47,6 +47,11 @@ dependencies {
 application {
     applicationName = "uhabits"
     mainClass.set("org.isoron.uhabits.desktop.MainKt")
+    // JLine reaches the terminal through the JDK's foreign-function API. From
+    // JDK 22 on, doing that without this flag prints a "restricted method"
+    // warning on every start -- straight onto the screen the client is about
+    // to draw on. JDK 17 accepts the flag too, so it costs nothing there.
+    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.named<JavaExec>("run") {
